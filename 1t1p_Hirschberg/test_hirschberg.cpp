@@ -7,8 +7,8 @@
 #include <iostream>
 #include <vector>
 
-const size_t TEST_QUANTITY = 100;
-const size_t STRING_MAX_SIZE = 1000;
+const size_t TEST_QUANTITY = 10;
+const size_t STRING_MAX_SIZE = 10000;
 const std::string ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const std::string INPUT_FILE1 = "f1.in";
 const std::string INPUT_FILE2 = "f2.in";

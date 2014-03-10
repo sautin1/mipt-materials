@@ -6,11 +6,81 @@
 #include <string>
 #include <algorithm>
 
+ssize_t SubstringSize(ssize_t begin_index, ssize_t end_index)
+{
+	return end_index - begin_index + 1;
+}
+
+
+ssize_t GetOptimalDecomposition(const std::string& s1, const std::string& s2, ssize_t s1_begin_index, ssize_t s1_end_index, 
+				ssize_t s2_begin_index, ssize_t s2_end_index, ssize_t& min_distance)
+{
+	ssize_t s1_size = SubstringSize(s1_begin_index, s1_end_index);
+	ssize_t s2_size = SubstringSize(s2_begin_index, s2_end_index);
+
+	std::vector<ssize_t> str_distance; //straight pass edit-distance values
+	for (ssize_t i = 0; i <= s2_size; i++){
+		str_distance.push_back(i);
+	}
+	//Straight pass
+	ssize_t prev;
+	ssize_t cur;
+	for (ssize_t i = 0; i < s1_size/2; i++){
+		prev = str_distance[0];
+		str_distance[0] += 1;
+		for (ssize_t j = 0; j < s2_size; j++){
+			cur = str_distance[j+1];
+
+			if (s1[s1_begin_index + i] == s2[s2_begin_index + j]){
+				str_distance[j+1] = prev;
+			}
+			else{
+				str_distance[j+1] = 1 + std::min(str_distance[j+1], std::min(prev, str_distance[j]));
+			}
+			prev = cur;
+		}
+	}
+
+	//Reverse pass
+	std::vector<ssize_t> rev_distance; //reverse pass edit-distance values
+	rev_distance.push_back(0);
+	for (ssize_t i = 0; i < s2_size; i++){
+		rev_distance.push_back(i + 1);
+	}
+	for (ssize_t i = 0; i < s1_size - s1_size/2; i++){
+		prev = rev_distance[0];
+		rev_distance[0] += 1;
+		for (ssize_t j = 0; j < s2_size; j++){
+			cur = rev_distance[j+1];
+
+			if (s1[s1_end_index - i] == s2[s2_end_index - j]){
+				rev_distance[j+1] = prev;
+			}
+			else{
+				rev_distance[j+1] = 1 + std::min(rev_distance[j+1], std::min(prev, rev_distance[j]));
+			}
+			prev = cur;
+		}
+	}
+
+	//Find min_row
+	ssize_t min_row = 0;
+	for (ssize_t i = 1; i < str_distance.size(); i++){
+		if (str_distance[i]       + rev_distance[str_distance.size() - i - 1] < 
+			str_distance[min_row] + rev_distance[str_distance.size() - min_row - 1]){
+			min_row = i;
+		}
+	}
+	min_distance = str_distance[min_row] + rev_distance[str_distance.size() - min_row - 1];
+	return min_row;
+}
+
+
 ssize_t Hirschberg(const std::string& s1, const std::string& s2, ssize_t s1_begin_index, ssize_t s1_end_index, 
 				ssize_t s2_begin_index, ssize_t s2_end_index, std::ofstream& fout)
 {
-	ssize_t s1_size = s1_end_index - s1_begin_index + 1;
-	ssize_t s2_size = s2_end_index - s2_begin_index + 1;
+	ssize_t s1_size = SubstringSize(s1_begin_index, s1_end_index);
+	ssize_t s2_size = SubstringSize(s2_begin_index, s2_end_index);
 	
 	if (s1_size == 0){
 		for (ssize_t i = s2_begin_index; i <= s2_end_index; i++){
@@ -92,63 +162,8 @@ ssize_t Hirschberg(const std::string& s1, const std::string& s2, ssize_t s1_begi
 		}	
 	}
 
-	//________________
-
-	std::vector<ssize_t> str_distance; //straight pass edit-distance values
-	for (ssize_t i = 0; i <= s2_size; i++){
-		str_distance.push_back(i);
-	}
-	//Straight pass
-	ssize_t prev;
-	ssize_t cur;
-	for (ssize_t i = 0; i < s1_size/2; i++){
-		prev = str_distance[0];
-		str_distance[0] += 1;
-		for (ssize_t j = 0; j < s2_size; j++){
-			cur = str_distance[j+1];
-
-			if (s1[s1_begin_index + i] == s2[s2_begin_index + j]){
-				str_distance[j+1] = prev;
-			}
-			else{
-				str_distance[j+1] = 1 + std::min(str_distance[j+1], std::min(prev, str_distance[j]));
-			}
-			prev = cur;
-		}
-	}
-
-	//Reverse pass
-	std::vector<ssize_t> rev_distance; //reverse pass edit-distance values
-	rev_distance.push_back(0);
-	for (ssize_t i = 0; i < s2_size; i++){
-		rev_distance.push_back(i + 1);
-	}
-	for (ssize_t i = 0; i < s1_size - s1_size/2; i++){
-		prev = rev_distance[0];
-		rev_distance[0] += 1;
-		for (ssize_t j = 0; j < s2_size; j++){
-			cur = rev_distance[j+1];
-
-			if (s1[s1_end_index - i] == s2[s2_end_index - j]){
-				rev_distance[j+1] = prev;
-			}
-			else{
-				rev_distance[j+1] = 1 + std::min(rev_distance[j+1], std::min(prev, rev_distance[j]));
-			}
-			prev = cur;
-		}
-	}
-
-	//Find min_row
-	ssize_t min_row = 0;
-	for (ssize_t i = 1; i < str_distance.size(); i++){
-		if (str_distance[i]       + rev_distance[str_distance.size() - i - 1] < 
-			str_distance[min_row] + rev_distance[str_distance.size() - min_row - 1]){
-			min_row = i;
-		}
-	}
-	ssize_t min_distance = str_distance[min_row] + rev_distance[str_distance.size() - min_row - 1];
-	
+	ssize_t min_distance;
+	ssize_t min_row = GetOptimalDecomposition(s1, s2, s1_begin_index, s1_end_index, s2_begin_index, s2_end_index, min_distance);
 
 	Hirschberg(s1, s2, s1_begin_index, s1_begin_index + s1_size/2 - 1, s2_begin_index, s2_begin_index + min_row-1, fout);
 	Hirschberg(s1, s2, s1_begin_index + s1_size/2, s1_end_index, s2_begin_index + min_row, s2_end_index, fout);
