@@ -4,26 +4,28 @@
 #include <stdexcept>
 #include <limits>
 #include <iostream>
+#include <algorithm>
 
 const ssize_t INF = std::numeric_limits<ssize_t>::max();
 const std::string INPUT_FILE = "lis.in";
 const std::string OUTPUT_FILE = "lis.out";
 
-
-size_t BinSearch(std::vector<ssize_t>& number_sequence, std::vector<size_t>& lis_end_element, 
-				size_t left_id, size_t right_id, ssize_t search_object)
+class Comparator
 {
-	while(left_id != right_id) {
-		size_t middle_id = (left_id + right_id) / 2;
-		if (number_sequence[lis_end_element[middle_id]] < search_object){
-			left_id = middle_id + 1;
-		}
-		else {
-			right_id = middle_id;
-		}
+public:
+	Comparator(const std::vector<ssize_t>* number_sequence)
+	{
+		number_sequence_ = number_sequence;
 	}
-	return left_id;
-}
+
+	bool operator()(const ssize_t search_object, const size_t element) const
+	{
+		return (*number_sequence_)[element] >= search_object;
+	}
+
+private:
+	const std::vector<ssize_t>* number_sequence_;
+};
 
 int main()
 {
@@ -51,7 +53,11 @@ int main()
 			lis_end_element.push_back(new_element_id);
 		} 
 		else {
-			size_t element_position = BinSearch(number_sequence, lis_end_element, 0, lis_end_element.size()-1, new_element);
+			Comparator compare_functor(&number_sequence);
+			std::vector<size_t>::iterator element_position_it;
+			element_position_it = std::upper_bound(lis_end_element.begin(), lis_end_element.end(), new_element, compare_functor);
+			size_t element_position = element_position_it - lis_end_element.begin();
+
 			lis_end_element[element_position] = new_element_id;
 			reference.push_back(lis_end_element[element_position - 1]);
 		}
