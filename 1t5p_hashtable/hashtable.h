@@ -87,6 +87,7 @@ public:
 				}
 				else {
 					list_it_ = (*bucket_it_).end();
+					--list_it_;
 				}
 			}
 			else {
