@@ -3,6 +3,7 @@
 #include <vector>
 #include <stdexcept>
 #include <stack>
+#include <cstdlib>
 
 const size_t NODE_WHITE = 0;
 const size_t NODE_GREY  = 1;
@@ -20,10 +21,13 @@ class directed_graph
 	std::vector< neighbour_t > graph_;
 	size_t node_quantity_;
 public:
+	directed_graph();
 	directed_graph(size_t node_quantity, const std::vector<edge_t>& edges);
 	directed_graph(size_t node_quantity, const std::vector< std::vector<bool> >& matrix);
 	size_t size() const;
 	bool dfs_nr(std::vector<size_t>& node_color, node_t start_node, size_t mode, std::vector<node_t>& node_toposort) const;
 	bool dfs_caller() const;
 	bool toposort(std::vector<node_t>& node_toposort) const;
+	void transpose(directed_graph& new_graph) const;
+	size_t scc(std::vector<size_t>& scc_number) const;
 };
