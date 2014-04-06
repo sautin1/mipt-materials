@@ -1,7 +1,7 @@
 #include <fstream>
 #include "directed_graph.h"
 
-const std::string INPUT_FILE  = "/home/sautin1/Documents/Prog/2t1p_DFS_NR/dfs_nr/toposort.in";
+const std::string INPUT_FILE  = "toposort.in";
 const std::string OUTPUT_FILE = "toposort.out";
 
 int main()
