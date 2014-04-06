@@ -103,7 +103,7 @@ bool directed_graph::toposort(std::vector<node_t>& node_toposort) const
 	std::vector<size_t> node_color(node_quantity_, NODE_WHITE);
 	for (node_t node = 0; node < node_quantity_; ++node){
 		if (node_color[node] == NODE_WHITE){
-			success = success && dfs_nr(node_color, node, TOPOSORT_MODE, node_toposort);
+			success = dfs_nr(node_color, node, TOPOSORT_MODE, node_toposort) && success;
 		}
 	}
 	//reverse the vector of toposorted nodes
