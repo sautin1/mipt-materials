@@ -23,7 +23,7 @@ public:
 	directed_graph(size_t node_quantity, const std::vector<edge_t>& edges);
 	directed_graph(size_t node_quantity, const std::vector< std::vector<bool> >& matrix);
 	size_t size() const;
-    bool dfs_nr(std::vector<size_t>& node_color, node_t start_node, size_t mode, std::vector<node_t>& node_toposort) const;
+	bool dfs_nr(std::vector<size_t>& node_color, node_t start_node, size_t mode, std::vector<node_t>& node_toposort) const;
 	bool dfs_caller() const;
 	bool toposort(std::vector<node_t>& node_toposort) const;
 };
