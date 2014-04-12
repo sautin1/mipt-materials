@@ -1,8 +1,9 @@
 #include <fstream>
 #include "directed_graph.h"
 
-const std::string INPUT_FILE  = "ssc.in";
+const std::string INPUT_FILE  = "scc.in";
 const std::string OUTPUT_FILE = "ssc.out";
+const std::string OUTPUT_FILE2 = "ssc2.out";
 
 int main()
 {
@@ -22,10 +23,18 @@ int main()
 	fin.close();
 	directed_graph graph(node_quantity, edges);
 	std::vector<size_t> scc;
-	size_t scc_quantity = graph.scc(scc);
+	size_t scc_quantity = graph.scc_tarjan(scc);
 
 	std::ofstream fout;
 	fout.open(OUTPUT_FILE.c_str(), std::ofstream::out);
+	fout << scc_quantity << "\n";
+	for (size_t node_index = 0; node_index < node_quantity; ++node_index){
+		fout << scc[node_index] << " ";
+	}
+	fout.close();
+
+	size_t scc_quantity = graph.scc_kosaraju(scc);
+	fout.open(OUTPUT_FILE2.c_str(), std::ofstream::out);
 	fout << scc_quantity << "\n";
 	for (size_t node_index = 0; node_index < node_quantity; ++node_index){
 		fout << scc[node_index] << " ";

@@ -1,4 +1,38 @@
-#include "directed_graph.h"
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <stdexcept>
+#include <stack>
+#include <cstdlib>
+
+const size_t NODE_WHITE = 0;
+const size_t NODE_GREY  = 1;
+const size_t NODE_BLACK = 2;
+
+const size_t DFS_MODE = 0;
+const size_t TOPOSORT_MODE = 1;
+
+typedef size_t node_t;
+typedef std::pair<node_t, node_t> edge_t;
+typedef std::vector<node_t> neighbour_t;
+
+class directed_graph
+{
+	std::vector< neighbour_t > graph_;
+	size_t node_quantity_;
+public:
+	directed_graph();
+	directed_graph(size_t node_quantity, const std::vector<edge_t>& edges);
+	directed_graph(size_t node_quantity, const std::vector< std::vector<bool> >& matrix);
+	size_t size() const;
+	bool dfs_nr(std::vector<size_t>& node_color, node_t start_node, size_t mode, std::vector<node_t>& node_toposort) const;
+	bool dfs_caller() const;
+	bool toposort(std::vector<node_t>& node_toposort) const;
+	void transpose(directed_graph& new_graph) const;
+	size_t scc_kosaraju(std::vector<size_t>& scc_number) const;
+	size_t scc_tarjan(std::vector<size_t>& scc_number) const;
+
+};
 
 directed_graph::directed_graph(){}
 
@@ -177,7 +211,7 @@ size_t directed_graph::scc_tarjan(std::vector<size_t>& scc_number) const
 					if (node_color[neighbour] != NODE_WHITE){
 						//tried to return to the parent
 						if (scc_number[neighbour] == 0){
-							//do not go to other components
+							//we do not go to other components
 							min_time_in[current_node] = std::min(min_time_in[current_node], time_in[neighbour]);
 						}
 						++neighbour_index;
@@ -212,4 +246,39 @@ size_t directed_graph::scc_tarjan(std::vector<size_t>& scc_number) const
 		scc_number[scc_index] = scc_quantity - scc_number[scc_index];
 	}
 	return scc_quantity;
+}
+
+
+const std::string INPUT_FILE  = "input.txt";
+const std::string OUTPUT_FILE = "output.txt";
+
+int main()
+{
+	std::ifstream fin;
+	fin.open(INPUT_FILE.c_str(), std::ifstream::in);
+	if (!fin.good()){
+		throw std::runtime_error(std::string("Cannot open input file: ") + INPUT_FILE);
+	}
+	size_t node_quantity, edge_quantity;
+	std::vector<edge_t> edges;
+	fin >> node_quantity >> edge_quantity;
+	for (size_t edge_index = 0; edge_index < edge_quantity; ++edge_index){
+		size_t node1, node2;
+		fin >> node1 >> node2;
+		edges.push_back(std::make_pair(node1-1, node2-1));
+	}
+	fin.close();
+	directed_graph graph(node_quantity, edges);
+	std::vector<size_t> scc;
+	size_t scc_quantity = graph.scc_tarjan(scc);
+
+	std::ofstream fout;
+	fout.open(OUTPUT_FILE.c_str(), std::ofstream::out);
+	fout << scc_quantity << "\n";
+	for (size_t node_index = 0; node_index < node_quantity; ++node_index){
+		fout << scc[node_index] + 1 << " ";
+	}
+	fout.close();
+
+	return 0;
 }

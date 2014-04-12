@@ -29,5 +29,7 @@ public:
 	bool dfs_caller() const;
 	bool toposort(std::vector<node_t>& node_toposort) const;
 	void transpose(directed_graph& new_graph) const;
-	size_t scc(std::vector<size_t>& scc_number) const;
+	size_t scc_kosaraju(std::vector<size_t>& scc_number) const;
+	size_t scc_tarjan(std::vector<size_t>& scc_number) const;
+
 };
