@@ -17,17 +17,17 @@ size_t undirected_graph::size() const
 	return node_quantity_;
 }
 
-node_t undirected_graph::get_parent(std::stack<dfs_stack_item>& dfs_stack) const
+ssize_t undirected_graph::get_parent(std::stack<dfs_stack_item>& dfs_stack) const
 {
 	//returns the parent node of dfs_stack.top().node (.node field of the pretop item in dfs_stack)
-	node_t parent;
+	ssize_t parent;
 	if (dfs_stack.size() > 1){
 		dfs_stack_item top_item = dfs_stack.top();
 		dfs_stack.pop();
 		parent = dfs_stack.top().node;
 		dfs_stack.push(top_item);
 	} else {
-		parent = dfs_stack.top().node;
+		parent = -1;
 	}
 	return parent;
 }
@@ -85,7 +85,7 @@ void undirected_graph::bridges(std::vector<size_t>& bridges, size_t mode, std::v
 				while (neighbour_index < graph_[current_node].size()){
 					node_t neighbour = graph_[current_node][neighbour_index].node;
 					if (node_color[neighbour] != NODE_WHITE){
-						node_t parent = get_parent(dfs_stack);
+						ssize_t parent = get_parent(dfs_stack);
 						//tried to return to the parent
 						if (node_color[neighbour] == NODE_GREY && (neighbour != parent || parent_touched[current_node])){
 							min_time_in[current_node] = std::min(min_time_in[current_node], time_in[neighbour]);
@@ -119,18 +119,18 @@ void undirected_graph::bridges(std::vector<size_t>& bridges, size_t mode, std::v
 }
 
 
-void undirected_graph::cut_vertices(std::vector<node_t>& cut_vertices, size_t mode, std::vector<size_t>& node_component) const
+void undirected_graph::cut_vertices(std::vector<node_t>& cut_vertices, size_t mode, std::vector<ssize_t>& node_component) const
 {
 	cut_vertices.clear();
 	std::vector<size_t> node_color(node_quantity_, NODE_WHITE);
 	std::vector<bool> iscut(node_quantity_, false); //used to avoid repeats in cut_vertices
 	std::vector<bool> parent_touched(node_quantity_, false); //is used only to process multiple edges
 	std::stack<size_t> edge_stack; //COMPONENT MODE
-	std::vector<size_t> previous_edge; //COMPONENT MODE
+	std::vector<ssize_t> previous_edge; //COMPONENT MODE
 	size_t node_component_quantity = 0; //COMPONENT MODE
 	if (mode == COMPONENT_MODE){
-		node_component.assign(edge_quantity_, 0);
-		previous_edge.assign(node_quantity_, 0);
+		node_component.assign(edge_quantity_, -1);
+		previous_edge.assign(node_quantity_, -1);
 	}
 
 	for (node_t start_node = 0; start_node < node_quantity_; ++start_node){
@@ -171,6 +171,10 @@ void undirected_graph::cut_vertices(std::vector<node_t>& cut_vertices, size_t mo
 									edge_stack.pop();
 								}
 							}
+						} else{
+							if (mode == COMPONENT_MODE){
+								previous_edge[current_node] = graph_[current_node][dfs_stack.top().next_neighbour_index-1].edge_index;
+							}
 						}
 					}
 					else {
@@ -202,7 +206,7 @@ void undirected_graph::cut_vertices(std::vector<node_t>& cut_vertices, size_t mo
 					node_t neighbour = graph_[current_node][neighbour_index].node;
 
 					if (node_color[neighbour] != NODE_WHITE){
-						node_t parent = get_parent(dfs_stack);
+						ssize_t parent = get_parent(dfs_stack);
 						//tried to return to the parent
 						if (node_color[neighbour] == NODE_GREY && (neighbour != parent || parent_touched[current_node])){
 							min_time_in[current_node] = std::min(min_time_in[current_node], time_in[neighbour]);
@@ -241,4 +245,39 @@ void undirected_graph::cut_vertices(std::vector<node_t>& cut_vertices, size_t mo
 			}
 		}
 	}
+}
+
+size_t undirected_graph::linked_components(ssize_t excluded_node) const
+{
+	/*returns the number of linked components in the graph, where excluded_node is excluded*/
+	std::vector<size_t> node_color(node_quantity_, NODE_WHITE);
+	if (excluded_node > -1){
+		node_color[excluded_node] = NODE_BLACK;
+	}
+	size_t component_quantity = 0;
+	for (node_t start_node = 0; start_node < node_quantity_; ++start_node){
+		if (node_color[start_node] == NODE_WHITE){
+			++component_quantity;
+			std::stack<dfs_stack_item> dfs_stack;
+			dfs_stack.push(dfs_stack_item(start_node, 0));
+			while (!dfs_stack.empty()){
+				node_t current_node = dfs_stack.top().node;
+				node_color[current_node] = NODE_GREY;
+				size_t neighbour_index = dfs_stack.top().next_neighbour_index;
+
+				while (neighbour_index < graph_[current_node].size() && node_color[graph_[current_node][neighbour_index].node] != NODE_WHITE){
+					++neighbour_index;
+				}
+				if (neighbour_index >= graph_[current_node].size()){
+					node_color[current_node] = NODE_BLACK;
+					dfs_stack.pop();
+				} else {
+					dfs_stack.pop();
+					dfs_stack.push(dfs_stack_item(current_node, neighbour_index+1));
+					dfs_stack.push(dfs_stack_item(graph_[current_node][neighbour_index].node, 0));
+				}
+			}
+		}
+	}
+	return component_quantity;
 }

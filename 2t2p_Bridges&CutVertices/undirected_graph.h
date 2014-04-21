@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <cstdlib> //for ssize_t
 #include <stack>
 
 const size_t NODE_WHITE = 0;
@@ -48,7 +49,8 @@ class undirected_graph
 public:
 	undirected_graph(size_t node_quantity, size_t edge_quantity, const std::vector<edge_t>& edges);
 	void bridges(std::vector<size_t>& bridges, size_t mode, std::vector<size_t>& edge_component) const;
-	void cut_vertices(std::vector<node_t>& cut_vertices, size_t mode, std::vector<size_t>& node_component) const;
-	node_t get_parent(std::stack<dfs_stack_item>& dfs_stack) const;
+	void cut_vertices(std::vector<node_t>& cut_vertices, size_t mode, std::vector<ssize_t> &node_component) const;
+	ssize_t get_parent(std::stack<dfs_stack_item>& dfs_stack) const;
 	size_t size() const;
+	size_t linked_components(ssize_t excluded_node) const;
 };
