@@ -17,7 +17,7 @@ bool enlarge_matching(size_t letter_index, std::vector<ssize_t>& matching, const
 	return false;
 }
 
-size_t maximal_matching(const std::string& word, const bricks_t& bricks)
+size_t maximal_matching(const std::string& word, const bricks_t& bricks, matching_t& matching)
 {
 	//build graph
 	graph_t graph(word.size(), std::vector<size_t>());
@@ -33,7 +33,7 @@ size_t maximal_matching(const std::string& word, const bricks_t& bricks)
 	}
 
 	size_t max_matching_size = 0;
-	std::vector<ssize_t> matching(bricks.size(), -1);
+	matching.assign(bricks.size(), -1);
 
 	//make random matching
 	std::vector<bool> matched(word.size(), false);

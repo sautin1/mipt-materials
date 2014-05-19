@@ -28,7 +28,8 @@ int main()
 	fin >> word;
 	fin.close();
 
-	bool success = (brick_quantity >= word.size()) && (maximal_matching(word, bricks) == word.size());
+	matching_t matching;
+	bool success = (brick_quantity >= word.size()) && (maximal_matching(word, bricks, matching) == word.size());
 
 	std::ofstream fout(OUTPUT_FILE.c_str(), std::ofstream::out);
 	if (!fout.good()){
