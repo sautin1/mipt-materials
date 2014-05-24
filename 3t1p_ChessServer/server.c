@@ -5,7 +5,7 @@ size_t user_q;
 void readMessage(MessageType* m, int incomeSd, size_t* user_id)
 {
 	switch (m->type){
-		case login: //добавить пользователя и найти ему пару
+        case login:
 		{
 			UserData* ud = (UserData*)(m->data);
 			size_t id = 0;
@@ -45,23 +45,17 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id)
 		case userlist:
 		{
             //create opponent list
-			User** opponents = (User**)malloc(sizeof(User*) * MAX_USERS);
-			size_t opponent_q = 0;
-			for (int i = 0; i < user_q; ++i){
-				if (users[i]->ownLevel == users[*(user_id)]->desiredLevel && i != *(user_id)){
-					++opponent_q;
-					opponents[opponent_q-1] = users[i];
-				}
-			}
-            MessageType answer_m/* = composeMessage(userlist, opponent_q, opponents)*/;
-
-			answer_m.type = userlist;
-			answer_m.size = opponent_q;
-			answer_m.data = opponents;
-
-			sendMessage(incomeSd, &answer_m);
-			free(opponents);
-			break;
+            User* opponents[MAX_USERS];
+            size_t opponent_q = 0;
+            for (int i = 0; i < user_q; ++i){
+                if (users[i]->ownLevel == users[*(user_id)]->desiredLevel && i != *(user_id)){
+                    ++opponent_q;
+                    opponents[opponent_q-1] = users[i];
+                }
+            }
+            MessageType answer_m = composeMessage(userlist, opponent_q * sizeof(User*), &(opponents[0]));
+            sendMessage(incomeSd, &answer_m);
+            break;
 		}
 	}
 }
@@ -123,7 +117,7 @@ void* manageConnections(void* arg)
 	}
 	close(sd);
 	unlink(SOCKNAME);
-	return NULL; //ибо void*
+    return NULL;
 }
 
 int main()

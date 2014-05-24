@@ -8,11 +8,11 @@ void throwError(char* error)
 
 MessageType composeMessage(enum Type type, size_t size, void* data)
 {
-	MessageType m;
-	m.type = type;
-	m.size = size;
-	m.data = malloc(m.size);
-	memcpy(m.data, data, m.size);
+    MessageType m;
+    m.type = type;
+    m.size = size;
+    m.data = malloc(m.size);
+    memcpy(m.data, data, m.size);
 	return m;
 }
 
@@ -33,8 +33,9 @@ int sendMessage(int sd, MessageType* m)
 		}
 		else {
 			if (m->size > 0){
-				for (int i = 0; i < m->size; ++i){
-					call_result = send(sd, ((UserData**)(m->data))[i], sizeof(UserData), 0);
+                size_t opponent_q = m->size / sizeof(UserData*);
+                for (int i = 0; i < opponent_q; ++i){
+                    call_result = send(sd, ((UserData**)(m->data))[i], sizeof(UserData), 0);
 					if (call_result == -1){
 						throwError("send");
 					}
@@ -58,8 +59,9 @@ int getMessage(int sd, MessageType* m)
         case userlist:
         {
             if (m->size > 0){
+                size_t opponent_q = m->size / sizeof(UserData*);
                 UserData** opponents = (UserData**)malloc(sizeof(UserData*) * m->size);
-                for (int i = 0; i < m->size; ++i){
+                for (int i = 0; i < opponent_q; ++i){
                     opponents[i] = (UserData*)malloc(sizeof(UserData));
                     while ((call_result = recv(sd, opponents[i], sizeof(UserData), 0)) == 0);
                     if (call_result == -1){

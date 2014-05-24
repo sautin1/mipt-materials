@@ -1,7 +1,7 @@
 #include "messages.h"
 #include "common.h"
 
-void logIn(int sd, int* user_id)
+void ask_login(int sd, int* user_id)
 {
 	UserData ud;
 	printf("\tEnter your name (max length %d): ", MAX_NAME_LENGTH);
@@ -25,7 +25,7 @@ void logIn(int sd, int* user_id)
 	printf("Logged in!\n\t%s, your user_id is %d\n", ud.name, *user_id);
 }
 
-void logOut(int sd)
+void ask_logout(int sd)
 {
 	MessageType m;
 	m = composeMessage(logout, 0, NULL);
@@ -33,7 +33,7 @@ void logOut(int sd)
 	close(sd);
 }
 
-void userList(int sd)
+void ask_userlist(int sd)
 {
 	MessageType m;
 	m = composeMessage(userlist, 0, NULL);
@@ -42,7 +42,8 @@ void userList(int sd)
 	if (m.size == 0){
 		printf("No players with desired level!\n");
 	}
-	for (int i = 0; i < m.size; ++i){
+    size_t opponent_q = m.size / sizeof(UserData*);
+    for (int i = 0; i < opponent_q; ++i){
 		UserData* opponent = ((UserData**)(m.data))[i];
 		printf("Player %d.\n\tName: %s\n\tOwnLevel: %d\n\tDesiredLevel: %d\n___\n", i, opponent->name, opponent->ownLevel, opponent->desiredLevel);
 		free(((UserData**)(m.data))[i]);
@@ -74,18 +75,18 @@ int main()
 		if (strcmp(command, "login") == 0){
 			if (user_id == -1){
 				printf("Logging in...\n");
-				logIn(sd, &user_id);
+                ask_login(sd, &user_id);
 			} else {
 				printf("You're logged in!\n");
 			}
 		}
 		if (strcmp(command, "logout") == 0){
 			printf("Logging out...\n");	
-            logOut(sd);
+            ask_logout(sd);
 			break;
 		}
 		if (strcmp(command, "userlist") == 0){
-			userList(sd);
+            ask_userlist(sd);
 		}
 		free(command);
 	}
