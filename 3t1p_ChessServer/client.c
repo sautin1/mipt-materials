@@ -20,7 +20,7 @@ void logIn(int sd, int* user_id)
 	MessageType m;
 	m = composeMessage(login, sizeof(UserData), &ud);
 	sendMessage(sd, &m);
-	getMessage(sd, &m); //здесь получим индекс нового юзера
+    getMessage(sd, &m); //here we'll get new user's index
 	(*user_id) = *((size_t*)m.data);
 	printf("Logged in!\n\t%s, your user_id is %d\n", ud.name, *user_id);
 }
@@ -30,7 +30,6 @@ void logOut(int sd)
 	MessageType m;
 	m = composeMessage(logout, 0, NULL);
 	sendMessage(sd, &m);
-    fprintf(stderr, "TRY TO LOGOUT!\n");
 	close(sd);
 }
 
@@ -53,7 +52,6 @@ void userList(int sd)
 
 int main()
 {
-	int user_id = -1;
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sd == -1){
 		throwError("Client: socket cannot be created");
@@ -67,6 +65,8 @@ int main()
 	if (call_result == -1){
 		throwError("Client: connect error");
 	}
+
+    int user_id = -1;
 	while (1){
 		char* command = (char*)malloc(MAX_NAME_LENGTH);
 		printf(">> ");

@@ -8,14 +8,11 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id)
 		case login: //добавить пользователя и найти ему пару
 		{
 			UserData* ud = (UserData*)(m->data);
-			if (user_q >= MAX_USERS){
-				throwError("player overflow");
-			}
 			size_t id = 0;
 			while (id < MAX_USERS && users[id] != NULL){
 				++id;
 			}
-			users[id] = ud; //ud никуда не денется, потому что в куче
+            users[id] = ud;
 			printf("Registered user #%zu. Name: %s. Level: %d. OpponentLevel: %d.\n", id, 
 				users[id]->name, users[id]->ownLevel, users[id]->desiredLevel);
 			(*user_id) = id;
@@ -26,11 +23,11 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id)
 		}
 		case logout:
 		{
-            printf("User #%zu logged out!\n", (*user_id));
 			free(users[(*user_id)]);
 			users[(*user_id)] = NULL;
 			--user_q;
 			close(incomeSd);
+            printf("User #%zu logged out!\n", (*user_id));
 			break;
 		}
 		case turn:
@@ -47,6 +44,7 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id)
 		}
 		case userlist:
 		{
+            //create opponent list
 			User** opponents = (User**)malloc(sizeof(User*) * MAX_USERS);
 			size_t opponent_q = 0;
 			for (int i = 0; i < user_q; ++i){
@@ -55,7 +53,8 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id)
 					opponents[opponent_q-1] = users[i];
 				}
 			}
-			MessageType answer_m;
+            MessageType answer_m/* = composeMessage(userlist, opponent_q, opponents)*/;
+
 			answer_m.type = userlist;
 			answer_m.size = opponent_q;
 			answer_m.data = opponents;
@@ -106,17 +105,19 @@ void* manageConnections(void* arg)
 	}
 	pthread_t thread[MAX_USERS];
 	user_q = 0;
-	/**/size_t connection_q = 0;
 	while (1){
 		int incomeSd;
 		while ((incomeSd = accept(sd, 0, 0)) == -1);
 		++user_q;
-		/**/++connection_q;
 		pthread_create(&thread[user_q-1], 0, establishConnection, &incomeSd);
-		/**/if (connection_q >= MAX_USERS){
-			break;
-		}
+        if (user_q >= MAX_USERS){
+            printf("Max number of connections reached!\n");
+            while (user_q >= MAX_USERS){
+                usleep(PAUSE_LENGTH);
+            }
+        }
 	}
+    //this place will not be reached
 	for (int i = 0; i < user_q; ++i){
 		pthread_join(thread[i], 0);
 	}

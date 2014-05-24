@@ -24,7 +24,7 @@ int sendMessage(int sd, MessageType* m)
 		throwError("send");
 	}
 	else {
-		//отправляем все побайтово, если известен точный размер
+        //send byte-by-byte, if the precise size is known
 		if (m->type != userlist){
 			call_result = send(sd, m->data, m->size, 0);
 			if (call_result == -1){
@@ -47,37 +47,48 @@ int sendMessage(int sd, MessageType* m)
 
 int getMessage(int sd, MessageType* m)
 {
-	//сначала получаем поля
+    //first get fields
 	int call_result = 0;
 	while ((call_result = recv(sd, m, sizeof(MessageType), 0)) == 0);
 	if (call_result == -1){
 		throwError("recv");
 	}
-	//теперь выделяем место под data
-    if (m->type != userlist){
-        if (m->type != logout){
+    //then malloc space for data
+    switch (m->type){
+        case userlist:
+        {
+            if (m->size > 0){
+                UserData** opponents = (UserData**)malloc(sizeof(UserData*) * m->size);
+                for (int i = 0; i < m->size; ++i){
+                    opponents[i] = (UserData*)malloc(sizeof(UserData));
+                    while ((call_result = recv(sd, opponents[i], sizeof(UserData), 0)) == 0);
+                    if (call_result == -1){
+                        throwError("recv");
+                    }
+                }
+                m->data = opponents;
+            }
+            else {
+                m->data = NULL;
+            }
+            break;
+        }
+
+        case logout:
+        {
+            break;
+        }
+
+        default:
+        {
             m->data = malloc(m->size);
             while ((call_result = recv(sd, m->data, m->size, 0)) == 0);
             if (call_result == -1){
                 throwError("recv");
             }
         }
-	}
-	else {
-		if (m->size > 0){
-			UserData** opponents = (UserData**)malloc(sizeof(UserData*) * m->size);
-			for (int i = 0; i < m->size; ++i){
-				opponents[i] = (UserData*)malloc(sizeof(UserData));
-				while ((call_result = recv(sd, opponents[i], sizeof(UserData), 0)) == 0);
-				if (call_result == -1){
-					throwError("recv");
-				}
-			}
-			m->data = opponents;
-		}
-		else {
-			m->data = NULL;
-		}
-	}
+
+    }
+
 	return 0;
 }
