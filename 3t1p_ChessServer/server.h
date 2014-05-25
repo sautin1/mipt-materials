@@ -7,6 +7,7 @@
 #include "common.h"
 
 #define MAX_USERS 5
+#define MAX_GAMES MAX_USERS/2
 #define MAX_LISTENED 10
 #define PAUSE_LENGTH 10000
 
@@ -14,6 +15,7 @@ typedef UserData User;
 
 typedef struct {
     User list[MAX_USERS];
+    char busy[MAX_USERS];
     size_t q;
 } UserList;
 
@@ -21,7 +23,8 @@ typedef struct {
 #define SHM_SIZE sizeof(UserList)
 
 //Children's processes
-void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg);
+size_t createOpponentList(void* arg1, void* arg2, size_t user_id);
+void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void* arg2);
 void* establishConnection(int incomeSd, void* arg);
 //Parent's process
 void* manageConnections(void* arg);

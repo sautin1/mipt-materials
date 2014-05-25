@@ -16,6 +16,7 @@ void ask_login(int sd, int* user_id)
 		printf("\tEnter your opponent's level (max %d): ", MAX_LEVEL);	
 		scanf("%d", &ud.desiredLevel);
 	}
+    ud.id = 0;
 
 	MessageType m;
 	m = composeMessage(login, sizeof(UserData), &ud);
@@ -49,6 +50,22 @@ void ask_userlist(int sd)
 		free(((UserData**)(m.data))[i]);
 	}
 	free(m.data);
+}
+
+void ask_start(int sd)
+{
+    MessageType m;
+    m = composeMessage(start, 0, NULL);
+    sendMessage(sd, &m);
+    getMessage(sd, &m);
+    if (m.size == 0){
+        printf("No players with desired level! Please try again later!\n");
+    } else {
+        char* opponent = (char*)m.data;
+        printf("Game with player %s started!\n", opponent);
+        free(m.data);
+    }
+    //m = composeMessage(disposition, 0, NULL);
 }
 
 int main()
@@ -88,6 +105,9 @@ int main()
 		if (strcmp(command, "userlist") == 0){
             ask_userlist(sd);
 		}
+        if (strcmp(command, "start") == 0){
+            ask_start(sd);
+        }
 		free(command);
 	}
 	//close(sd);

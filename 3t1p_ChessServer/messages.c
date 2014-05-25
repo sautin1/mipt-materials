@@ -83,10 +83,12 @@ int getMessage(int sd, MessageType* m)
 
         default:
         {
-            m->data = malloc(m->size);
-            while ((call_result = recv(sd, m->data, m->size, 0)) == 0);
-            if (call_result == -1){
-                throwError("recv");
+            if (m->size > 0){
+                m->data = malloc(m->size);
+                while ((call_result = recv(sd, m->data, m->size, 0)) == 0);
+                if (call_result == -1){
+                    throwError("recv");
+                }
             }
         }
 

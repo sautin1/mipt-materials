@@ -7,9 +7,29 @@
 
 void throwError(char* error);
 
+//type for turns
+typedef struct {
+    unsigned short startPos;
+    unsigned short endPos;
+} TTurn;
+
+//тип для результата хода (корректность)
+//int, 0-fail, 1-success, 2-correct&atefigure
+
+//тип для описания конкретной позиции
+typedef struct {
+    enum TFigureType {none, pawn, rook, king, bishop, queen, knight} type;
+    unsigned short user; //0 - никто не владеет, 1 - первый игрок, 2 - второй игрок
+} TDisposition;
+
+//тип для описания конкретной позиции
+typedef struct {
+    TDisposition d[8][8];
+} TGame;
+
 //common type for messages
 typedef struct {
-	enum Type {login, logout, turn, disposition, result, userlist} type;
+    enum Type {login, logout, start, turn, disposition, result, userlist} type;
 	size_t size;
 	void* data;
 } MessageType;
@@ -18,6 +38,8 @@ typedef struct {
     char name[MAX_NAME_LENGTH]; //static array to use sizeof
     int ownLevel;
     int desiredLevel;
+    int id;
+    int request;
 } UserData;
 
 MessageType composeMessage(enum Type type, size_t size, void* data);
