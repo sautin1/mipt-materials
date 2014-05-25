@@ -2,7 +2,7 @@
 CC		= gcc
 LINK	= g++
 LIBS	= -lpthread -lrt
-FLAGS	= -std=c99 -Wall
+FLAGS	= -std=gnu99 -Wall
 DESTDIR	=
 TARGET 	= Client \
 		  Server
