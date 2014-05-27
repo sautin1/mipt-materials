@@ -117,6 +117,27 @@ void ask_turn(int sd)
     }
 }
 
+void ask_disposition(int sd)
+{
+    MessageType m;
+    m = composeMessage(disposition, 0, NULL);
+    sendMessage(sd, &m);
+    getMessage(sd, &m);
+    TGame* board = (TGame*)m.data;
+    for (int i = 0; i < 8; ++i){
+        printf("%d | ", 8-i);
+        for (int j = 0; j < 8; ++j){
+            printf("%d ", board->d[i][j].type);
+        }
+        printf("\n");
+    }
+    printf("   ________________\n   ");
+    for (int i = 0; i < 8; ++i){
+        printf(" %c", 'A' + i);
+    }
+    printf("\n");
+}
+
 int main()
 {
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -162,7 +183,7 @@ int main()
                 printf("Login first!\n");
                 continue;
             }
-            //ask_disposition(sd);
+            ask_disposition(sd);
         }
         if (strcmp(command, "turn") == 0){
             if (game_started == 0){

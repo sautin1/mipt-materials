@@ -18,7 +18,7 @@ typedef struct {
 
 //тип для описания конкретной позиции
 typedef struct {
-    enum TFigureType {none, pawn, rook, king, bishop, queen, knight} type;
+    enum TFigureType {none, pawn, knight, bishop, rook, queen, king} type;
     unsigned short user; //0 - noone handles, 1 - first player, 2 - second player
 } TDisposition;
 

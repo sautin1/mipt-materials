@@ -125,6 +125,10 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
 		}
 		case disposition:
 		{
+            MessageType answer_m;
+            size_t game_id = users->usergame[*user_id];
+            answer_m = composeMessage(disposition, sizeof(TGame), &(users->game[game_id]));
+            sendMessage(incomeSd, &answer_m);
 			break;
 		}
         case result:
