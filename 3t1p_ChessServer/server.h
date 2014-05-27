@@ -16,6 +16,10 @@
 #define MAX_TOTAL_USERS 1000
 #define MAX_LISTENED 10
 #define PAUSE_LENGTH 10000
+#define FILENAME_LENGTH 200
+#define FILENAME_START "chess_"
+#define FILENAME_END ".log"
+#define UNIQUE_ID_LENGTH 50
 
 typedef UserData User;
 

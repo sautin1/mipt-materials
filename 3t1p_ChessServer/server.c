@@ -1,5 +1,15 @@
 #include "server.h"
 
+char* getFilename(char* filename, size_t game_id)
+{
+    strcpy(filename, FILENAME_START);
+    char* unique_id = (char*)malloc(UNIQUE_ID_LENGTH);
+    sprintf(unique_id, "%zu", game_id);
+    strcat(filename, unique_id);
+    strcat(filename, FILENAME_END);
+    return filename;
+}
+
 size_t createOpponentList(void* arg1, void* arg2, size_t user_id)
 {
     UserGameList* users = (UserGameList*)arg1;
@@ -100,6 +110,12 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
             sendMessage(incomeSd, &answer_m);
             createChessboard(users->game);
 
+            char* filename = (char*)malloc(FILENAME_LENGTH * sizeof(char));
+            getFilename(filename, users->usergame[*user_id]);
+            FILE* log_file = fopen(filename, "w+");
+            fclose(log_file);
+            free(filename);
+
             answer_m = composeMessage(start, sizeof(int), &(users->color[*user_id]));
             sendMessage(incomeSd, &answer_m);
             break;
@@ -114,13 +130,21 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
                 check = 1;
             } else {
                 check = checkTurn(turn_str);
-                if (check){
-                    applyTurn(turn_str, &users->game[game_id]);
+                if (check == 0){
+                    //applyTurn(turn_str, &users->game[game_id]);
+                    //Save turn to log file
+                    char* filename = (char*)malloc(FILENAME_LENGTH * sizeof(char));
+                    getFilename(filename, game_id);
+                    FILE* log_file = fopen(filename, "a");
+                    fprintf(log_file, "%s\n", turn_str);
+                    fclose(log_file);
+                    free(filename);
                 }
                 users->game[game_id].user = 3 - users->game[game_id].user;
             }
             answer_m = composeMessage(turn, sizeof(int), &check);
             sendMessage(incomeSd, &answer_m);
+            free(turn_str);
             break;
 		}
 		case disposition:

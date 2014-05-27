@@ -1,5 +1,6 @@
 #include "messages.h"
 #include "common.h"
+#include "client.h"
 UserData* opponent;
 
 void ask_login(int sd, int* user_id)
@@ -84,13 +85,16 @@ void ask_turn(int sd)
         char turn_str[5] = {0};
         while ((turn_str[0] < 'a' || turn_str[0] > 'h') ||
                (turn_str[2] < 'a' || turn_str[2] > 'h') ||
-               (turn_str[1] < '0' || turn_str[1] > '7') ||
-               (turn_str[3] < '0' || turn_str[3] > '7')){
+               (turn_str[1] < '1' || turn_str[1] > '8') ||
+               (turn_str[3] < '1' || turn_str[3] > '8')){
             printf("\tYour turn (for example, e1e3): ");
             scanf(" %s", turn_str);
         }
+        --turn_str[1];
+        --turn_str[3];
+        turn_str[4] = '\0';
         MessageType m;
-        m = composeMessage(turn, sizeof(char) * 4, &(turn_str[0]));
+        m = composeMessage(turn, sizeof(char) * 5, &(turn_str[0]));
         sendMessage(sd, &m);
         getMessage(sd, &m);
         int result = *((int*)m.data);
@@ -124,12 +128,13 @@ void ask_disposition(int sd)
     sendMessage(sd, &m);
     getMessage(sd, &m);
     TGame* board = (TGame*)m.data;
+    char* color[3] = {KNRM, KCYN, KGRN};
     for (int i = 0; i < 8; ++i){
         printf("%d | ", 8-i);
         for (int j = 0; j < 8; ++j){
-            printf("%d ", board->d[i][j].type);
+            printf("%d ", color[board->d[i][j].user], board->d[i][j].type);
         }
-        printf("\n");
+        printf("%s\n", KNRM);
     }
     printf("   ________________\n   ");
     for (int i = 0; i < 8; ++i){
