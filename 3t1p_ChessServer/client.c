@@ -1,5 +1,6 @@
 #include "messages.h"
 #include "common.h"
+UserData* opponent;
 
 void ask_login(int sd, int* user_id)
 {
@@ -24,6 +25,17 @@ void ask_login(int sd, int* user_id)
     getMessage(sd, &m); //here we'll get new user's index
 	(*user_id) = *((size_t*)m.data);
 	printf("Logged in!\n\t%s, your user_id is %d\n", ud.name, *user_id);
+
+    printf("Looking for a partner...\n");
+    m = composeMessage(start, 0, NULL);
+    sendMessage(sd, &m);
+    getMessage(sd, &m);
+    if (m.size == 0){
+        printf("No players with desired level! Please wait...\n");
+        getMessage(sd, &m);
+    }
+    opponent = (UserData*)(m.data);
+    printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
 }
 
 void ask_logout(int sd)
@@ -49,33 +61,15 @@ void ask_userlist(int sd)
 	sendMessage(sd, &m);
 	getMessage(sd, &m);
 	if (m.size == 0){
-		printf("No players with desired level!\n");
+        printf("No players online!\n");
 	}
-    size_t opponent_q = m.size / sizeof(UserData*);
-    for (int i = 0; i < opponent_q; ++i){
-		UserData* opponent = ((UserData**)(m.data))[i];
-		printf("Player %d.\n\tName: %s\n\tOwnLevel: %d\n\tDesiredLevel: %d\n___\n", i, opponent->name, opponent->ownLevel, opponent->desiredLevel);
-		free(((UserData**)(m.data))[i]);
+    size_t user_q = m.size / sizeof(UserData*);
+    for (int i = 0; i < user_q; ++i){
+        UserData* user = ((UserData**)(m.data))[i];
+        printf("Player %d.\n\tName: %s\n\tOwnLevel: %d\n\tDesiredLevel: %d\n___\n", i, user->name, user->ownLevel, user->desiredLevel);
+        free(user);
 	}
 	free(m.data);
-}
-
-void ask_start(int sd)
-{
-    MessageType m;
-    m = composeMessage(start, 0, NULL);
-    sendMessage(sd, &m);
-    while (1){
-        getMessage(sd, &m);
-        if (m.size == 0){
-            printf("No players with desired level! Please wait!\n");
-        } else {
-            UserData* opponent = (UserData*)(m.data);
-            printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
-            free(m.data);
-        }
-    }
-    //m = composeMessage(disposition, 0, NULL);
 }
 
 int main()
@@ -99,10 +93,6 @@ int main()
 		char* command = (char*)malloc(MAX_NAME_LENGTH);
 		printf(">> ");
 		scanf("%s", command);
-        if (user_id == -1 && strcmp(command, "login") != 0){
-            printf("You have to login first!\n");
-            continue;
-        }
         if (strcmp(command, "login") == 0){
 			if (user_id == -1){
 				printf("Logging in...\n");
@@ -114,14 +104,12 @@ int main()
 		if (strcmp(command, "logout") == 0){
 			printf("Logging out...\n");	
             ask_logout(sd);
+            free(opponent);
 			break;
 		}
 		if (strcmp(command, "userlist") == 0){
             ask_userlist(sd);
 		}
-        if (strcmp(command, "start") == 0){
-            ask_start(sd);
-        }
 		free(command);
 	}
     close(sd);

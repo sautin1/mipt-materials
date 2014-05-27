@@ -16,7 +16,7 @@ typedef UserData User;
 
 typedef struct {
     User list[MAX_USERS];
-    char busy[MAX_USERS];
+    short int busy[MAX_USERS];
     size_t q;
 } UserList;
 
@@ -25,7 +25,7 @@ typedef struct {
 
 //Children's processes
 size_t createOpponentList(void* arg1, void* arg2, size_t user_id);
-void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void* arg2);
+void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent_id, void* arg1, void* arg2);
 void* establishConnection(int incomeSd, void* arg);
 //Parent's process
 void* manageConnections(void* arg);

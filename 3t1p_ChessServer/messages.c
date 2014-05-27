@@ -33,8 +33,8 @@ int sendMessage(int sd, MessageType* m)
 		}
 		else {
 			if (m->size > 0){
-                size_t opponent_q = m->size / sizeof(UserData*);
-                for (int i = 0; i < opponent_q; ++i){
+                size_t user_q = m->size / sizeof(UserData*);
+                for (int i = 0; i < user_q; ++i){
                     call_result = send(sd, ((UserData**)(m->data))[i], sizeof(UserData), 0);
 					if (call_result == -1){
 						throwError("send");

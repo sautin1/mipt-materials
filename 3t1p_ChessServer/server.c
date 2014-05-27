@@ -8,7 +8,7 @@ size_t createOpponentList(void* arg1, void* arg2, size_t user_id)
     User** opponents = (User**)arg2;
     size_t opponent_q = 0;
     for (int i = 0; i < MAX_USERS; ++i){
-        if (users->list[i].ownLevel != 0 && !(users->busy[i]) &&
+        if (users->list[i].ownLevel != 0 && users->busy[i] == 0 &&
             users->list[i].ownLevel == users->list[user_id].desiredLevel &&
             users->list[i].desiredLevel == users->list[user_id].ownLevel && i != user_id){
             ++opponent_q;
@@ -21,14 +21,14 @@ size_t createOpponentList(void* arg1, void* arg2, size_t user_id)
 void clearUser(void* arg, int user_id)
 {
     UserList* users = (UserList*)arg;
-    strcpy(users->list[user_id].name, "");
     users->list[user_id].ownLevel = 0;
     users->list[user_id].desiredLevel = 0;
+    strcpy(users->list[user_id].name, "");
     users->list[user_id].request = user_id;
     users->busy[user_id] = 0;
 }
 
-void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void* arg2)
+void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent_id, void* arg1, void* arg2)
 {
     UserList* users = (UserList*)arg1;
     TGame* game = (TGame*)arg2;
@@ -64,26 +64,29 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
             User* opponents[MAX_USERS];
             size_t opponent_q = createOpponentList(users, &(opponents[0]), *user_id);
             MessageType answer_m;
-            if (opponent_q == 0){
+            size_t i;
+            for (i = 0; i < opponent_q; ++i){
+                //mutex_lock
+                if (users->busy[opponents[i]->id] == 0){
+                    users->busy[opponents[i]->id] = 1;
+                    users->busy[*user_id] = 1;
+                    users->list[opponents[i]->id].request = *user_id;
+                    answer_m = composeMessage(start, sizeof(UserData), opponents[i]);
+                    //mutex_unlock
+                    break;
+                }
+                //mutex_unlock
+            }
+            if (i == opponent_q){
+                //wait
+                *opponent_id = i;
                 answer_m = composeMessage(start, 0, NULL);
-            } else {
-                users->busy[*user_id] = 1;
-                size_t opponent_id;
-                for (opponent_id = 0; opponent_id < opponent_q; ++opponent_id){
-                    /*mutex_lock*/
-                    if (users->busy[opponents[opponent_id]->id] == 0){
-                        users->busy[opponents[opponent_id]->id] = 1;
-                        users->list[opponents[opponent_id]->id].request = *user_id;
-                        /*mutex_unlock*/
-                        break;
-                    }
-                    /*mutex_unlock*/
-                }
-                if (opponent_id == opponent_q){
-                    answer_m = composeMessage(start, 0, NULL);
-                } else {
-                    answer_m = composeMessage(start, sizeof(UserData), opponents[opponent_id]);
-                }
+                sendMessage(incomeSd, &answer_m);
+
+                while (users->list[*user_id].request == *user_id);
+                i = users->list[*user_id].request;
+                User* opponent = &(users->list[i]);
+                answer_m = composeMessage(start, sizeof(User), opponent);
             }
             sendMessage(incomeSd, &answer_m);
             break;
@@ -102,11 +105,16 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
         }
 		case userlist:
 		{
-            //create opponent list
-            User* opponents[MAX_USERS];
-            size_t opponent_q = createOpponentList(users, &(opponents[0]), *user_id);
-
-            MessageType answer_m = composeMessage(userlist, opponent_q * sizeof(User*), &(opponents[0]));
+            User* active_users[users->q];
+            size_t act_user_q = 0;
+            for (int i = 0; i < MAX_USERS; ++i){
+                if (users->list[i].ownLevel != 0){
+                    ++act_user_q;
+                    active_users[act_user_q-1] = &(users->list[i]);
+                }
+            }
+            //create user list
+            MessageType answer_m = composeMessage(userlist, act_user_q * sizeof(User*), &(active_users[0]));
             sendMessage(incomeSd, &answer_m);
             break;
 		}
@@ -116,17 +124,6 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
         }
 	}
 }
-
-/*void* catch_request(void* arg)
-{
-    User user = *((User*)arg);
-    while (1){
-        if (){
-
-        }
-    }
-    return NULL;
-}*/
 
 void startGame(int incomeSd, void* arg)
 {
@@ -138,13 +135,11 @@ void startGame(int incomeSd, void* arg)
 
 MessageType* buf;
 TGame* game;
-//pthread_t request_catcher_thread;
 
 void childSignalHandler(int signalVal)
 {
     if (signalVal == SIGTERM){
         fprintf(stderr, "ServerChild terminates!\n");
-//        pthread_cancel(request_catcher_thread);
         free(buf);
         free(game);
     }
@@ -159,28 +154,15 @@ void* establishConnection(int incomeSd, void* arg)
     size_t opponent_id;
     buf = (MessageType*)malloc(sizeof(MessageType));
     game = NULL;
-    //short int logged_in = 0;
 	while (1){
-        if (users->list[user_id].request != user_id){
-            if (users->list[user_id].request >= 0){
-                opponent_id = users->list[user_id].request;
-                startGame(incomeSd, &(users->list[opponent_id]));
-            }
-        }
 		getMessage(incomeSd, buf);
-        //printf("I've got a message: %d\n", buf->type);
-        readMessage(buf, incomeSd, &user_id, users, game);
+        readMessage(buf, incomeSd, &user_id, &opponent_id, users, game);
 		if (buf->type == logout){
 			break;
-        }/* else if (buf->type == login && logged_in == 0){
-            pthread_create(&request_catcher_thread, 0, catch_request, &(users->list[user_id]));
-            logged_in = 1;
-        }*/
+        }
 	}
     free(game);
 	free(buf);
-    //pthread_cancel(request_catcher_thread);
-    //close(incomeSd);
 	return NULL;
 }
 
@@ -195,9 +177,8 @@ void* wait_child(void* arg)
 UserList* users;
 size_t total_users;
 pid_t manager[MAX_TOTAL_USERS];
-pthread_t son_waiter_thread[MAX_TOTAL_USERS];
+pthread_t child_waiter_thread[MAX_TOTAL_USERS];
 int sd;
-
 
 void parentSignalHandler(int signalVal)
 {
@@ -209,7 +190,7 @@ void parentSignalHandler(int signalVal)
             kill(manager[i], SIGTERM);
         }
         for (int i = 0; i < total_users; ++i){
-            pthread_join(son_waiter_thread[i], NULL);
+            pthread_join(child_waiter_thread[i], NULL);
         }
         close(sd);
         unlink(SOCKNAME);
@@ -267,13 +248,13 @@ void* manageConnections(void* arg)
                 exit(EXIT_SUCCESS);
             } else {
                 //wait for child using thread
-                pthread_create(&son_waiter_thread[total_users], 0, wait_child, &manager[total_users]);
+                pthread_create(&child_waiter_thread[total_users], 0, wait_child, &manager[total_users]);
             }
         }
 	}
     //this place will hardly be reached
     for (int i = 0; i < total_users; ++i){
-        pthread_join(son_waiter_thread[i], NULL);
+        pthread_join(child_waiter_thread[i], NULL);
     }
 	close(sd);
     unlink(SOCKNAME);
@@ -299,7 +280,7 @@ int main()
     pthread_t thread;
     pthread_create(&thread, 0, manageConnections, users);
     pthread_join(thread, 0);
-    fprintf(stderr, "Server terminates!\n");
+    //fprintf(stderr, "Server terminates!\n");
 
     munmap(users, SHM_SIZE);
     shm_unlink(SHM_NAME);
