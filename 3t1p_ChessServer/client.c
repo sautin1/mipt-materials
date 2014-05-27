@@ -36,6 +36,12 @@ void ask_login(int sd, int* user_id)
     }
     opponent = (UserData*)(m.data);
     printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
+    getMessage(sd, &m);
+    if (*(int*)(m.data) == 1){
+        printf("You're White. White goes first!\n");
+    } else {
+        printf("You're Black. Black goes second!\n");
+    }
 }
 
 void ask_logout(int sd)
@@ -72,6 +78,45 @@ void ask_userlist(int sd)
 	free(m.data);
 }
 
+void ask_turn(int sd)
+{
+    while (1){
+        char turn_str[5] = {0};
+        while ((turn_str[0] < 'a' || turn_str[0] > 'h') ||
+               (turn_str[2] < 'a' || turn_str[2] > 'h') ||
+               (turn_str[1] < '0' || turn_str[1] > '7') ||
+               (turn_str[3] < '0' || turn_str[3] > '7')){
+            printf("\tYour turn (for example, e1e3): ");
+            scanf(" %s", turn_str);
+        }
+        MessageType m;
+        m = composeMessage(turn, sizeof(char) * 4, &(turn_str[0]));
+        sendMessage(sd, &m);
+        getMessage(sd, &m);
+        int result = *((int*)m.data);
+        switch (result){
+            case 0:
+            {
+                printf("Turn accepted!\n");
+                break;
+            }
+            case 1:
+            {
+                printf("It is not your time to make turns!\n");
+                break;
+            }
+            default:
+            {
+                printf("Turn is incorrect! Try again!\n");
+                break;
+            }
+        }
+        if (result == 0 || result == 1){
+            break;
+        }
+    }
+}
+
 int main()
 {
 	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -89,8 +134,9 @@ int main()
 	}
 
     int user_id = -1;
+    short int game_started = 0;
 	while (1){
-		char* command = (char*)malloc(MAX_NAME_LENGTH);
+        char* command = (char*)malloc(MAX_NAME_LENGTH);
 		printf(">> ");
 		scanf("%s", command);
         if (strcmp(command, "login") == 0){
@@ -100,6 +146,7 @@ int main()
 			} else {
 				printf("You're logged in!\n");
 			}
+            game_started = 1;
 		}
 		if (strcmp(command, "logout") == 0){
 			printf("Logging out...\n");	
@@ -110,6 +157,20 @@ int main()
 		if (strcmp(command, "userlist") == 0){
             ask_userlist(sd);
 		}
+        if (strcmp(command, "disposition") == 0){
+            if (game_started == 0){
+                printf("Login first!\n");
+                continue;
+            }
+            //ask_disposition(sd);
+        }
+        if (strcmp(command, "turn") == 0){
+            if (game_started == 0){
+                printf("Login first!\n");
+                continue;
+            }
+            ask_turn(sd);
+        }
 		free(command);
 	}
     close(sd);

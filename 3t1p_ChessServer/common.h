@@ -1,3 +1,6 @@
+#ifndef COMMON_H
+#define COMMON_H
+
 #define SOCKNAME "mysocket"
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -9,3 +12,5 @@
 #include <stdio.h>
 #include <memory.h>
 #include <errno.h>
+
+#endif //COMMON_H

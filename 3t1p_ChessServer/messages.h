@@ -25,6 +25,7 @@ typedef struct {
 //тип для описания конкретной позиции
 typedef struct {
     TDisposition d[8][8];
+    short int user; //whose turn is next (and 0 if game is not active)
 } TGame;
 
 //common type for messages

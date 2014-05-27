@@ -1,14 +1,12 @@
 #include "server.h"
-//int userGame[MAX_USERS];
-//TGame* g = (TGame*)calloc(sizeof(Game) * MAX_GAMES);
 
 size_t createOpponentList(void* arg1, void* arg2, size_t user_id)
 {
-    UserList* users = (UserList*)arg1;
+    UserGameList* users = (UserGameList*)arg1;
     User** opponents = (User**)arg2;
     size_t opponent_q = 0;
     for (int i = 0; i < MAX_USERS; ++i){
-        if (users->list[i].ownLevel != 0 && users->busy[i] == 0 &&
+        if (users->list[i].ownLevel != 0 && users->color[i] == 0 &&
             users->list[i].ownLevel == users->list[user_id].desiredLevel &&
             users->list[i].desiredLevel == users->list[user_id].ownLevel && i != user_id){
             ++opponent_q;
@@ -20,18 +18,20 @@ size_t createOpponentList(void* arg1, void* arg2, size_t user_id)
 
 void clearUser(void* arg, int user_id)
 {
-    UserList* users = (UserList*)arg;
+    UserGameList* users = (UserGameList*)arg;
     users->list[user_id].ownLevel = 0;
     users->list[user_id].desiredLevel = 0;
     strcpy(users->list[user_id].name, "");
     users->list[user_id].request = user_id;
-    users->busy[user_id] = 0;
+    users->color[user_id] = 0;
+    users->usergame[user_id] = -1;
 }
 
-void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent_id, void* arg1, void* arg2)
+pthread_mutex_t mutex;
+
+void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* opponent_id,*/ void* arg)
 {
-    UserList* users = (UserList*)arg1;
-    TGame* game = (TGame*)arg2;
+    UserGameList* users = (UserGameList*)arg;
 	switch (m->type){
         case login:
 		{
@@ -66,20 +66,32 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent
             MessageType answer_m;
             size_t i;
             for (i = 0; i < opponent_q; ++i){
-                //mutex_lock
-                if (users->busy[opponents[i]->id] == 0){
-                    users->busy[opponents[i]->id] = 1;
-                    users->busy[*user_id] = 1;
+                pthread_mutex_lock(&mutex);
+                if (users->color[opponents[i]->id] == 0){
+                    users->color[opponents[i]->id] = 2;
+                    users->color[*user_id] = 1;
+                    size_t game_id;
+                    for (game_id = 0; game_id < MAX_USERS; ++game_id){
+                        if (users->game[game_id].user == 0){
+                            users->usergame[*user_id] = game_id;
+                            users->usergame[opponents[i]->id] = game_id;
+                            break;
+                        }
+                    }
+                    createChessboard(&(users->game[game_id]));
+                    printf("users->color[opponents[i]->id] = %d\n", users->color[opponents[i]->id]);
+                    printf("users->color[*user_id] = %d\n", users->color[*user_id]);
+                    printf("users->game[game_id].user = %d\n", users->game[game_id].user);
                     users->list[opponents[i]->id].request = *user_id;
                     answer_m = composeMessage(start, sizeof(UserData), opponents[i]);
-                    //mutex_unlock
+                    pthread_mutex_unlock(&mutex);
                     break;
                 }
-                //mutex_unlock
+                pthread_mutex_unlock(&mutex);
             }
             if (i == opponent_q){
                 //wait
-                *opponent_id = i;
+                //*opponent_id = i;
                 answer_m = composeMessage(start, 0, NULL);
                 sendMessage(incomeSd, &answer_m);
 
@@ -89,11 +101,31 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent
                 answer_m = composeMessage(start, sizeof(User), opponent);
             }
             sendMessage(incomeSd, &answer_m);
+            createChessboard(users->game);
+
+            answer_m = composeMessage(start, sizeof(int), &(users->color[*user_id]));
+            sendMessage(incomeSd, &answer_m);
             break;
         }
 		case turn:
 		{
-			break;
+            MessageType answer_m;
+            char* turn_str = (char*)m->data;
+            int check;
+            size_t game_id = users->usergame[*user_id];
+            printf("I WILL CHECK users->game[game_id].user = %d AND users->color[*user_id] = %d\n", users->game[game_id].user, users->color[*user_id]);
+            if (users->game[game_id].user != users->color[*user_id]){
+                check = 1;
+            } else {
+                check = checkTurn(turn_str);
+                if (check){
+                    applyTurn(turn_str, &users->game[game_id]);
+                }
+                users->game[game_id].user = 3 - users->game[game_id].user;
+            }
+            answer_m = composeMessage(turn, sizeof(int), &check);
+            sendMessage(incomeSd, &answer_m);
+            break;
 		}
 		case disposition:
 		{
@@ -103,7 +135,7 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent
         {
             break;
         }
-		case userlist:
+        case userlist:
 		{
             User* active_users[users->q];
             size_t act_user_q = 0;
@@ -125,23 +157,13 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, size_t* opponent
 	}
 }
 
-void startGame(int incomeSd, void* arg)
-{
-    User* opponent = (User*)arg;
-    MessageType m;
-    m = composeMessage(start, sizeof(UserData), opponent);
-    sendMessage(incomeSd, &m);
-}
-
 MessageType* buf;
-TGame* game;
 
 void childSignalHandler(int signalVal)
 {
     if (signalVal == SIGTERM){
         fprintf(stderr, "ServerChild terminates!\n");
         free(buf);
-        free(game);
     }
     exit(EXIT_FAILURE);
 }
@@ -149,19 +171,17 @@ void childSignalHandler(int signalVal)
 void* establishConnection(int incomeSd, void* arg)
 {
     signal(SIGTERM, childSignalHandler);
-    UserList* users = (UserList*)arg;
+    UserGameList* users = (UserGameList*)arg;
     size_t user_id;
-    size_t opponent_id;
+    //size_t opponent_id;
     buf = (MessageType*)malloc(sizeof(MessageType));
-    game = NULL;
 	while (1){
 		getMessage(incomeSd, buf);
-        readMessage(buf, incomeSd, &user_id, &opponent_id, users, game);
+        readMessage(buf, incomeSd, &user_id, /*&opponent_id,*/ users);
 		if (buf->type == logout){
 			break;
         }
 	}
-    free(game);
 	free(buf);
 	return NULL;
 }
@@ -174,7 +194,7 @@ void* wait_child(void* arg)
     return NULL;
 }
 
-UserList* users;
+UserGameList* users;
 size_t total_users;
 pid_t manager[MAX_TOTAL_USERS];
 pthread_t child_waiter_thread[MAX_TOTAL_USERS];
