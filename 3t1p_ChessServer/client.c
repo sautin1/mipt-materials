@@ -28,9 +28,7 @@ void ask_login(int sd, int* user_id)
 
 void ask_logout(int sd)
 {
-	MessageType m;
-	m = composeMessage(logout, 0, NULL);
-	sendMessage(sd, &m);
+    MessageType m;
     char answer;
     printf("\tWould you like to see the log of the game? (y/n) ");
     scanf(" %c", &answer);
@@ -40,6 +38,8 @@ void ask_logout(int sd)
         getMessage(sd, &m);
         //printf log
     }
+    m = composeMessage(logout, 0, NULL);
+    sendMessage(sd, &m);
 }
 
 void ask_userlist(int sd)
@@ -97,7 +97,11 @@ int main()
 		char* command = (char*)malloc(MAX_NAME_LENGTH);
 		printf(">> ");
 		scanf("%s", command);
-		if (strcmp(command, "login") == 0){
+        if (user_id == -1 && strcmp(command, "login") != 0){
+            printf("You have to login first!\n");
+            continue;
+        }
+        if (strcmp(command, "login") == 0){
 			if (user_id == -1){
 				printf("Logging in...\n");
                 ask_login(sd, &user_id);

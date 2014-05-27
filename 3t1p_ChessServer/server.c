@@ -18,6 +18,16 @@ size_t createOpponentList(void* arg1, void* arg2, size_t user_id)
     return opponent_q;
 }
 
+void clearUser(void* arg, int user_id)
+{
+    UserList* users = (UserList*)arg;
+    strcpy(users->list[user_id].name, "");
+    users->list[user_id].ownLevel = 0;
+    users->list[user_id].desiredLevel = 0;
+    users->list[user_id].request = user_id;
+    users->busy[user_id] = 0;
+}
+
 void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void* arg2)
 {
     UserList* users = (UserList*)arg1;
@@ -36,17 +46,15 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
                 users->list[id].name, users->list[id].ownLevel, users->list[id].desiredLevel);
 			(*user_id) = id;
             users->list[id].id = id;
+            users->list[id].request = id;
             MessageType answer_m = composeMessage(login, sizeof(size_t), &id);
             sendMessage(incomeSd, &answer_m);
 			break;
 		}
 		case logout:
 		{
-            strcpy(users->list[(*user_id)].name, "");
-            users->list[(*user_id)].ownLevel = 0;
-            users->list[(*user_id)].desiredLevel = 0;
+            clearUser(users, *user_id);
             --(users->q);
-            //close(incomeSd);
             printf("User #%zu logged out!\n", (*user_id));
 			break;
 		}
@@ -56,15 +64,26 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
             User* opponents[MAX_USERS];
             size_t opponent_q = createOpponentList(users, &(opponents[0]), *user_id);
             MessageType answer_m;
-            if (opponent_q == -1){
+            if (opponent_q == 0){
                 answer_m = composeMessage(start, 0, NULL);
             } else {
-                size_t opponent_id = rand() % opponent_q;
                 users->busy[*user_id] = 1;
-                users->busy[opponents[opponent_id]->id] = 1;
-
-                //answer_m = composeMessage(start, sizeof(opponents[opponent_id]->name), &(opponents[opponent_id]->name[0]));
-                answer_m = composeMessage(start, sizeof(UserData), opponents[opponent_id]);
+                size_t opponent_id;
+                for (opponent_id = 0; opponent_id < opponent_q; ++opponent_id){
+                    /*mutex_lock*/
+                    if (users->busy[opponents[opponent_id]->id] == 0){
+                        users->busy[opponents[opponent_id]->id] = 1;
+                        users->list[opponents[opponent_id]->id].request = *user_id;
+                        /*mutex_unlock*/
+                        break;
+                    }
+                    /*mutex_unlock*/
+                }
+                if (opponent_id == opponent_q){
+                    answer_m = composeMessage(start, 0, NULL);
+                } else {
+                    answer_m = composeMessage(start, sizeof(UserData), opponents[opponent_id]);
+                }
             }
             sendMessage(incomeSd, &answer_m);
             break;
@@ -193,10 +212,7 @@ void* manageConnections(void* arg)
 
     users->q = 0;
     for (int i = 0; i < MAX_USERS; ++i){
-        strcpy(users->list[i].name, "");
-        users->list[i].ownLevel = 0;
-        users->list[i].desiredLevel = 0;
-        users->busy[i] = 0;
+        clearUser(users, i);
     }
 
     total_users = 0;
