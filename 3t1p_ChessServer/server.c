@@ -79,9 +79,6 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
                         }
                     }
                     createChessboard(&(users->game[game_id]));
-                    printf("users->color[opponents[i]->id] = %d\n", users->color[opponents[i]->id]);
-                    printf("users->color[*user_id] = %d\n", users->color[*user_id]);
-                    printf("users->game[game_id].user = %d\n", users->game[game_id].user);
                     users->list[opponents[i]->id].request = *user_id;
                     answer_m = composeMessage(start, sizeof(UserData), opponents[i]);
                     pthread_mutex_unlock(&mutex);
@@ -113,7 +110,6 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
             char* turn_str = (char*)m->data;
             int check;
             size_t game_id = users->usergame[*user_id];
-            printf("I WILL CHECK users->game[game_id].user = %d AND users->color[*user_id] = %d\n", users->game[game_id].user, users->color[*user_id]);
             if (users->game[game_id].user != users->color[*user_id]){
                 check = 1;
             } else {
