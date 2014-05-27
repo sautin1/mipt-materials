@@ -8,6 +8,7 @@
 
 #define MAX_USERS 5
 #define MAX_GAMES MAX_USERS/2
+#define MAX_TOTAL_USERS 1000
 #define MAX_LISTENED 10
 #define PAUSE_LENGTH 10000
 

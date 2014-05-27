@@ -31,7 +31,15 @@ void ask_logout(int sd)
 	MessageType m;
 	m = composeMessage(logout, 0, NULL);
 	sendMessage(sd, &m);
-	close(sd);
+    char answer;
+    printf("\tWould you like to see the log of the game? (y/n) ");
+    scanf(" %c", &answer);
+    if (answer != 'n'){
+        m = composeMessage(log, 0, NULL);
+        sendMessage(sd, &m);
+        getMessage(sd, &m);
+        //printf log
+    }
 }
 
 void ask_userlist(int sd)
@@ -61,8 +69,8 @@ void ask_start(int sd)
     if (m.size == 0){
         printf("No players with desired level! Please try again later!\n");
     } else {
-        char* opponent = (char*)m.data;
-        printf("Game with player %s started!\n", opponent);
+        UserData* opponent = (UserData*)(m.data);
+        printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
         free(m.data);
     }
     //m = composeMessage(disposition, 0, NULL);
@@ -110,6 +118,6 @@ int main()
         }
 		free(command);
 	}
-	//close(sd);
+    close(sd);
 	return 0;
 }

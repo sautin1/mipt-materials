@@ -43,9 +43,10 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
 		case logout:
 		{
             strcpy(users->list[(*user_id)].name, "");
+            users->list[(*user_id)].ownLevel = 0;
+            users->list[(*user_id)].desiredLevel = 0;
             --(users->q);
-			close(incomeSd);
-            free(game);
+            //close(incomeSd);
             printf("User #%zu logged out!\n", (*user_id));
 			break;
 		}
@@ -61,7 +62,9 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
                 size_t opponent_id = rand() % opponent_q;
                 users->busy[*user_id] = 1;
                 users->busy[opponents[opponent_id]->id] = 1;
-                answer_m = composeMessage(start, sizeof(opponents[opponent_id]->name), &(opponents[opponent_id]->name[0]));
+
+                //answer_m = composeMessage(start, sizeof(opponents[opponent_id]->name), &(opponents[opponent_id]->name[0]));
+                answer_m = composeMessage(start, sizeof(UserData), opponents[opponent_id]);
             }
             sendMessage(incomeSd, &answer_m);
             break;
@@ -88,15 +91,33 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
             sendMessage(incomeSd, &answer_m);
             break;
 		}
+        case log:
+        {
+            //read from file
+        }
 	}
+}
+
+MessageType* buf;
+TGame* game;
+
+void childSignalHandler(int signalVal)
+{
+    if (signalVal == SIGTERM){
+        fprintf(stderr, "ServerChild terminates!\n");
+        free(buf);
+        free(game);
+    }
+    exit(EXIT_FAILURE);
 }
 
 void* establishConnection(int incomeSd, void* arg)
 {
+    signal(SIGTERM, childSignalHandler);
     UserList* users = (UserList*)arg;
 	size_t user_id;
-	MessageType* buf = (MessageType*)malloc(sizeof(MessageType));
-    TGame* game = NULL;
+    buf = (MessageType*)malloc(sizeof(MessageType));
+    game = NULL;
 	while (1){
 		getMessage(incomeSd, buf);
         //printf("I've got a message: %d\n", buf->type);
@@ -105,8 +126,45 @@ void* establishConnection(int incomeSd, void* arg)
 			break;
         }
 	}
+    free(game);
 	free(buf);
+    //close(incomeSd);
 	return NULL;
+}
+
+void* wait_child(void* arg)
+{
+    pid_t child_pid = *((pid_t*)arg);
+    int status;
+    waitpid(child_pid, &status, 0);
+    return NULL;
+}
+
+UserList* users;
+size_t total_users;
+pid_t manager[MAX_TOTAL_USERS];
+pthread_t son_waiter_thread[MAX_TOTAL_USERS];
+int sd;
+
+
+void parentSignalHandler(int signalVal)
+{
+    if (signalVal == SIGINT){
+        fprintf(stderr, "Server terminates!\n");
+        munmap(users, SHM_SIZE);
+        shm_unlink(SHM_NAME);
+        for (int i = 0; i < total_users; ++i){
+            kill(manager[i], SIGTERM);
+        }
+        for (int i = 0; i < total_users; ++i){
+            pthread_join(son_waiter_thread[i], NULL);
+        }
+        close(sd);
+        unlink(SOCKNAME);
+        exit(EXIT_SUCCESS);
+    } else {
+        exit(EXIT_FAILURE);
+    }
 }
 
 void* manageConnections(void* arg)
@@ -114,7 +172,7 @@ void* manageConnections(void* arg)
     //Socket stuff
     /**/unlink(SOCKNAME);
 
-	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
+    sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sd == -1){
 		throwError("server: socket");
 	}
@@ -133,7 +191,6 @@ void* manageConnections(void* arg)
     }
     //_______________
 
-    UserList* users = (UserList*)arg;
     users->q = 0;
     for (int i = 0; i < MAX_USERS; ++i){
         strcpy(users->list[i].name, "");
@@ -141,35 +198,34 @@ void* manageConnections(void* arg)
         users->list[i].desiredLevel = 0;
         users->busy[i] = 0;
     }
-    pid_t manager[MAX_USERS] = {0};
-	while (1){
+
+    total_users = 0;
+    while (total_users < MAX_TOTAL_USERS){
 		int incomeSd;
 		while ((incomeSd = accept(sd, 0, 0)) == -1);
         ++users->q;
-        size_t manager_index = 0;
-        while (manager_index < MAX_USERS && manager[manager_index] != 0){
-            ++manager_index;
-        }
-        if (manager_index == MAX_USERS){
+        if (users->q > MAX_USERS){
             printf("Max number of connections reached!\n");
             while (users->q >= MAX_USERS){
                 usleep(PAUSE_LENGTH);
             }
         } else {
-            manager[manager_index] = fork();
-            if (manager[manager_index] == 0){
+            ++total_users;
+            manager[total_users] = fork();
+            if (manager[total_users] == 0){
                 establishConnection(incomeSd, users);
+                close(incomeSd);
                 exit(EXIT_SUCCESS);
             } else {
-                //wait for child using thread. After child terminates make manager[manager_index] = 0
+                //wait for child using thread
+                pthread_create(&son_waiter_thread[total_users], 0, wait_child, &manager[total_users]);
             }
         }
 	}
-    //this place will not be reached
-    for (int i = 0; i < users->q; ++i){
-        int status;
-        waitpid(manager[i], &status, 0);
-	}
+    //this place will hardly be reached
+    for (int i = 0; i < total_users; ++i){
+        pthread_join(son_waiter_thread[i], NULL);
+    }
 	close(sd);
     unlink(SOCKNAME);
     return NULL;
@@ -177,6 +233,7 @@ void* manageConnections(void* arg)
 
 int main()
 {
+    signal(SIGINT, parentSignalHandler);
     int shm_fd;
     shm_fd = shm_open(SHM_NAME, O_RDWR|O_CREAT|O_EXCL, 0666);
     if (shm_fd == -1){
@@ -188,7 +245,7 @@ int main()
     }
 
     ftruncate(shm_fd, SHM_SIZE);
-    UserList* users = mmap(NULL, SHM_SIZE, PROT_WRITE|PROT_READ, MAP_SHARED, shm_fd, 0);
+    users = mmap(NULL, SHM_SIZE, PROT_WRITE|PROT_READ, MAP_SHARED, shm_fd, 0);
 
     pthread_t thread;
     pthread_create(&thread, 0, manageConnections, users);

@@ -19,7 +19,7 @@ typedef struct {
 //тип для описания конкретной позиции
 typedef struct {
     enum TFigureType {none, pawn, rook, king, bishop, queen, knight} type;
-    unsigned short user; //0 - никто не владеет, 1 - первый игрок, 2 - второй игрок
+    unsigned short user; //0 - noone handles, 1 - first player, 2 - second player
 } TDisposition;
 
 //тип для описания конкретной позиции
@@ -29,7 +29,7 @@ typedef struct {
 
 //common type for messages
 typedef struct {
-    enum Type {login, logout, start, turn, disposition, result, userlist} type;
+    enum Type {login, logout, start, turn, disposition, result, userlist, log} type;
 	size_t size;
 	void* data;
 } MessageType;
