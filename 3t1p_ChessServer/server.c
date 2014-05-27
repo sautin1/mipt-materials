@@ -117,13 +117,34 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, void* arg1, void
 	}
 }
 
+/*void* catch_request(void* arg)
+{
+    User user = *((User*)arg);
+    while (1){
+        if (){
+
+        }
+    }
+    return NULL;
+}*/
+
+void startGame(int incomeSd, void* arg)
+{
+    User* opponent = (User*)arg;
+    MessageType m;
+    m = composeMessage(start, sizeof(UserData), opponent);
+    sendMessage(incomeSd, &m);
+}
+
 MessageType* buf;
 TGame* game;
+//pthread_t request_catcher_thread;
 
 void childSignalHandler(int signalVal)
 {
     if (signalVal == SIGTERM){
         fprintf(stderr, "ServerChild terminates!\n");
+//        pthread_cancel(request_catcher_thread);
         free(buf);
         free(game);
     }
@@ -134,19 +155,31 @@ void* establishConnection(int incomeSd, void* arg)
 {
     signal(SIGTERM, childSignalHandler);
     UserList* users = (UserList*)arg;
-	size_t user_id;
+    size_t user_id;
+    size_t opponent_id;
     buf = (MessageType*)malloc(sizeof(MessageType));
     game = NULL;
+    //short int logged_in = 0;
 	while (1){
+        if (users->list[user_id].request != user_id){
+            if (users->list[user_id].request >= 0){
+                opponent_id = users->list[user_id].request;
+                startGame(incomeSd, &(users->list[opponent_id]));
+            }
+        }
 		getMessage(incomeSd, buf);
         //printf("I've got a message: %d\n", buf->type);
         readMessage(buf, incomeSd, &user_id, users, game);
 		if (buf->type == logout){
 			break;
-        }
+        }/* else if (buf->type == login && logged_in == 0){
+            pthread_create(&request_catcher_thread, 0, catch_request, &(users->list[user_id]));
+            logged_in = 1;
+        }*/
 	}
     free(game);
 	free(buf);
+    //pthread_cancel(request_catcher_thread);
     //close(incomeSd);
 	return NULL;
 }

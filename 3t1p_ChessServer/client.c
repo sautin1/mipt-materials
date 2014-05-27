@@ -65,13 +65,15 @@ void ask_start(int sd)
     MessageType m;
     m = composeMessage(start, 0, NULL);
     sendMessage(sd, &m);
-    getMessage(sd, &m);
-    if (m.size == 0){
-        printf("No players with desired level! Please try again later!\n");
-    } else {
-        UserData* opponent = (UserData*)(m.data);
-        printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
-        free(m.data);
+    while (1){
+        getMessage(sd, &m);
+        if (m.size == 0){
+            printf("No players with desired level! Please wait!\n");
+        } else {
+            UserData* opponent = (UserData*)(m.data);
+            printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
+            free(m.data);
+        }
     }
     //m = composeMessage(disposition, 0, NULL);
 }
