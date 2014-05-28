@@ -2,11 +2,14 @@
 #define COMMON_H
 
 #define SOCKNAME "mysocket"
+#define PORT 4000
+#include <arpa/inet.h>
+#include <netinet/in.h>
+//#include <sys/un.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/un.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>

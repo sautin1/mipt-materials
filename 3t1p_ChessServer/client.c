@@ -248,16 +248,18 @@ void startGame(int sd)
 
 int connectServer()
 {
-    int sd = socket(AF_UNIX, SOCK_STREAM, 0);
+    int sd = socket(AF_INET, SOCK_STREAM, 0);
     if (sd == -1){
         throwError("Client: socket cannot be created");
     }
-    struct sockaddr_un client_addr;
-    client_addr.sun_family = AF_UNIX;
-    strcpy(client_addr.sun_path, SOCKNAME);
+    struct sockaddr_in client_addr;
+    client_addr.sin_family = AF_INET;
+    //strcpy(client_addr.sun_path, SOCKNAME);
+    client_addr.sin_port = htons(PORT);
+    inet_aton("127.0.0.1", (struct in_addr*)&client_addr.sin_addr.s_addr);
 
     int call_result = 0;
-    call_result = connect(sd, (struct sockaddr*) &client_addr, sizeof(struct sockaddr_un));
+    call_result = connect(sd, (struct sockaddr*)&client_addr, sizeof(struct sockaddr_in));
     if (call_result == -1){
         throwError("Client: connect error");
     }

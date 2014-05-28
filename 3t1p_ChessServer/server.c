@@ -269,23 +269,23 @@ void* manageConnections(void* arg)
 {
     //Socket stuff
     /**/unlink(SOCKNAME);
+    struct sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    sd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sd == -1){
-		throwError("server: socket");
-	}
-	struct sockaddr_un server_addr;
-	server_addr.sun_family = AF_UNIX;
-	strcpy(server_addr.sun_path, SOCKNAME);
-
-	int call_result = 0;
-	call_result = bind(sd, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_un));
-	if (call_result == -1){
-		throwError("server: bind");
-	}
-	call_result = listen(sd, MAX_LISTENED);
-	if (call_result == -1){
-		throwError("server: listen");
+    sd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sd == -1){
+        throwError("server: socket");
+    }
+    int call_result = 0;
+    call_result = bind(sd, (struct sockaddr*) &server_addr, sizeof(struct sockaddr_in));
+    if (call_result == -1){
+        throwError("server: bind");
+    }
+    call_result = listen(sd, MAX_LISTENED);
+    if (call_result == -1){
+        throwError("server: listen");
     }
     //_______________
 
