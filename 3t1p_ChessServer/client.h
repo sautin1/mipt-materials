@@ -1,6 +1,9 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include "messages.h"
+#include "common.h"
+
 //Colors for disposition:
 #define KNRM  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -14,8 +17,13 @@
 void ask_login(int sd, int* user_id);
 void ask_logout(int sd);
 void ask_userlist(int sd);
+
+TTurn* encodeTurn(char* turn_str);
+char* decodeTurn(TTurn* turn_code);
 void ask_turn(int sd);
+
 void ask_disposition(int sd);
+void ask_log(int sd);
 int connectServer();
 void startGame(int sd);
 

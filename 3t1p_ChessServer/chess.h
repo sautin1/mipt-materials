@@ -3,7 +3,7 @@
 #include "messages.h"
 
 void createChessboard(TGame* game);
-short int checkTurn(char* turn_str);
-void applyTurn(char* turn_str, TGame* game);
+short int checkTurn(TTurn* user_turn);
+void applyTurn(TTurn* user_turn, TGame* game);
 
 #endif //CHESS_H

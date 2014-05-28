@@ -38,12 +38,12 @@ void createChessboard(TGame* game)
     game->d[7][7].type = rook;
 }
 
-short int checkTurn(char* turn_str)
+short int checkTurn(TTurn* user_turn)
 {
     return 0;
 }
 
-void applyTurn(char* turn_str, TGame* game)
+void applyTurn(TTurn* user_turn, TGame* game)
 {
 
 }

@@ -31,7 +31,7 @@ typedef struct {
 
 //common type for messages
 typedef struct {
-    enum Type {login, logout, start, turn, disposition, result, userlist, log} type;
+    enum Type {login, logout, start, turn, disposition, /*result,*/ userlist, log} type;
 	size_t size;
 	void* data;
 } MessageType;

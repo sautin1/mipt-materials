@@ -98,7 +98,6 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
             }
             if (i == opponent_q){
                 //wait
-                //*opponent_id = i;
                 answer_m = composeMessage(start, 0, NULL);
                 sendMessage(incomeSd, &answer_m);
 
@@ -123,28 +122,28 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
 		case turn:
 		{
             MessageType answer_m;
-            char* turn_str = (char*)m->data;
             int check;
             size_t game_id = users->usergame[*user_id];
             if (users->game[game_id].user != users->color[*user_id]){
                 check = 1;
             } else {
-                check = checkTurn(turn_str);
+                TTurn* user_turn = (TTurn*)m->data;
+                check = checkTurn(user_turn);
                 if (check == 0){
-                    //applyTurn(turn_str, &users->game[game_id]);
+                    applyTurn(user_turn, &users->game[game_id]);
                     //Save turn to log file
                     char* filename = (char*)malloc(FILENAME_LENGTH * sizeof(char));
                     getFilename(filename, game_id);
                     FILE* log_file = fopen(filename, "a");
-                    fprintf(log_file, "%s\n", turn_str);
+                    fprintf(log_file, "%d %d\n", user_turn->startPos, user_turn->endPos);
                     fclose(log_file);
                     free(filename);
                 }
+                free(user_turn);
                 users->game[game_id].user = 3 - users->game[game_id].user;
             }
             answer_m = composeMessage(turn, sizeof(int), &check);
             sendMessage(incomeSd, &answer_m);
-            free(turn_str);
             break;
 		}
 		case disposition:
@@ -155,10 +154,10 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
             sendMessage(incomeSd, &answer_m);
 			break;
 		}
-        case result:
+        /*case result:
         {
             break;
-        }
+        }*/
         case userlist:
 		{
             User* active_users[users->q];
@@ -184,21 +183,20 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
                 throwError("server: log file");
             }
             MessageType answer_m;
-            char* one_turn = (char*)malloc(TURN_LENGTH);
+            TTurn* user_turn = (TTurn*)malloc(sizeof(TTurn));
             while (1){
-                int call_result = fscanf(log_file, "%s\n", one_turn);
+                int call_result = fscanf(log_file, "%hd %hd\n", &(user_turn->startPos), &(user_turn->endPos));
                 if (call_result == 0 || call_result == EOF){
                     answer_m = composeMessage(log, 0, NULL);
                     sendMessage(incomeSd, &answer_m);
                     break;
                 } else {
-                    one_turn[TURN_LENGTH-1] = '\0';
-                    answer_m = composeMessage(log, TURN_LENGTH * sizeof(char), one_turn);
+                    answer_m = composeMessage(log, sizeof(TTurn), user_turn);
                     sendMessage(incomeSd, &answer_m);
                 }
             }
+            free(user_turn);
             fclose(log_file);
-            free(one_turn);
             free(filename);
         }
 	}

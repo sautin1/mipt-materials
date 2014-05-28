@@ -1,7 +1,4 @@
-#include "messages.h"
-#include "common.h"
 #include "client.h"
-UserData* opponent;
 
 void ask_login(int sd, int* user_id)
 {
@@ -23,21 +20,22 @@ void ask_login(int sd, int* user_id)
 	MessageType m;
 	m = composeMessage(login, sizeof(UserData), &ud);
 	sendMessage(sd, &m);
-    getMessage(sd, &m); //here we'll get new user's index
+    getMessage(sd, &m); //get new user's index
 	(*user_id) = *((size_t*)m.data);
 	printf("Logged in!\n\t%s, your user_id is %d\n", ud.name, *user_id);
 
     printf("Looking for a partner...\n");
     m = composeMessage(start, 0, NULL);
     sendMessage(sd, &m);
-    getMessage(sd, &m);
+    getMessage(sd, &m); //failure/success message (with opponent UserData)
     if (m.size == 0){
         printf("No players with desired level! Please wait...\n");
-        getMessage(sd, &m);
+        getMessage(sd, &m); //success message (with opponent UserData)
     }
-    opponent = (UserData*)(m.data);
+    UserData* opponent = (UserData*)(m.data);
     printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
-    getMessage(sd, &m);
+    free(opponent);
+    getMessage(sd, &m); //white/black
     if (*(int*)(m.data) == 1){
         printf("You're White. White goes first!\n");
     } else {
@@ -45,28 +43,36 @@ void ask_login(int sd, int* user_id)
     }
 }
 
-void ask_logout(int sd)
+void ask_log(int sd)
 {
     MessageType m;
+    m = composeMessage(log, 0, NULL);
+    sendMessage(sd, &m);
+    while (1){
+        getMessage(sd, &m);
+        if (m.size == 0){
+            break;
+        } else {
+            TTurn* user_turn = (TTurn*)m.data;
+            char* turn_str = decodeTurn(user_turn);
+            printf("%s\n", turn_str);
+            free(m.data);
+        }
+    }
+}
+
+void ask_logout(int sd)
+{
     char answer;
     printf("\tWould you like to see the log of the game? (y/n) ");
     scanf(" %c", &answer);
     if (answer != 'n'){
+        printf("\n\nCurrent disposition:");
         ask_disposition(sd);
-        m = composeMessage(log, 0, NULL);
-        sendMessage(sd, &m);
-        while (1){
-            getMessage(sd, &m);
-            if (m.size == 0){
-                break;
-            } else {
-                char* turn_str = (char*)m.data;
-                ++turn_str[1];
-                ++turn_str[3];
-                printf("%s\n", turn_str);
-            }
-        }
+        printf("Game log:");
+        ask_log(sd);
     }
+    MessageType m;
     m = composeMessage(logout, 0, NULL);
     sendMessage(sd, &m);
 }
@@ -89,6 +95,25 @@ void ask_userlist(int sd)
 	free(m.data);
 }
 
+TTurn* encodeTurn(char* turn_str)
+{
+    TTurn* turn_code = (TTurn*)malloc(sizeof(TTurn));
+    turn_code->startPos = tolower(turn_str[0]) - 'a' + 8*(turn_str[1] - '1');
+    turn_code->endPos   = tolower(turn_str[2]) - 'a' + 8*(turn_str[3] - '1');
+    return turn_code;
+}
+
+char* decodeTurn(TTurn* turn_code)
+{
+    char* turn_str = (char*)malloc(TURN_LENGTH);
+    turn_str[0] = ((turn_code->startPos % 8) + 'a');
+    turn_str[1] = ((turn_code->startPos / 8) + '1');
+    turn_str[2] = ((turn_code->endPos   % 8) + 'a');
+    turn_str[3] = ((turn_code->endPos   / 8) + '1');
+    return turn_str;
+}
+
+
 void ask_turn(int sd)
 {
     while (1){
@@ -97,15 +122,15 @@ void ask_turn(int sd)
                (turn_str[2] < 'a' || turn_str[2] > 'h') ||
                (turn_str[1] < '1' || turn_str[1] > '8') ||
                (turn_str[3] < '1' || turn_str[3] > '8')){
-            printf("\tYour turn (for example, e1e3): ");
+            printf("\tYour turn (for example, a2a4): ");
             scanf(" %s", turn_str);
         }
-        --turn_str[1];
-        --turn_str[3];
         turn_str[4] = '\0';
+        TTurn* user_turn = encodeTurn(turn_str);
         MessageType m;
-        m = composeMessage(turn, sizeof(char) * 5, &(turn_str[0]));
+        m = composeMessage(turn, sizeof(TTurn), user_turn);
         sendMessage(sd, &m);
+        //free(m.data);
         getMessage(sd, &m);
         int result = *((int*)m.data);
         switch (result){
@@ -173,7 +198,6 @@ void startGame(int sd)
         if (strcmp(command, "logout") == 0){
             printf("Logging out...\n");
             ask_logout(sd);
-            free(opponent);
             break;
         }
         if (strcmp(command, "userlist") == 0){
@@ -192,6 +216,13 @@ void startGame(int sd)
                 continue;
             }
             ask_turn(sd);
+        }
+        if (strcmp(command, "log") == 0){
+            if (game_started == 0){
+                printf("Login first!\n");
+                continue;
+            }
+            ask_log(sd);
         }
         free(command);
     }
