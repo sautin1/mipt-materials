@@ -126,47 +126,42 @@ void reverseTurn(TTurn* user_turn)
 
 void ask_turn(int sd, short int user_color)
 {
-    while (1){
-        char turn_str[5] = {0};
-        while ((turn_str[0] < 'a') || (turn_str[0] > 'h') ||
-               (turn_str[2] < 'a') || (turn_str[2] > 'h') ||
-               (turn_str[1] < '1') || (turn_str[1] > '8') ||
-               (turn_str[3] < '1') || (turn_str[3] > '8') ||
-               (turn_str[4] != 0 ) ||
-               ((turn_str[0] == turn_str[2]) && (turn_str[1] == turn_str[3]))){
-            printf("\tYour turn (for example, a2a4): ");
-            scanf(" %s", turn_str);
+    char turn_str[5] = {0};
+    while ((turn_str[0] < 'a') || (turn_str[0] > 'h') ||
+           (turn_str[2] < 'a') || (turn_str[2] > 'h') ||
+           (turn_str[1] < '1') || (turn_str[1] > '8') ||
+           (turn_str[3] < '1') || (turn_str[3] > '8') ||
+           (turn_str[4] != 0 ) ||
+           ((turn_str[0] == turn_str[2]) && (turn_str[1] == turn_str[3]))){
+        printf("\tYour turn (for example, a2a4): ");
+        scanf(" %s", turn_str);
+    }
+    turn_str[4] = '\0';
+    TTurn* user_turn = encodeTurn(turn_str);
+    if (user_color != 1){
+        //black
+        reverseTurn(user_turn);
+    }
+    MessageType m;
+    m = composeMessage(turn, sizeof(TTurn), user_turn);
+    sendMessage(sd, &m);
+    //free(m.data);
+    getMessage(sd, &m);
+    int result = *((int*)m.data);
+    switch (result){
+        case TURN_CORRECT:
+        {
+            printf("Turn accepted!\n");
+            break;
         }
-        turn_str[4] = '\0';
-        TTurn* user_turn = encodeTurn(turn_str);
-        if (user_color != 1){
-            //black
-            reverseTurn(user_turn);
+        case TURN_NOT_TIME:
+        {
+            printf("It is not your time to make turns!\n");
+            break;
         }
-        MessageType m;
-        m = composeMessage(turn, sizeof(TTurn), user_turn);
-        sendMessage(sd, &m);
-        //free(m.data);
-        getMessage(sd, &m);
-        int result = *((int*)m.data);
-        switch (result){
-            case 0:
-            {
-                printf("Turn accepted!\n");
-                break;
-            }
-            case 1:
-            {
-                printf("It is not your time to make turns!\n");
-                break;
-            }
-            default:
-            {
-                printf("Turn is incorrect! Try again!\n");
-                break;
-            }
-        }
-        if (result == 0 || result == 1){
+        default:
+        {
+            printf("Turn is incorrect! Try again!\n");
             break;
         }
     }

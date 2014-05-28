@@ -8,6 +8,10 @@
 
 void throwError(const char* error);
 
+#define TURN_INCORRECT -1
+#define TURN_NOT_TIME -2
+#define TURN_CORRECT 0
+
 //type for turns
 typedef struct {
     unsigned short startPos;
@@ -19,7 +23,7 @@ typedef struct {
 
 //тип для описания конкретной позиции
 typedef struct {
-    enum TFigureType {none, pawn, knight, bishop, rook, queen, king} type;
+    enum TPieceType {none, pawn, knight, bishop, rook, queen, king} type;
     unsigned short user; //0 - noone handles, 1 - first player, 2 - second player
 } TDisposition;
 

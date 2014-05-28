@@ -78,8 +78,8 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
             for (i = 0; i < opponent_q; ++i){
                 pthread_mutex_lock(&mutex);
                 if (users->color[opponents[i]->id] == 0){
-                    users->color[opponents[i]->id] = 2;
                     users->color[*user_id] = 1;
+                    users->color[opponents[i]->id] = 2;
                     size_t game_id;
                     for (game_id = 0; game_id < MAX_USERS; ++game_id){
                         if (users->game[game_id].user == 0){
@@ -125,12 +125,13 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
             int check;
             size_t game_id = users->usergame[*user_id];
             if (users->game[game_id].user != users->color[*user_id]){
-                check = 1;
+                check = TURN_NOT_TIME;
             } else {
                 TTurn* user_turn = (TTurn*)m->data;
-                check = checkTurn(user_turn);
+                check = checkTurn(user_turn, &users->game[game_id], users->game[game_id].user);
                 if (check == 0){
                     applyTurn(user_turn, &users->game[game_id]);
+                    users->game[game_id].user = 3 - users->game[game_id].user;
                     //Save turn to log file
                     char* filename = (char*)malloc(FILENAME_LENGTH * sizeof(char));
                     getFilename(filename, game_id);
@@ -140,7 +141,6 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
                     free(filename);
                 }
                 free(user_turn);
-                users->game[game_id].user = 3 - users->game[game_id].user;
             }
             answer_m = composeMessage(turn, sizeof(int), &check);
             sendMessage(incomeSd, &answer_m);
