@@ -1,6 +1,6 @@
 #include "messages.h"
 
-void throwError(char* error)
+void throwError(const char *error)
 {
 	perror(error);
 	exit(EXIT_FAILURE);

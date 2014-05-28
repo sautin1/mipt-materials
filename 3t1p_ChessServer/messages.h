@@ -3,9 +3,10 @@
 
 #include "common.h"
 #define MAX_NAME_LENGTH 50
+#define TURN_LENGTH 5
 #define MAX_LEVEL 10
 
-void throwError(char* error);
+void throwError(const char* error);
 
 //type for turns
 typedef struct {

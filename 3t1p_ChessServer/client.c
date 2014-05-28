@@ -52,10 +52,20 @@ void ask_logout(int sd)
     printf("\tWould you like to see the log of the game? (y/n) ");
     scanf(" %c", &answer);
     if (answer != 'n'){
+        ask_disposition(sd);
         m = composeMessage(log, 0, NULL);
         sendMessage(sd, &m);
-        getMessage(sd, &m);
-        //printf log
+        while (1){
+            getMessage(sd, &m);
+            if (m.size == 0){
+                break;
+            } else {
+                char* turn_str = (char*)m.data;
+                ++turn_str[1];
+                ++turn_str[3];
+                printf("%s\n", turn_str);
+            }
+        }
     }
     m = composeMessage(logout, 0, NULL);
     sendMessage(sd, &m);
@@ -128,11 +138,11 @@ void ask_disposition(int sd)
     sendMessage(sd, &m);
     getMessage(sd, &m);
     TGame* board = (TGame*)m.data;
-    char* color[3] = {KNRM, KCYN, KGRN};
+    char* color[3] = {KNRM, KCYN, KRED};
     for (int i = 0; i < 8; ++i){
         printf("%d | ", 8-i);
         for (int j = 0; j < 8; ++j){
-            printf("%d ", color[board->d[i][j].user], board->d[i][j].type);
+            printf("%s%d ", color[board->d[i][j].user], board->d[i][j].type);
         }
         printf("%s\n", KNRM);
     }
@@ -143,46 +153,32 @@ void ask_disposition(int sd)
     printf("\n");
 }
 
-int main()
+void startGame(int sd)
 {
-	int sd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (sd == -1){
-		throwError("Client: socket cannot be created");
-	}
-	struct sockaddr_un client_addr;
-	client_addr.sun_family = AF_UNIX;
-	strcpy(client_addr.sun_path, SOCKNAME);
-
-	int call_result = 0;
-	call_result = connect(sd, (struct sockaddr*) &client_addr, sizeof(struct sockaddr_un));
-	if (call_result == -1){
-		throwError("Client: connect error");
-	}
-
     int user_id = -1;
-    short int game_started = 0;
-	while (1){
+    short int game_started;
+    while (1){
         char* command = (char*)malloc(MAX_NAME_LENGTH);
-		printf(">> ");
-		scanf("%s", command);
+        printf(">> ");
+        scanf("%s", command);
         if (strcmp(command, "login") == 0){
-			if (user_id == -1){
-				printf("Logging in...\n");
+            if (user_id == -1){
+                printf("Logging in...\n");
                 ask_login(sd, &user_id);
-			} else {
-				printf("You're logged in!\n");
-			}
+            } else {
+                printf("You're logged in!\n");
+            }
             game_started = 1;
-		}
-		if (strcmp(command, "logout") == 0){
-			printf("Logging out...\n");	
+        }
+        if (strcmp(command, "logout") == 0){
+            printf("Logging out...\n");
             ask_logout(sd);
             free(opponent);
-			break;
-		}
-		if (strcmp(command, "userlist") == 0){
+            break;
+        }
+        if (strcmp(command, "userlist") == 0){
             ask_userlist(sd);
-		}
+        }
         if (strcmp(command, "disposition") == 0){
             if (game_started == 0){
                 printf("Login first!\n");
@@ -197,8 +193,32 @@ int main()
             }
             ask_turn(sd);
         }
-		free(command);
-	}
+        free(command);
+    }
+}
+
+int connectServer()
+{
+    int sd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sd == -1){
+        throwError("Client: socket cannot be created");
+    }
+    struct sockaddr_un client_addr;
+    client_addr.sun_family = AF_UNIX;
+    strcpy(client_addr.sun_path, SOCKNAME);
+
+    int call_result = 0;
+    call_result = connect(sd, (struct sockaddr*) &client_addr, sizeof(struct sockaddr_un));
+    if (call_result == -1){
+        throwError("Client: connect error");
+    }
+    return sd;
+}
+
+int main()
+{
+    int sd = connectServer();
+    startGame(sd);
     close(sd);
 	return 0;
 }

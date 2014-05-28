@@ -112,7 +112,7 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
 
             char* filename = (char*)malloc(FILENAME_LENGTH * sizeof(char));
             getFilename(filename, users->usergame[*user_id]);
-            FILE* log_file = fopen(filename, "w+");
+            FILE* log_file = fopen(filename, "w");
             fclose(log_file);
             free(filename);
 
@@ -177,6 +177,29 @@ void readMessage(MessageType* m, int incomeSd, size_t* user_id, /*size_t* oppone
         case log:
         {
             //read from file
+            char* filename = (char*)malloc(FILENAME_LENGTH * sizeof(char));
+            getFilename(filename, users->usergame[*user_id]);
+            FILE* log_file = fopen(filename, "r");
+            if (log_file == NULL){
+                throwError("server: log file");
+            }
+            MessageType answer_m;
+            char* one_turn = (char*)malloc(TURN_LENGTH);
+            while (1){
+                int call_result = fscanf(log_file, "%s\n", one_turn);
+                if (call_result == 0 || call_result == EOF){
+                    answer_m = composeMessage(log, 0, NULL);
+                    sendMessage(incomeSd, &answer_m);
+                    break;
+                } else {
+                    one_turn[TURN_LENGTH-1] = '\0';
+                    answer_m = composeMessage(log, TURN_LENGTH * sizeof(char), one_turn);
+                    sendMessage(incomeSd, &answer_m);
+                }
+            }
+            fclose(log_file);
+            free(one_turn);
+            free(filename);
         }
 	}
 }
