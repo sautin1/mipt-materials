@@ -14,16 +14,17 @@
 #define KCYN  "\x1B[36m"
 #define KWHT  "\x1B[37m"
 
-void ask_login(int sd, int* user_id);
-void ask_logout(int sd);
+void ask_login(int sd, int* user_id, short int* user_color);
+void ask_logout(int sd, short int user_color);
 void ask_userlist(int sd);
 
 TTurn* encodeTurn(char* turn_str);
 char* decodeTurn(TTurn* turn_code);
-void ask_turn(int sd);
+void reverseTurn(TTurn* user_turn);
+void ask_turn(int sd, short int user_color);
 
-void ask_disposition(int sd);
-void ask_log(int sd);
+void ask_disposition(int sd, short int user_color);
+void ask_log(int sd, short int user_color);
 int connectServer();
 void startGame(int sd);
 

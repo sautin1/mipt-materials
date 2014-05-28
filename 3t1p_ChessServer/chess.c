@@ -45,5 +45,9 @@ short int checkTurn(TTurn* user_turn)
 
 void applyTurn(TTurn* user_turn, TGame* game)
 {
-
+    TDisposition* start_disposition = &(game->d[7 - user_turn->startPos / 8][user_turn->startPos % 8]);
+    TDisposition* end_disposition   = &(game->d[7 - user_turn->endPos   / 8][user_turn->endPos   % 8]);
+    memcpy(end_disposition, start_disposition, sizeof(TDisposition));
+    start_disposition->type = none;
+    start_disposition->user = 0;
 }

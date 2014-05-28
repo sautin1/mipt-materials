@@ -1,6 +1,6 @@
 #include "client.h"
 
-void ask_login(int sd, int* user_id)
+void ask_login(int sd, int* user_id, short int* user_color)
 {
 	UserData ud;
 	printf("\tEnter your name (max length %d): ", MAX_NAME_LENGTH);
@@ -36,14 +36,15 @@ void ask_login(int sd, int* user_id)
     printf("Game with player #%d %s started!\n", opponent->id, opponent->name);
     free(opponent);
     getMessage(sd, &m); //white/black
-    if (*(int*)(m.data) == 1){
+    *user_color = *(int*)(m.data);
+    if (*user_color == 1){
         printf("You're White. White goes first!\n");
     } else {
         printf("You're Black. Black goes second!\n");
     }
 }
 
-void ask_log(int sd)
+void ask_log(int sd, short int user_color)
 {
     MessageType m;
     m = composeMessage(log, 0, NULL);
@@ -54,6 +55,10 @@ void ask_log(int sd)
             break;
         } else {
             TTurn* user_turn = (TTurn*)m.data;
+            if (user_color != 1){
+                //black
+                reverseTurn(user_turn);
+            }
             char* turn_str = decodeTurn(user_turn);
             printf("%s\n", turn_str);
             free(m.data);
@@ -61,16 +66,16 @@ void ask_log(int sd)
     }
 }
 
-void ask_logout(int sd)
+void ask_logout(int sd, short int user_color)
 {
     char answer;
     printf("\tWould you like to see the log of the game? (y/n) ");
     scanf(" %c", &answer);
     if (answer != 'n'){
-        printf("\n\nCurrent disposition:");
-        ask_disposition(sd);
-        printf("Game log:");
-        ask_log(sd);
+        printf("\n\nCurrent disposition:\n");
+        ask_disposition(sd, user_color);
+        printf("Game log:\n");
+        ask_log(sd, user_color);
     }
     MessageType m;
     m = composeMessage(logout, 0, NULL);
@@ -113,20 +118,31 @@ char* decodeTurn(TTurn* turn_code)
     return turn_str;
 }
 
+void reverseTurn(TTurn* user_turn)
+{
+    user_turn->startPos = (8 - (user_turn->startPos / 8 + 1)) * 8 + ('h' - 'a' - (user_turn->startPos % 8));
+    user_turn->endPos   = (8 - (user_turn->endPos   / 8 + 1)) * 8 + ('h' - 'a' - (user_turn->endPos   % 8));
+}
 
-void ask_turn(int sd)
+void ask_turn(int sd, short int user_color)
 {
     while (1){
         char turn_str[5] = {0};
-        while ((turn_str[0] < 'a' || turn_str[0] > 'h') ||
-               (turn_str[2] < 'a' || turn_str[2] > 'h') ||
-               (turn_str[1] < '1' || turn_str[1] > '8') ||
-               (turn_str[3] < '1' || turn_str[3] > '8')){
+        while ((turn_str[0] < 'a') || (turn_str[0] > 'h') ||
+               (turn_str[2] < 'a') || (turn_str[2] > 'h') ||
+               (turn_str[1] < '1') || (turn_str[1] > '8') ||
+               (turn_str[3] < '1') || (turn_str[3] > '8') ||
+               (turn_str[4] != 0 ) ||
+               ((turn_str[0] == turn_str[2]) && (turn_str[1] == turn_str[3]))){
             printf("\tYour turn (for example, a2a4): ");
             scanf(" %s", turn_str);
         }
         turn_str[4] = '\0';
         TTurn* user_turn = encodeTurn(turn_str);
+        if (user_color != 1){
+            //black
+            reverseTurn(user_turn);
+        }
         MessageType m;
         m = composeMessage(turn, sizeof(TTurn), user_turn);
         sendMessage(sd, &m);
@@ -156,18 +172,24 @@ void ask_turn(int sd)
     }
 }
 
-void ask_disposition(int sd)
+void ask_disposition(int sd, short int user_color)
 {
     MessageType m;
     m = composeMessage(disposition, 0, NULL);
     sendMessage(sd, &m);
     getMessage(sd, &m);
     TGame* board = (TGame*)m.data;
-    char* color[3] = {KNRM, KCYN, KRED};
+    char* text_color[3] = {KNRM, KCYN, KRED};
     for (int i = 0; i < 8; ++i){
         printf("%d | ", 8-i);
         for (int j = 0; j < 8; ++j){
-            printf("%s%d ", color[board->d[i][j].user], board->d[i][j].type);
+            if (user_color != 1){
+                //black
+                printf("%s%d ", text_color[board->d[7-i][7-j].user], board->d[7-i][7-j].type);
+            } else {
+                //white
+                printf("%s%d ", text_color[board->d[i][j].user], board->d[i][j].type);
+            }
         }
         printf("%s\n", KNRM);
     }
@@ -181,6 +203,7 @@ void ask_disposition(int sd)
 void startGame(int sd)
 {
     int user_id = -1;
+    short int user_color;
     short int game_started;
     while (1){
         char* command = (char*)malloc(MAX_NAME_LENGTH);
@@ -189,7 +212,7 @@ void startGame(int sd)
         if (strcmp(command, "login") == 0){
             if (user_id == -1){
                 printf("Logging in...\n");
-                ask_login(sd, &user_id);
+                ask_login(sd, &user_id, &user_color);
             } else {
                 printf("You're logged in!\n");
             }
@@ -197,7 +220,7 @@ void startGame(int sd)
         }
         if (strcmp(command, "logout") == 0){
             printf("Logging out...\n");
-            ask_logout(sd);
+            ask_logout(sd, user_color);
             break;
         }
         if (strcmp(command, "userlist") == 0){
@@ -208,21 +231,21 @@ void startGame(int sd)
                 printf("Login first!\n");
                 continue;
             }
-            ask_disposition(sd);
+            ask_disposition(sd, user_color);
         }
         if (strcmp(command, "turn") == 0){
             if (game_started == 0){
                 printf("Login first!\n");
                 continue;
             }
-            ask_turn(sd);
+            ask_turn(sd, user_color);
         }
         if (strcmp(command, "log") == 0){
             if (game_started == 0){
                 printf("Login first!\n");
                 continue;
             }
-            ask_log(sd);
+            ask_log(sd, user_color);
         }
         free(command);
     }
