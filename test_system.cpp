@@ -53,7 +53,7 @@ void binomial_heap_tester()
 
 void binomial_heap_test_caller(size_t test_quantity)
 {
-	srand(/*time(NULL)*/23);
+	srand(time(NULL));
 	for (size_t test_number = 0; test_number < test_quantity; ++test_number){
 		binomial_heap_tester();
 		std::cout << "Test #" << test_number+1 << " is passed!\n\n";
