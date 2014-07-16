@@ -1,242 +1,271 @@
+#include <iostream>
 #include <cstddef>
 #include <vector>
 #include <memory>
 #include <algorithm>
 #include <stdexcept>
-#include <iostream>
 #include <fstream>
 
-struct node
-{
-	node();
-	node(std::shared_ptr<node> new_parent, std::shared_ptr<node> new_brother, std::shared_ptr<node> new_son, const int &new_value);
-	std::shared_ptr<node> parent;
-	std::shared_ptr<node> brother; //right brother
-	std::shared_ptr<node> son; //left son
-	int value;
-};
-
-const std::shared_ptr<node> nullshptr(nullptr);
-
+template <typename keyT, typename comparatorT>
 class binomial_tree
 {
+	template <typename keyT1, typename comparatorT1> friend class binomial_heap;
+private:
+	typedef std::shared_ptr< binomial_tree<keyT, comparatorT> > binomial_tree_ptr;
+	binomial_tree_ptr parent_tree_ptr_;
+	binomial_tree_ptr brother_tree_ptr_;
+	binomial_tree_ptr son_tree_ptr_;
+	ssize_t power_;
+	keyT root_key_;
 public:
-	std::shared_ptr<node> root_;
-	binomial_tree();
-	binomial_tree(std::shared_ptr<node> new_root);
-	void clear();
-	bool meld(binomial_tree& new_tree);
+	binomial_tree()
+		:parent_tree_ptr_(nullptr), brother_tree_ptr_(nullptr), son_tree_ptr_(nullptr), power_(-1)
+	{}
+
+	binomial_tree(const keyT& new_key)
+		:parent_tree_ptr_(nullptr), brother_tree_ptr_(nullptr), son_tree_ptr_(nullptr), power_(0), root_key_(new_key)
+	{}
+
+
+	ssize_t power() const
+	{
+		return power_;
+	}
+
+	size_t size() const
+	{
+		return std::pow(2, power());
+	}
+
+	void isolate()
+	{
+		parent_tree_ptr_.reset();
+		brother_tree_ptr_.reset();
+	}
+
+	void clear()
+	{
+		isolate();
+		son_tree_ptr_.reset();
+		power_ = -1;
+	}
+
+	template <typename keyT1, typename comparatorT1>
+	friend void meld_trees(std::shared_ptr< binomial_tree<keyT1, comparatorT1> >& left_tree, std::shared_ptr< binomial_tree<keyT1, comparatorT1> >& right_tree);
 };
 
+template <typename keyT, typename comparatorT>
+void meld_trees(std::shared_ptr< binomial_tree<keyT, comparatorT> >& left_tree, std::shared_ptr< binomial_tree<keyT, comparatorT> >& right_tree)
+{
+	if (left_tree->power() != right_tree->power() && left_tree->power() != -1 && right_tree->power() != -1){
+		throw std::logic_error("Meld(): try to meld trees of different powers");
+	}
+	if (left_tree->power() == -1){
+		left_tree = right_tree;
+		return;
+	}
+	if (right_tree->power() == -1){
+		return;
+	}
+	comparatorT isless;
+	if (isless(right_tree->root_key_, left_tree->root_key_)){
+		std::swap(left_tree, right_tree);
+	}
+	right_tree-> parent_tree_ptr_ = left_tree;
+	right_tree->brother_tree_ptr_ = left_tree->son_tree_ptr_;
+	left_tree ->	son_tree_ptr_ = right_tree;
+	++left_tree->power_;
+}
+
+template <typename keyT, typename comparatorT>
 class binomial_heap
 {
 private:
-	std::vector<binomial_tree> trees_;
-	size_t min_;
+	typedef std::shared_ptr< binomial_tree<keyT, comparatorT> > binomial_tree_ptr;
+	std::vector< binomial_tree_ptr > ptr_forest_;
+	binomial_tree_ptr min_tree_ptr_;
 	size_t size_;
-	void heapify_up(std::shared_ptr<node>& node_ptr);
-	void heapify_down(std::shared_ptr<node>& node_ptr);
-	void update_min();
-public:
-	binomial_heap();
-	binomial_heap(std::shared_ptr<node>& new_value_shptr);
-	size_t size() const;
-	int get_min() const;
-	int extract_min();
-	void meld(binomial_heap& right);
-	std::shared_ptr<node> insert(const int& new_value);
-	void decrease_key(std::shared_ptr<node>& change_node_ptr, const int& new_value);
-	void increase_key(std::shared_ptr<node>& change_node_ptr, const int& new_value);
-	void change_key  (std::shared_ptr<node>& change_node_ptr, const int& new_value);
-	void erase	   (std::shared_ptr<node>&  erase_node_ptr);
-};
+	comparatorT isless_;
 
-node::node()
-	:parent(nullshptr), brother(nullshptr), son(nullshptr), value()
-{}
-
-node::node(std::shared_ptr<node> new_parent, std::shared_ptr<node> new_brother, std::shared_ptr<node> new_son, const int& new_value)
-	:parent(new_parent), brother(new_brother), son(new_son), value(new_value)
-{}
-
-binomial_tree::binomial_tree()
-	:root_(nullshptr)
-{}
-
-binomial_tree::binomial_tree(std::shared_ptr<node> new_root)
-	:root_(new_root)
-{}
-
-void binomial_tree::clear()
-{
-	root_ = nullshptr;
-}
-
-bool binomial_tree::meld(binomial_tree& new_tree)
-{
-	if (new_tree.root_ == nullshptr){
-		return false;
-	}
-	if (root_ == nullshptr){
-		*this = new_tree;
-		return false;
-	}
-	if (new_tree.root_->value < root_->value){
-		std::swap(*this, new_tree);
-	}
-	new_tree.root_->parent = root_;
-	new_tree.root_->brother = root_->son;
-	root_->son = new_tree.root_;
-	return true;
-}
-
-binomial_heap::binomial_heap()
-	:trees_(), min_(0), size_(0)
-{}
-
-binomial_heap::binomial_heap(std::shared_ptr<node>& new_value_shptr)
-	:trees_(1, new_value_shptr), min_(0), size_(1)
-{}
-
-size_t binomial_heap::size() const
-{
-	return size_;
-}
-
-int binomial_heap::get_min() const
-{
-	if (size_ == 0){
-		throw std::logic_error(std::string("Binomial_heap: heap is empty!"));
-	}
-	return trees_[min_].root_->value;
-}
-
-int binomial_heap::extract_min()
-{
-	int min_value = get_min();
-
-	binomial_heap son_heap;
-	son_heap.size_ = std::pow(2, min_) - 1;
-	std::shared_ptr<node> min_tree_son = trees_[min_].root_->son;
-	while (min_tree_son != nullshptr){
-		son_heap.trees_.push_back(binomial_tree(min_tree_son));
-		min_tree_son = min_tree_son->brother;
-		son_heap.trees_.back().root_->brother = nullshptr;
-		son_heap.trees_.back().root_->parent  = nullshptr;
-	}
-	std::reverse(son_heap.trees_.begin(), son_heap.trees_.end());
-	son_heap.update_min();
-
-	trees_[min_].root_ = nullshptr;
-	size_ -= son_heap.size() + 1;
-	meld(son_heap);
-	update_min();
-	return min_value;
-}
-
-void binomial_heap::update_min()
-{
-	for (size_t tree_index = 0; tree_index < trees_.size(); ++tree_index){
-		if (trees_[tree_index].root_ != nullshptr &&
-		(trees_[min_].root_ == nullshptr || trees_[tree_index].root_->value < trees_[min_].root_->value)){
-			min_ = tree_index;
-		}
-	}
-}
-
-void binomial_heap::meld(binomial_heap& new_heap)
-{
-	if (new_heap.size() == 0){
-		return;
-	}
-	if (size_ == 0){
-		std::swap(*this, new_heap);
-		update_min();
-		return;
+	binomial_heap(binomial_tree_ptr& new_binomial_tree)
+		:ptr_forest_(new_binomial_tree->power(), binomial_tree_ptr(nullptr)), min_tree_ptr_(new_binomial_tree),
+		  size_(std::pow(2, new_binomial_tree->power()))
+	{
+		ptr_forest_.push_back(new_binomial_tree);
 	}
 
-	binomial_tree tmp_tree;
-	trees_.resize(std::max(trees_.size(), new_heap.trees_.size()), binomial_tree());
-	new_heap.trees_.resize(std::max(trees_.size(), new_heap.trees_.size()), binomial_tree());
-	for (size_t tree_index = 0; tree_index < trees_.size(); ++tree_index){
-		if (trees_[tree_index].meld(new_heap.trees_[tree_index])){
-			std::swap(tmp_tree, trees_[tree_index]);
-		} else {
-			if (trees_[tree_index].meld(tmp_tree)){
-				tmp_tree = trees_[tree_index];
-				trees_[tree_index].clear();
-			} else {
-				tmp_tree.clear();
+	void update_min()
+	{
+		for (size_t tree_index = 0; tree_index < ptr_forest_.size(); ++tree_index){
+			if (ptr_forest_[tree_index] != binomial_tree_ptr(nullptr) &&
+			   (min_tree_ptr_ == binomial_tree_ptr(nullptr) || isless_(ptr_forest_[tree_index]->root_key_, min_tree_ptr_->root_key_))){
+				min_tree_ptr_ = ptr_forest_[tree_index];
 			}
 		}
 	}
-	if (tmp_tree.root_ != nullshptr){
-		trees_.push_back(tmp_tree);
+
+	void erase_root(binomial_tree_ptr& erase_tree_root)
+	{
+		while (erase_tree_root->parent_tree_ptr_ != binomial_tree_ptr(nullptr)){
+			erase_tree_root = erase_tree_root->parent_tree_ptr_;
+		}
+		binomial_heap<keyT, comparatorT> son_heap;
+
+		binomial_tree_ptr son_tree_ptr = erase_tree_root->son_tree_ptr_;
+		while (son_tree_ptr != binomial_tree_ptr(nullptr)){
+			son_heap.ptr_forest_.push_back(son_tree_ptr);
+			son_tree_ptr = son_tree_ptr->brother_tree_ptr_;
+			son_heap.ptr_forest_.back()->isolate();
+			size_t son_tree_size = son_heap.ptr_forest_.back()->size();
+			size_ -= son_tree_size;
+			son_heap.size_ += son_tree_size;
+		}
+		std::reverse(son_heap.ptr_forest_.begin(), son_heap.ptr_forest_.end());
+		ptr_forest_[erase_tree_root->power()] = std::make_shared< binomial_tree<keyT, comparatorT> >();
+		--size_;
+		meld(son_heap);
+		//min_tree_ptr_ was updated in meld()
 	}
-	size_ += new_heap.size();
-	update_min();
-}
 
-std::shared_ptr<node> binomial_heap::insert(const int& new_value)
-{
-	std::shared_ptr<node> new_value_shptr(new node(nullshptr, nullshptr, nullshptr, new_value));
-	binomial_heap new_heap(new_value_shptr);
-	meld(new_heap);
-	return new_value_shptr;
-}
-
-void binomial_heap::heapify_up(std::shared_ptr<node>& node_ptr)
-{
-	while (node_ptr->parent != nullshptr && node_ptr->value < node_ptr->parent->value){
-		std::swap(node_ptr->value, node_ptr->parent->value);
-		node_ptr = node_ptr->parent;
+	void make_root(binomial_tree_ptr& tree_ptr)
+	{
+		while (tree_ptr->parent_tree_ptr_ != binomial_tree_ptr(nullptr)){
+			std::swap(tree_ptr->root_key_, tree_ptr->parent_tree_ptr_->root_key_);
+			tree_ptr = tree_ptr->parent_tree_ptr_;
+		}
 	}
-}
 
-void binomial_heap::decrease_key(std::shared_ptr<node>& change_node_ptr, const int& new_value)
-{
-	change_node_ptr->value = new_value;
-	heapify_up(change_node_ptr);
-}
+	void decrease_key(binomial_tree_ptr& change_tree_ptr, const keyT& new_key)
+	{
+		change_tree_ptr->root_key_ = new_key;
+		while (change_tree_ptr->parent_tree_ptr_ != binomial_tree_ptr(nullptr)
+			   && isless_(new_key, change_tree_ptr->parent_tree_ptr_->root_key_)){
+			std::swap(change_tree_ptr->root_key_, change_tree_ptr->parent_tree_ptr_->root_key_);
+			change_tree_ptr = change_tree_ptr->parent_tree_ptr_;
+		}
+		//update min_tree_ptr_
+		if (change_tree_ptr->parent_tree_ptr_ == binomial_tree_ptr(nullptr)){
+			//we reached the root of a binomial tree => heap minimum may have changed
+			if (isless_(new_key, min_tree_ptr_->root_key_)){
+				min_tree_ptr_ = change_tree_ptr;
+			}
+		}
+	}
 
-void binomial_heap::increase_key(std::shared_ptr<node>& change_node_ptr, const int& new_value)
-{
-	erase(change_node_ptr);
-	insert(new_value);
-}
+	void increase_key(binomial_tree_ptr& change_tree_ptr, const keyT& new_key)
+	{
+		erase(change_tree_ptr);
+		insert(new_key);
+	}
+public:
+	binomial_heap()
+		:size_(0)
+	{}
 
-void binomial_heap::change_key(std::shared_ptr<node>& change_node_ptr, const int& new_value)
-{
-	if (new_value < change_node_ptr->value){
-		decrease_key(change_node_ptr, new_value);
-	} else if (new_value > change_node_ptr->value){
-		increase_key(change_node_ptr, new_value);
-	} else return;
-	update_min();
-}
+	size_t size() const
+	{
+		return size_;
+	}
 
-void binomial_heap::erase(std::shared_ptr<node>& erase_node_ptr)
-{
-	decrease_key(erase_node_ptr, get_min() - 1);
-	update_min();
-	extract_min();
-}
+	keyT get_min() const
+	{
+		return min_tree_ptr_->root_key_;
+	}
+
+	keyT extract_min()
+	{
+		keyT min = get_min();
+		erase_root(min_tree_ptr_);
+		//min_tree_ptr_ was updated in erase_root()
+		return min;
+	}
+
+	void meld(binomial_heap<keyT, comparatorT>& right_heap)
+	{
+		size_t new_forest_size = std::max(ptr_forest_.size(), right_heap.ptr_forest_.size());
+
+		min_tree_ptr_.reset();
+		binomial_tree_ptr tmp_tree_ptr = std::make_shared< binomial_tree<keyT, comparatorT> >();
+		for (ssize_t tree_index = 0; tree_index < new_forest_size; ++tree_index){
+			//resize forests
+			if (tree_index >= ptr_forest_.size()){
+				ptr_forest_.push_back(std::make_shared< binomial_tree<keyT, comparatorT> > ());
+			}
+			if (tree_index >= right_heap.ptr_forest_.size()){
+				right_heap.ptr_forest_.push_back(std::make_shared< binomial_tree<keyT, comparatorT> > ());
+			}
+
+			meld_trees<keyT, comparatorT>(ptr_forest_[tree_index], right_heap.ptr_forest_[tree_index]);
+			if (ptr_forest_[tree_index]->power() > tree_index){
+				std::swap(tmp_tree_ptr, ptr_forest_[tree_index]);
+			} else {
+				meld_trees<keyT, comparatorT>(ptr_forest_[tree_index], tmp_tree_ptr);
+				if (ptr_forest_[tree_index]->power() > tree_index){
+					tmp_tree_ptr = ptr_forest_[tree_index];
+					ptr_forest_[tree_index] = std::make_shared< binomial_tree<keyT, comparatorT> > ();
+				} else {
+					tmp_tree_ptr = std::make_shared< binomial_tree<keyT, comparatorT> > ();
+				}
+			}
+			//update min_tree_ptr_
+			if (ptr_forest_[tree_index]->power() != -1 &&
+			   (min_tree_ptr_ == binomial_tree_ptr(nullptr) || isless_(ptr_forest_[tree_index]->root_key_, min_tree_ptr_->root_key_))){
+				min_tree_ptr_ = ptr_forest_[tree_index];
+			}
+		}
+		if (tmp_tree_ptr->power() != -1){
+			ptr_forest_.push_back(tmp_tree_ptr);
+			if (min_tree_ptr_ == binomial_tree_ptr(nullptr) || isless_(tmp_tree_ptr->root_key_, min_tree_ptr_->root_key_)){
+				min_tree_ptr_ = tmp_tree_ptr;
+			}
+		}
+		size_ += right_heap.size();
+	}
+
+	binomial_tree_ptr insert(const keyT& new_key)
+	{
+		binomial_tree_ptr new_tree_ptr = std::make_shared< binomial_tree<keyT, comparatorT> >(new_key);
+		binomial_heap new_heap(new_tree_ptr);
+		meld(new_heap);
+		//min_tree_ptr_ was updated in meld()
+		return new_tree_ptr;
+	}
+
+	void erase(binomial_tree_ptr& erase_tree_ptr)
+	{
+		make_root(erase_tree_ptr);
+		erase_root(erase_tree_ptr);
+		//min_tree_ptr_ was updated in erase_root()
+	}
+
+	void change_key(binomial_tree_ptr& change_tree_ptr, const keyT& new_key)
+	{
+		if (isless_(new_key, change_tree_ptr->root_key_)){
+			decrease_key(change_tree_ptr, new_key);
+			//min_tree_ptr_ was updated in decrease_key()
+		} else if (isless_(change_tree_ptr->root_key_, new_key)){
+			increase_key(change_tree_ptr, new_key);
+			//min_tree_ptr_ was updated in increase_key()
+		}
+	}
+};
 
 int main()
 {
-	binomial_heap heap;
+	binomial_heap<int, std::less<int> > heap;
 	std::ifstream fin("input.txt");
-	size_t n;
+	int n;
 	fin >> n;
-	for (size_t i = 0; i < n; ++i){
+	for (int i = 0; i < n; ++i){
 		int tmp;
 		fin >> tmp;
 		heap.insert(tmp);
 	}
 	fin.close();
+
 	std::ofstream fout("output.txt");
-	for (size_t i = 0; i < n; ++i){
-		fout << heap.extract_min() << " ";
+	for (int i = 0; i < n; ++i){
+		fout << heap.extract_min() << ' ';
 	}
 	fout.close();
 	return 0;

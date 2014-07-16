@@ -8,7 +8,9 @@
 #include <ctime>
 #include <algorithm>
 
-const size_t TEST_Q = 100;
+typedef std::shared_ptr< binomial_tree< int, std::less<int> > > binomial_tree_ptr;
+
+const size_t TEST_Q = 50;
 const size_t MAX_MELD_Q = 500;
 const size_t MAX_HEAP_SIZE = 100000;
 
