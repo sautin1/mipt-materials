@@ -40,7 +40,7 @@ void PlannerTask::print(std::ostream& fout, TaskOutputFormat format) const
 {
     tm taskTime = *localtime(&deadline);
     if (format == TOFfile) {
-        fout << subject << " " << name << " " << taskTime.tm_hour << " " << taskTime.tm_min << " " << taskTime.tm_mday << " " << taskTime.tm_mon << " " << taskTime.tm_year + 1900 << " " << completedTaskQ << " " << taskQ;
+        fout << subject << " " << name << " " << taskTime.tm_hour << " " << taskTime.tm_min << " " << taskTime.tm_mday << " " << taskTime.tm_mon+1 << " " << taskTime.tm_year + 1900 << " " << completedTaskQ << " " << taskQ;
     } else {
         fout << std::setw(OUTPUT_STRING_WIDTH) << std::left << subject << ": " << std::setw(OUTPUT_STRING_WIDTH) << std::left << name << " (till ";
         if (taskTime.tm_hour < 10) {
@@ -172,11 +172,12 @@ PlannerTask Planner::parseTask(std::istream& fin) const
 {
     PlannerTask task;
     tm taskTime;
-    fin >> task.subject >> task.name >> taskTime.tm_hour >> taskTime.tm_min >> taskTime.tm_mday >> taskTime.tm_mon >> taskTime.tm_year >> task.completedTaskQ >> task.taskQ;
+    int month;
+    fin >> task.subject >> task.name >> taskTime.tm_hour >> taskTime.tm_min >> taskTime.tm_mday >> month >> taskTime.tm_year >> task.completedTaskQ >> task.taskQ;
 
     taskTime.tm_sec = 0;
     taskTime.tm_year -= 1900;
-    --taskTime.tm_mon;
+    taskTime.tm_mon = month - 1;
     task.deadline = mktime(&taskTime);
 
     return task;
@@ -193,9 +194,10 @@ time_t Planner::readDeadline() const
     sstream >> newTime.tm_hour >> tmp >> newTime.tm_min;
     std::cin >> timeString;
     std::stringstream sstream2(timeString, std::ios_base::in);
-    sstream2 >> newTime.tm_mday >> tmp >> newTime.tm_mon >> tmp >> newTime.tm_year;
+    int month;
+    sstream2 >> newTime.tm_mday >> tmp >> month >> tmp >> newTime.tm_year;
     newTime.tm_year -= 1900;
-    --newTime.tm_mon;
+    newTime.tm_mon = month - 1;
     return mktime(&newTime);
 }
 
