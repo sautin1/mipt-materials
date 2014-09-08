@@ -67,6 +67,7 @@ void PlannerTask::print(std::ostream& fout, TaskOutputFormat format) const
 Planner::Planner(const std::string& new_filename)
     :modified(false)
 {
+    std::cout << "Welcome to HomeWorkPlanner (hwp), created by Andrew Sautin!\n";
     if (fileExists(new_filename)) {
         filename = new_filename;
         loadTasks(filename);
@@ -493,7 +494,6 @@ void Planner::processCommand(const CommandT command, const std::string& arg)
 void Planner::communicate()
 {
     // read & process commands
-    std::cout << "Welcome to HomeWorkPlanner (hwp), created by Andrew Sautin!\n";
     while (true) {
         std::string command;
         std::string argument;
