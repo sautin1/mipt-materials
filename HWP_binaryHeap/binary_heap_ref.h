@@ -78,6 +78,12 @@ public:
         return heap.empty();
     }
 
+    void clear()
+    {
+        heap.clear();
+        reference.clear();
+    }
+
     bool insert(const keyT& newKey)
     {
         bool is_inserted = reference.insert(std::make_pair(newKey, heap.size())).second;
