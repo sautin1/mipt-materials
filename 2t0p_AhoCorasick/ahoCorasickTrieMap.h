@@ -8,7 +8,7 @@
 
 class AhoCorasickTrieMap {
 public:
-	typedef std::map<char, int>::iterator MapIterator;
+	typedef std::map<unsigned char, int>::iterator MapIterator;
 	struct Match {
 		int patternIndex;
 		int textPosition;
@@ -20,17 +20,17 @@ public:
 	void getMatches(const std::string& text, std::vector<Match>& matches);
 	std::string getPattern(int patternIndex);
 private:
-	static const char ALPHABET_START = 'a';
+	static const unsigned char ALPHABET_START = 'a';
 
 	struct TrieNode {
 		int patternIndex;
 		int parentIndex;
-		std::map<char, int> nextCharNode;
-		std::map<char, int> autoGoNode;
+		std::map<unsigned char, int> nextCharNode;
+		std::map<unsigned char, int> autoGoNode;
 		int suffLink, suffTermLink;
 		bool isTermNode;
-		char wayChar;
-		TrieNode(int newParentIndex, char newWayChar);
+		unsigned char wayChar;
+		TrieNode(int newParentIndex, unsigned char newWayChar);
 	};
 
 	std::vector<TrieNode> nodes;
@@ -38,7 +38,7 @@ private:
 
 	size_t size() const;
 	void searchMatches(int nodeIndex, int textIndex, std::vector<Match>& matches);
-	int getAutoGoNode(int nodeIndex, char transChar);
+	int getAutoGoNode(int nodeIndex, unsigned char transChar);
 	int getSuffLink(int nodeIndex);
 	int getSuffTermLink(int nodeIndex);
 };
