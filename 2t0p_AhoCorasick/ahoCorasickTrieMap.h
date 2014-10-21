@@ -18,7 +18,7 @@ public:
 	void addPattern(const std::string& pattern);
 	void addPattern(const std::vector<std::string> patterns);
 	void getMatches(const std::string& text, std::vector<Match>& matches);
-	std::string getPattern(int patternIndex);
+	std::string getPattern(int patternIndex) const;
 private:
 	static const unsigned char ALPHABET_START = 'a';
 

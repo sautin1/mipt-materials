@@ -81,7 +81,7 @@ void AhoCorasickTrieArray::addPattern(const std::vector<std::string> patterns) {
 	}
 }
 
-std::string AhoCorasickTrieArray::getPattern(int patternIndex) {
+std::string AhoCorasickTrieArray::getPattern(int patternIndex) const {
 	return patterns[patternIndex];
 }
 

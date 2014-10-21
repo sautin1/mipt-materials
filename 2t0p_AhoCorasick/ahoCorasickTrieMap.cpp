@@ -82,7 +82,7 @@ void AhoCorasickTrieMap::addPattern(const std::vector<std::string> patterns) {
 	}
 }
 
-std::string AhoCorasickTrieMap::getPattern(int patternIndex) {
+std::string AhoCorasickTrieMap::getPattern(int patternIndex) const {
 	return patterns[patternIndex];
 }
 
