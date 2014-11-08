@@ -116,11 +116,27 @@ void SuffixArray::countLCP() {
 			currentLCP = 0;
 		} else {
 			size_t nextSuffixIndex = suffixArray[suffixPositionInArray[suffixIndex] + 1];
-			while (std::max(suffixIndex + currentLCP, nextSuffixIndex + currentLCP) < sourceString.size() &&
-				   sourceString[suffixIndex + currentLCP] == sourceString[nextSuffixIndex + currentLCP]) {
+			size_t stepQuantity = sourceString.size() - std::max(suffixIndex + currentLCP, nextSuffixIndex + currentLCP);
+			if (arrayType == SHIFT_ARRAY) {
+				stepQuantity = sourceString.size() - currentLCP;
+			}
+			for (size_t stepIndex = 0; stepIndex < stepQuantity; ++stepIndex) {
+				size_t leftCompareIndex = suffixIndex + currentLCP;
+				size_t rightCompareIndex = nextSuffixIndex + currentLCP;
+				if (arrayType == SHIFT_ARRAY) {
+					leftCompareIndex = leftCompareIndex % sourceString.size();
+					rightCompareIndex = rightCompareIndex % sourceString.size();
+				}
+				if (sourceString[leftCompareIndex] != sourceString[rightCompareIndex]) {
+					break;
+				}
 				++currentLCP;
 			}
 			lcp[suffixPositionInArray[suffixIndex]] = currentLCP;
+			if (arrayType == SHIFT_ARRAY && suffixIndex + 1 < sourceString.size() && nextSuffixIndex + 1 < sourceString.size() &&
+					suffixPositionInArray[suffixIndex + 1] >= suffixPositionInArray[nextSuffixIndex + 1]) {
+				currentLCP = 0;
+			}
 		}
 	}
 }

@@ -3,8 +3,8 @@
 
 int main()
 {
-	std::string str = "abacaba";
-	SuffixArray suffixArray(str, SuffixArray::SUFFIX_ARRAY);
+	std::string str = "ababab";
+	SuffixArray suffixArray(str, SuffixArray::SHIFT_ARRAY);
 	suffixArray.printLCP(std::cout, "\n");
-    return 0;
+	return 0;
 }
