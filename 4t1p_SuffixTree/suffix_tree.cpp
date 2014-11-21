@@ -17,9 +17,12 @@ SuffixTree::NodeReference::NodeReference(int _closest_ancestor_node, int _sample
 SuffixTree::TestAndSplitResult::TestAndSplitResult(bool _is_split, int _node_index)
 	: reached_endpoint(_is_split), node_index(_node_index) {}
 
+SuffixTree::DepthFirstSearchStackItem::DepthFirstSearchStackItem(int _node_index, char _neighbour_letter)
+	: node_index(_node_index), neighbour_letter(_neighbour_letter) {}
+
 SuffixTree::SuffixTree(const std::string& sample)
-	: sample_string_(sample) {
-	InitLetterSet(0, sample_string_.size());
+	: sample_(sample) {
+	InitLetterSet(0, sample_.size());
 	BuildTree();
 }
 
@@ -31,7 +34,7 @@ int SuffixTree::CreateNode() {
 
 void SuffixTree::InitDummy(int sample_start_index, int sample_end_index) {
 	for (int letter_index = sample_start_index; letter_index < sample_end_index; ++letter_index) {
-		if (!HasLink(dummy_, sample_string_[letter_index])) {
+		if (!HasLink(dummy_, sample_[letter_index])) {
 			LinkNodes(dummy_, root_, letter_index, letter_index + 1);
 		}
 	}
@@ -39,7 +42,7 @@ void SuffixTree::InitDummy(int sample_start_index, int sample_end_index) {
 
 void SuffixTree::InitLetterSet(int sample_start_index, int sample_end_index) {
 	for (int letter_index = sample_start_index; letter_index < sample_end_index; ++letter_index) {
-		letter_set_.insert(sample_string_[letter_index]);
+		letter_set_.insert(sample_[letter_index]);
 	}
 }
 
@@ -47,12 +50,16 @@ void SuffixTree::InitTree() {
 	dummy_ = CreateNode();
 	root_ = CreateNode();
 	active_point_ = NodeReference(root_, 0, 0);
-	InitDummy(0, sample_string_.size());
+	InitDummy(0, sample_.size());
 	nodes_[root_].suffix_link_node_index = dummy_;
 }
 
+std::string SuffixTree::sample() const {
+	return sample_;
+}
+
 void SuffixTree::LinkNodes(int source_node_index, int target_node_index, int sample_start_index, int sample_end_index) {
-	char letter = sample_string_[sample_start_index];
+	char letter = sample_[sample_start_index];
 	nodes_[source_node_index].links[letter] = Link(target_node_index, sample_start_index, sample_end_index);
 }
 
@@ -73,13 +80,13 @@ bool SuffixTree::HasLink(int node_index, char letter) const {
 
 // if v is explicit and ==0 then returns v. Otherwise, returns closest ancestor of v
 void SuffixTree::CanonicalizeNodeReference(NodeReference* node_reference) const {
-	Link link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_string_[node_reference->sample_start_index]);
+	Link link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_[node_reference->sample_start_index]);
 	while (node_reference->sample_end_index - node_reference->sample_start_index >=
 		   link_from_ancestor.sample_end_index - link_from_ancestor.sample_start_index) {
 		node_reference->closest_ancestor = link_from_ancestor.target_node_index;
 		node_reference->sample_start_index += link_from_ancestor.sample_end_index - link_from_ancestor.sample_start_index;
 		if (node_reference->sample_start_index < node_reference->sample_end_index) {
-			link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_string_[node_reference->sample_start_index]);
+			link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_[node_reference->sample_start_index]);
 		}
 	}
 }
@@ -87,12 +94,12 @@ void SuffixTree::CanonicalizeNodeReference(NodeReference* node_reference) const 
 SuffixTree::TestAndSplitResult SuffixTree::TestAndSplit(const NodeReference& node_reference) {
 	if (node_reference.sample_end_index == node_reference.sample_start_index) {
 		// explicit node
-		return TestAndSplitResult(HasLink(node_reference.closest_ancestor, sample_string_[node_reference.sample_end_index]), node_reference.closest_ancestor);
+		return TestAndSplitResult(HasLink(node_reference.closest_ancestor, sample_[node_reference.sample_end_index]), node_reference.closest_ancestor);
 	} else {
 		// implicit node
-		Link link_from_node = GetLink(node_reference.closest_ancestor, sample_string_[node_reference.sample_start_index]);
+		Link link_from_node = GetLink(node_reference.closest_ancestor, sample_[node_reference.sample_start_index]);
 		int link_letter_index = link_from_node.sample_start_index + node_reference.sample_end_index - node_reference.sample_start_index;
-		if (sample_string_[node_reference.sample_end_index] == sample_string_[link_letter_index]) {
+		if (sample_[node_reference.sample_end_index] == sample_[link_letter_index]) {
 			return TestAndSplitResult(true, node_reference.closest_ancestor);
 		}
 
@@ -131,7 +138,7 @@ SuffixTree::NodeReference SuffixTree::AddNextLetter(NodeReference active_point) 
 
 void SuffixTree::BuildTree() {
 	InitTree();
-	for (size_t letter_index = 0; letter_index < sample_string_.size(); ++letter_index) {
+	for (size_t letter_index = 0; letter_index < sample_.size(); ++letter_index) {
 		active_point_ = AddNextLetter(active_point_);
 		++active_point_.sample_end_index;
 		CanonicalizeNodeReference(&active_point_);
@@ -139,11 +146,11 @@ void SuffixTree::BuildTree() {
 }
 
 void SuffixTree::AppendSample(const std::string& append_sample) {
-	size_t old_sample_size = sample_string_.size();
-	sample_string_.append(append_sample);
-	InitDummy(old_sample_size, sample_string_.size());
-	InitLetterSet(old_sample_size, sample_string_.size());
-	for (size_t letter_index = old_sample_size; letter_index < sample_string_.size(); ++letter_index) {
+	size_t old_sample_size = sample_.size();
+	sample_.append(append_sample);
+	InitDummy(old_sample_size, sample_.size());
+	InitLetterSet(old_sample_size, sample_.size());
+	for (size_t letter_index = old_sample_size; letter_index < sample_.size(); ++letter_index) {
 		active_point_ = AddNextLetter(active_point_);
 		++active_point_.sample_end_index;
 		CanonicalizeNodeReference(&active_point_);
@@ -182,7 +189,7 @@ bool SuffixTree::IsSubstring(const std::string& substring) const {
 			sample_start_index = current_link.sample_start_index;
 			sample_end_index = sample_start_index + 1;
 		} else {
-			if (sample_string_[sample_end_index] != substring[letter_index]) {
+			if (sample_[sample_end_index] != substring[letter_index]) {
 				return false;
 			}
 			++sample_end_index;
@@ -195,8 +202,3 @@ bool SuffixTree::IsSubstring(const std::string& substring) const {
 	}
 	return true;
 }
-
-/*std::vector<int> FindAllOccurrences(const SuffixTree& suffix_tree, const std::string& search_string) {
-
-}*/
-
