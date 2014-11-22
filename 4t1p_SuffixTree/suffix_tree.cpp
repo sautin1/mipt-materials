@@ -17,12 +17,14 @@ SuffixTree::NodeReference::NodeReference(int _closest_ancestor_node, int _sample
 SuffixTree::TestAndSplitResult::TestAndSplitResult(bool _is_split, int _node_index)
 	: reached_endpoint(_is_split), node_index(_node_index) {}
 
-SuffixTree::DepthFirstSearchStackItem::DepthFirstSearchStackItem(int _node_index, char _neighbour_letter)
-	: node_index(_node_index), neighbour_letter(_neighbour_letter) {}
+SuffixTree::DepthFirstSearchStackItem::DepthFirstSearchStackItem(const Link& _enter_link, LinkMapConstIterator _next_link_letter_it)
+	: enter_link(_enter_link), next_link_letter_it(_next_link_letter_it) {}
 
 SuffixTree::SuffixTree(const std::string& sample)
-	: sample_(sample) {
+	: sample_(sample), non_existing_char_(1) {
 	InitLetterSet(0, sample_.size());
+	UpdateNonExistingChar();
+	sample_ += non_existing_char_;
 	BuildTree();
 }
 
@@ -46,6 +48,15 @@ void SuffixTree::InitLetterSet(int sample_start_index, int sample_end_index) {
 	}
 }
 
+void SuffixTree::UpdateNonExistingChar() {
+	while (non_existing_char_ <= std::numeric_limits<char>::max()) {
+		if (letter_set_.find(non_existing_char_) == letter_set_.end()) {
+			break;
+		}
+		++non_existing_char_;
+	}
+}
+
 void SuffixTree::InitTree() {
 	dummy_ = CreateNode();
 	root_ = CreateNode();
@@ -56,6 +67,10 @@ void SuffixTree::InitTree() {
 
 std::string SuffixTree::sample() const {
 	return sample_;
+}
+
+char SuffixTree::non_existing_char() const {
+	return non_existing_char_;
 }
 
 void SuffixTree::LinkNodes(int source_node_index, int target_node_index, int sample_start_index, int sample_end_index) {
@@ -76,6 +91,16 @@ bool SuffixTree::HasLink(int node_index, char letter) const {
 		has_link = false;
 	}
 	return has_link;
+}
+
+SuffixTree::LinkMapConstIterator SuffixTree::GetLinkIterator(int node_index, char letter) const {
+	LinkMapConstIterator it = nodes_[node_index].links.find(letter);
+	LinkMapConstIterator it2 = nodes_[node_index].links.end();
+	return it;
+}
+
+bool SuffixTree::IsLeaf(int node_index) const {
+	return (nodes_[node_index].links.size() == 0);
 }
 
 // if v is explicit and ==0 then returns v. Otherwise, returns closest ancestor of v
@@ -150,6 +175,7 @@ void SuffixTree::AppendSample(const std::string& append_sample) {
 	sample_.append(append_sample);
 	InitDummy(old_sample_size, sample_.size());
 	InitLetterSet(old_sample_size, sample_.size());
+	UpdateNonExistingChar();
 	for (size_t letter_index = old_sample_size; letter_index < sample_.size(); ++letter_index) {
 		active_point_ = AddNextLetter(active_point_);
 		++active_point_.sample_end_index;
@@ -160,7 +186,7 @@ void SuffixTree::AppendSample(const std::string& append_sample) {
 void SuffixTree::PrintTree(std::ostream& fout) const {
 	for (size_t node_index = 0; node_index < nodes_.size(); ++node_index) {
 		fout << "Node " << node_index << "\n";
-		for (auto it = nodes_[node_index].links.begin(); it != nodes_[node_index].links.end(); ++it) {
+		for (LinkMapConstIterator it = nodes_[node_index].links.begin(); it != nodes_[node_index].links.end(); ++it) {
 			Link link = it->second;
 			fout << "\t" << it->first << ": " << link.target_node_index << ". sample[ " << link.sample_start_index << " - ";
 			if (link.sample_end_index != INFINITY) {
@@ -172,33 +198,4 @@ void SuffixTree::PrintTree(std::ostream& fout) const {
 		fout << "\tsufflink: " << nodes_[node_index].suffix_link_node_index << "\n";
 	}
 	fout << "__________\n";
-}
-
-bool SuffixTree::IsSubstring(const std::string& substring) const {
-	int current_node = root_;
-	int sample_start_index = 0;
-	int sample_end_index = 0;
-	Link current_link;
-	for (size_t letter_index = 0; letter_index < substring.size(); ++letter_index) {
-		if (sample_end_index == sample_start_index) {
-			// in explicit node
-			if (!HasLink(current_node, substring[letter_index])) {
-				return false;
-			}
-			current_link = GetLink(current_node, substring[letter_index]);
-			sample_start_index = current_link.sample_start_index;
-			sample_end_index = sample_start_index + 1;
-		} else {
-			if (sample_[sample_end_index] != substring[letter_index]) {
-				return false;
-			}
-			++sample_end_index;
-		}
-		if (sample_end_index == current_link.sample_end_index) {
-			current_node = current_link.target_node_index;
-			sample_start_index = 0;
-			sample_end_index = 0;
-		}
-	}
-	return true;
 }
