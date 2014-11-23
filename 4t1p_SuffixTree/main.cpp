@@ -4,10 +4,10 @@
 
 int main()
 {
-	std::string sample = "banana";
+	std::string sample = "abaac";
 	SuffixTree suffix_tree(sample);
 	std::vector<int> occurences;
-	occurences = FindAllOccurrences(suffix_tree, "ana");
+	occurences = FindAllOccurrences(suffix_tree, "aab");
 	for (size_t occurence_number = 0; occurence_number < occurences.size(); ++occurence_number) {
 		std::cout << occurences[occurence_number] << " ";
 	}

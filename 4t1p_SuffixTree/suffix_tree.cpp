@@ -94,9 +94,7 @@ bool SuffixTree::HasLink(int node_index, char letter) const {
 }
 
 SuffixTree::LinkMapConstIterator SuffixTree::GetLinkIterator(int node_index, char letter) const {
-	LinkMapConstIterator it = nodes_[node_index].links.find(letter);
-	LinkMapConstIterator it2 = nodes_[node_index].links.end();
-	return it;
+	return nodes_[node_index].links.find(letter);
 }
 
 bool SuffixTree::IsLeaf(int node_index) const {
@@ -105,13 +103,19 @@ bool SuffixTree::IsLeaf(int node_index) const {
 
 // if v is explicit and ==0 then returns v. Otherwise, returns closest ancestor of v
 void SuffixTree::CanonicalizeNodeReference(NodeReference* node_reference) const {
-	Link link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_[node_reference->sample_start_index]);
-	while (node_reference->sample_end_index - node_reference->sample_start_index >=
-		   link_from_ancestor.sample_end_index - link_from_ancestor.sample_start_index) {
-		node_reference->closest_ancestor = link_from_ancestor.target_node_index;
-		node_reference->sample_start_index += link_from_ancestor.sample_end_index - link_from_ancestor.sample_start_index;
-		if (node_reference->sample_start_index < node_reference->sample_end_index) {
-			link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_[node_reference->sample_start_index]);
+	if (node_reference->sample_end_index == node_reference->sample_start_index) {
+		// explicit node
+		return;
+	} else {
+		// implicit node
+		Link link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_[node_reference->sample_start_index]);
+		while (node_reference->sample_end_index - node_reference->sample_start_index >=
+			   link_from_ancestor.sample_end_index - link_from_ancestor.sample_start_index) {
+			node_reference->closest_ancestor = link_from_ancestor.target_node_index;
+			node_reference->sample_start_index += link_from_ancestor.sample_end_index - link_from_ancestor.sample_start_index;
+			if (node_reference->sample_start_index < node_reference->sample_end_index) {
+				link_from_ancestor = GetLink(node_reference->closest_ancestor, sample_[node_reference->sample_start_index]);
+			}
 		}
 	}
 }
