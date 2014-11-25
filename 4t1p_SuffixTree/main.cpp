@@ -1,18 +1,9 @@
 #include <iostream>
-#include "suffix_tree.h"
-#include "find_occurrences.h"
+#include "test_suffix_tree.h"
 
-int main()
+int main(int argc, char** argv)
 {
-	std::string sample = "abaac";
-	SuffixTree suffix_tree(sample);
-	std::vector<int> occurences;
-	occurences = FindAllOccurrences(suffix_tree, "aab");
-	for (size_t occurence_number = 0; occurence_number < occurences.size(); ++occurence_number) {
-		std::cout << occurences[occurence_number] << " ";
-	}
-	std::cout << "\n";
-
-	return 0;
+	int result = start_testing(argc, argv);
+	return result;
 }
 

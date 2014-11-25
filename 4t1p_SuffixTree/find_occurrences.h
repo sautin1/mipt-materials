@@ -6,14 +6,15 @@
 
 typedef SuffixTree::LinkMapConstIterator LinkMapConstIterator;
 
-struct FindOccurrencesTraversalVisitor {
+class FindOccurrencesTraversalVisitor {
+private:
 	const SuffixTree& suffix_tree;
 	std::string pattern;
 	std::vector<int> occurrences;
 	int pattern_index;
 	int pattern_end_node;
 	int suffix_length;
-
+public:
 	FindOccurrencesTraversalVisitor(const SuffixTree& _suffix_tree, const std::string& _pattern);
 
 	void InitVisitor();

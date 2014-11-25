@@ -7,24 +7,25 @@
 #include <set>
 #include <limits>
 #include <stdexcept>
-#include <stack> // for DFS
-
-#include <iostream>
+#include <stack>
+#include <gtest/gtest.h>
 
 class SuffixTree
 {
 public:
+	friend class TestSuffixTree;
 	struct Link {
 		int target_node_index;
 		int sample_start_index, sample_end_index;
 		Link();
 		Link(int _target_node_index, int _sample_start_index, int _sample_end_index);
+		bool operator == (const Link& link) const;
 	};
 	typedef std::map<char, Link>::const_iterator LinkMapConstIterator;
 private:
-	const int INFINITY = std::numeric_limits<int>::max();
+	const int INF = std::numeric_limits<int>::max();
 	struct Node {
-		std::map<char, Link> links; // map's better than unordered_map, since DFS goes through letters in lex-order
+		std::map<char, Link> links;
 		int suffix_link_node_index;
 		Node();
 	};
@@ -35,6 +36,7 @@ private:
 		int sample_end_index;
 		NodeReference();
 		NodeReference(int _ancestor_node, int _sample_start_index, int _sample_end_index);
+		bool operator == (const NodeReference& node_reference) const;
 	};
 
 	struct TestAndSplitResult {
@@ -48,13 +50,6 @@ private:
 		LinkMapConstIterator next_link_letter_it;
 		DepthFirstSearchStackItem(const Link& _enter_link, LinkMapConstIterator _next_link_letter_it);
 	};
-
-	std::vector<Node> nodes_;
-	std::set<char> letter_set_;
-	int dummy_, root_;
-	std::string sample_;
-	NodeReference active_point_;
-	char non_existing_char_;
 
 	int CreateNode();
 	void InitDummy(int sample_start_index, int sample_end_index);
@@ -70,21 +65,42 @@ private:
 
 	NodeReference AddNextLetter(NodeReference active_point);
 	void BuildTree();
+
+	std::vector<Node> nodes_;
+	std::set<char> letter_set_;
+	int dummy_, root_;
+	std::string sample_;
+	NodeReference active_point_;
+	char non_existing_char_;
 public:
 	SuffixTree(const std::string& sample);
 	void UpdateNonExistingChar();
 
 	void AppendSample(const std::string& append_sample);
-	void PrintTree(std::ostream& fout) const;
 
 	// API for visitor
 	LinkMapConstIterator GetLinkIterator(int node_index, char letter) const;
 	bool IsLeaf(int node_index) const;
 	std::string sample() const;
 	char non_existing_char() const;
+	size_t Size() const;
 
 	template <typename TraversalVisitor>
 	void DepthFirstSearchTraversal(TraversalVisitor& visitor) const;
+
+private:
+	FRIEND_TEST(SuffixTreeTest, CreateNodeTest);
+	FRIEND_TEST(SuffixTreeTest, InitDummyTest);
+	FRIEND_TEST(SuffixTreeTest, InitLetterSetTest);
+	FRIEND_TEST(SuffixTreeTest, InitTreeTest);
+	FRIEND_TEST(SuffixTreeTest, LinkNodesTest);
+	FRIEND_TEST(SuffixTreeTest, HasLinkTest);
+	FRIEND_TEST(SuffixTreeTest, GetLinkTest);
+	FRIEND_TEST(SuffixTreeTest, CanonicalizeNodeReferenceSimpleTest);
+	FRIEND_TEST(SuffixTreeTest, CanonicalizeNodeReferenceNormalTest);
+	FRIEND_TEST(SuffixTreeTest, TestAndSplitTest);
+
+	FRIEND_TEST(SuffixTreeTest, SizeTest);
 };
 
 template <typename TraversalVisitor>

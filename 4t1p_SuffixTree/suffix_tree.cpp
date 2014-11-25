@@ -6,6 +6,12 @@ SuffixTree::Link::Link()
 SuffixTree::Link::Link(int _target_node_index, int _sample_start_index, int _sample_end_index)
 	: target_node_index(_target_node_index), sample_start_index(_sample_start_index), sample_end_index(_sample_end_index) {}
 
+bool SuffixTree::Link::operator == (const Link& link) const {
+	bool is_equal = target_node_index == link.target_node_index && sample_start_index == link.sample_start_index;
+	is_equal = is_equal && sample_end_index == link.sample_end_index;
+	return is_equal;
+}
+
 SuffixTree::Node::Node()
 	: links(), suffix_link_node_index(-1) {}
 
@@ -13,6 +19,12 @@ SuffixTree::NodeReference::NodeReference() {}
 
 SuffixTree::NodeReference::NodeReference(int _closest_ancestor_node, int _sample_start_index, int _sample_end_index)
 	: closest_ancestor(_closest_ancestor_node), sample_start_index(_sample_start_index), sample_end_index(_sample_end_index) {}
+
+bool SuffixTree::NodeReference::operator == (const NodeReference& node_reference) const {
+	bool is_equal = closest_ancestor == node_reference.closest_ancestor && sample_start_index == node_reference.sample_start_index;
+	is_equal = is_equal && sample_end_index == node_reference.sample_end_index;
+	return is_equal;
+}
 
 SuffixTree::TestAndSplitResult::TestAndSplitResult(bool _is_split, int _node_index)
 	: reached_endpoint(_is_split), node_index(_node_index) {}
@@ -71,6 +83,10 @@ std::string SuffixTree::sample() const {
 
 char SuffixTree::non_existing_char() const {
 	return non_existing_char_;
+}
+
+size_t SuffixTree::Size() const {
+	return nodes_.size();
 }
 
 void SuffixTree::LinkNodes(int source_node_index, int target_node_index, int sample_start_index, int sample_end_index) {
@@ -145,7 +161,7 @@ SuffixTree::NodeReference SuffixTree::AddNextLetter(NodeReference active_point) 
 	TestAndSplitResult test_and_split_result = TestAndSplit(active_point);
 	while (!test_and_split_result.reached_endpoint) {
 		// create infinite branch
-		LinkNodes(test_and_split_result.node_index, CreateNode(), active_point.sample_end_index, INFINITY);
+		LinkNodes(test_and_split_result.node_index, CreateNode(), active_point.sample_end_index, INF);
 
 		// create suffix link for previous node
 		if (previous_node != root_) {
@@ -185,21 +201,4 @@ void SuffixTree::AppendSample(const std::string& append_sample) {
 		++active_point_.sample_end_index;
 		CanonicalizeNodeReference(&active_point_);
 	}
-}
-
-void SuffixTree::PrintTree(std::ostream& fout) const {
-	for (size_t node_index = 0; node_index < nodes_.size(); ++node_index) {
-		fout << "Node " << node_index << "\n";
-		for (LinkMapConstIterator it = nodes_[node_index].links.begin(); it != nodes_[node_index].links.end(); ++it) {
-			Link link = it->second;
-			fout << "\t" << it->first << ": " << link.target_node_index << ". sample[ " << link.sample_start_index << " - ";
-			if (link.sample_end_index != INFINITY) {
-				fout << link.sample_end_index << " ].\n";
-			} else {
-				fout << "INF ].\n";
-			}
-		}
-		fout << "\tsufflink: " << nodes_[node_index].suffix_link_node_index << "\n";
-	}
-	fout << "__________\n";
 }
