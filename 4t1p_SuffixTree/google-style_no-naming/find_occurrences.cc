@@ -1,5 +1,5 @@
 #include "find_occurrences.h"
-
+#define UNUSED_VISITOR_METHOD_ARGUMENT(expr) (void)(expr)
 FindOccurrencesTraversalVisitor::FindOccurrencesTraversalVisitor(const SuffixTree& _suffix_tree, const std::string& _pattern)
 	: suffix_tree(_suffix_tree), pattern(_pattern) {}
 
@@ -12,7 +12,7 @@ void FindOccurrencesTraversalVisitor::InitVisitor() {
 
 void FindOccurrencesTraversalVisitor::DiscoverNode(const SuffixTree::Link& in_link) {
 	int active_node = in_link.target_node_index;
-	if (pattern_end_node == 0 && pattern_index == (int)pattern.size()) {
+	if (pattern_end_node == 0 && pattern_index == static_cast<int>(pattern.size())) {
 		pattern_end_node = active_node;
 	}
 	if (pattern_end_node > 0 && suffix_tree.IsLeaf(active_node)) {
@@ -21,7 +21,7 @@ void FindOccurrencesTraversalVisitor::DiscoverNode(const SuffixTree::Link& in_li
 }
 
 void FindOccurrencesTraversalVisitor::ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link) {
-	UNUSED(in_link);
+	UNUSED_VISITOR_METHOD_ARGUMENT(in_link);
 	if (pattern_end_node > 0) {
 		if (suffix_tree.IsLeaf(return_link.target_node_index)) {
 			suffix_length -= suffix_tree.sample().size() - return_link.sample_start_index;
@@ -41,10 +41,10 @@ void FindOccurrencesTraversalVisitor::ExamineEdge(const SuffixTree::Link& link) 
 	} else if (pattern_end_node == 0) {
 		std::string sample = suffix_tree.sample();
 		int sample_start_index = link.sample_start_index;
-		int sample_end_index = std::min(link.sample_end_index, (int)sample.size());
+		int sample_end_index = std::min(link.sample_end_index, static_cast<int>(sample.size()));
 		int sample_letter_index;
 		for (sample_letter_index = sample_start_index + 1; sample_letter_index < sample_end_index; ++sample_letter_index) {
-			if (pattern_index == (int)pattern.size()) {
+			if (pattern_index == static_cast<int>(pattern.size())) {
 				suffix_length += sample_end_index - sample_letter_index;
 				break;
 			}
@@ -59,7 +59,7 @@ void FindOccurrencesTraversalVisitor::ExamineEdge(const SuffixTree::Link& link) 
 
 LinkMapConstIterator FindOccurrencesTraversalVisitor::ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it,
 		const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it) {
-	UNUSED(link_map_begin_it);
+	UNUSED_VISITOR_METHOD_ARGUMENT(link_map_begin_it);
 	if (pattern_end_node == -1) {
 		return link_map_end_it;
 	} else if (pattern_end_node == 0) {
@@ -85,6 +85,7 @@ std::vector<int> FindOccurrencesTraversalVisitor::GetOccurrences() const {
 
 std::vector<int> FindAllOccurrences(const SuffixTree& suffix_tree, const std::string& search_string) {
 	FindOccurrencesTraversalVisitor visitor(suffix_tree, search_string);
-	suffix_tree.DepthFirstSearchTraversal<FindOccurrencesTraversalVisitor>(visitor);
+	suffix_tree.DepthFirstSearchTraversal<FindOccurrencesTraversalVisitor>(&visitor);
 	return visitor.GetOccurrences();
 }
+#undef UNUSED_VISITOR_METHOD_ARGUMENT

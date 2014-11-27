@@ -1,16 +1,18 @@
 #ifndef TEST_FIND_OCCURRENCES_H
 #define TEST_FIND_OCCURRENCES_H
 
-#include <gtest/gtest.h>
-#include <algorithm>
 #include "find_occurrences.h"
+
+#include <algorithm>
+
+#include <gtest/gtest.h>
 
 void PrefixFunction(const std::string& string, std::vector<int>& prefix);
 
 class FindAllOccurrencesTest : public ::testing::Test {
 protected:
 	FindAllOccurrencesTest()
-		: string_length(1e6), sample_cycle("bca"), pattern("abc") {
+		: string_length(1e4), sample_cycle("bca"), pattern("abc") {
 		sample.reserve(string_length);
 		for (size_t cycle_index = 0; cycle_index < cycle_quantity(); ++cycle_index) {
 			sample += sample_cycle;
@@ -27,7 +29,7 @@ protected:
 		PrefixFunction(string_for_kmp, prefix_function);
 		std::vector<int> occurrences;
 		for (size_t char_index = pattern.size() + 1; char_index < string_for_kmp.size(); ++char_index) {
-			if (prefix_function[char_index] == (int)pattern.size()) {
+			if (prefix_function[char_index] == static_cast<int>(pattern.size())) {
 				occurrences.push_back(char_index - 2 * pattern.size());
 			}
 		}
@@ -57,7 +59,7 @@ void BucketSort(std::vector<int>& unsorted_vector, size_t max_value) {
 
 void PrefixFunction(const std::string& string, std::vector<int>& prefix) {
 	prefix.resize(string.length(), 0);
-	for (int index = 1; index < (int)string.length(); ++index) {
+	for (int index = 1; index < static_cast<int>(string.length()); ++index) {
 		int match_index = prefix[index-1];
 		while (match_index > 0 && string[index] != string[match_index]) {
 			match_index = prefix[match_index-1];

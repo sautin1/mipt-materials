@@ -1,10 +1,11 @@
 #ifndef TEST_SUFFIX_TREE_H
 #define TEST_SUFFIX_TREE_H
-#define UNUSED(expr) (void)(expr)
+
+#include "suffix_tree.h"
+
+#include <algorithm>
 
 #include <gtest/gtest.h>
-#include <algorithm>
-#include "suffix_tree.h"
 
 class SuffixTreeTest : public ::testing::Test {
 protected:
@@ -23,13 +24,13 @@ protected:
 		ASSERT_EQ(suffix_tree.nodes_[1].suffix_link_node_index, 0);
 		SuffixTree::Link link;
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[1].links.at('b'));
-		ASSERT_EQ(link, SuffixTree::Link(2, 0, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(2, 0, suffix_tree.INF)));
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[1].links.at('a'));
-		ASSERT_EQ(link, SuffixTree::Link(9, 1, 2));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(9, 1, 2)));
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[1].links.at('n'));
-		ASSERT_EQ(link, SuffixTree::Link(7, 2, 4));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(7, 2, 4)));
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[1].links.at('$'));
-		ASSERT_EQ(link, SuffixTree::Link(11, 6, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(11, 6, suffix_tree.INF)));
 
 		ASSERT_EQ(suffix_tree.nodes_[2].links.size(), 0);
 		ASSERT_EQ(suffix_tree.nodes_[2].suffix_link_node_index, -1);
@@ -43,9 +44,9 @@ protected:
 		ASSERT_EQ(suffix_tree.nodes_[5].links.size(), 2);
 		ASSERT_EQ(suffix_tree.nodes_[5].suffix_link_node_index, 7);
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[5].links.at('$'));
-		ASSERT_EQ(link, SuffixTree::Link(6, 6, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(6, 6, suffix_tree.INF)));
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[5].links.at('n'));
-		ASSERT_EQ(link, SuffixTree::Link(3, 4, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(3, 4, suffix_tree.INF)));
 
 		ASSERT_EQ(suffix_tree.nodes_[6].links.size(), 0);
 		ASSERT_EQ(suffix_tree.nodes_[6].suffix_link_node_index, -1);
@@ -53,9 +54,9 @@ protected:
 		ASSERT_EQ(suffix_tree.nodes_[7].links.size(), 2);
 		ASSERT_EQ(suffix_tree.nodes_[7].suffix_link_node_index, 9);
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[7].links.at('$'));
-		ASSERT_EQ(link, SuffixTree::Link(8, 6, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(8, 6, suffix_tree.INF)));
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[7].links.at('n'));
-		ASSERT_EQ(link, SuffixTree::Link(4, 4, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(4, 4, suffix_tree.INF)));
 
 		ASSERT_EQ(suffix_tree.nodes_[8].links.size(), 0);
 		ASSERT_EQ(suffix_tree.nodes_[8].suffix_link_node_index, -1);
@@ -63,9 +64,9 @@ protected:
 		ASSERT_EQ(suffix_tree.nodes_[9].links.size(), 2);
 		ASSERT_EQ(suffix_tree.nodes_[9].suffix_link_node_index, 1);
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[9].links.at('$'));
-		ASSERT_EQ(link, SuffixTree::Link(10, 6, suffix_tree.INF));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(10, 6, suffix_tree.INF)));
 		ASSERT_NO_THROW(link = suffix_tree.nodes_[9].links.at('n'));
-		ASSERT_EQ(link, SuffixTree::Link(5, 2, 4));
+		ASSERT_TRUE(link.Equals(SuffixTree::Link(5, 2, 4)));
 
 		ASSERT_EQ(suffix_tree.nodes_[10].links.size(), 0);
 		ASSERT_EQ(suffix_tree.nodes_[10].suffix_link_node_index, -1);
@@ -128,7 +129,7 @@ TEST_F(SuffixTreeTest, InitDummyTest) {
 		suffix_tree.InitDummy(sample_start_index, sample_start_index + 1);
 		SuffixTree::Link new_link;
 		ASSERT_NO_THROW(new_link = suffix_tree.nodes_[suffix_tree.dummy_].links.at(suffix_tree.sample_[sample_start_index]));
-		ASSERT_EQ(old_link, new_link);
+		ASSERT_TRUE(old_link.Equals(new_link));
 		ASSERT_EQ(suffix_tree.nodes_[suffix_tree.dummy_].links.size(), old_link_quantity);
 	}
 }
@@ -145,9 +146,7 @@ TEST_F(SuffixTreeTest, InitTreeTest) {
 	suffix_tree.InitTree();
 	CheckCorrectDummy();
 	CheckCorrectRoot();
-	ASSERT_EQ(suffix_tree.active_point_.closest_ancestor, suffix_tree.root_);
-	ASSERT_EQ(suffix_tree.active_point_.sample_start_index, 0);
-	ASSERT_EQ(suffix_tree.active_point_.sample_end_index, 0);
+	ASSERT_TRUE(suffix_tree.active_point_.Equals(SuffixTree::NodeReference(suffix_tree.root_, 0, 0)));
 }
 
 TEST_F(SuffixTreeTest, LinkNodesTest) {
@@ -156,9 +155,7 @@ TEST_F(SuffixTreeTest, LinkNodesTest) {
 	ASSERT_EQ(suffix_tree.nodes_[suffix_tree.root_].links.size(), 1);
 	SuffixTree::Link link;
 	ASSERT_NO_THROW(link = suffix_tree.nodes_[suffix_tree.root_].links.at(suffix_tree.sample_[0]));
-	ASSERT_EQ(link.target_node_index, suffix_tree.dummy_);
-	ASSERT_EQ(link.sample_start_index, 0);
-	ASSERT_EQ(link.sample_end_index, 1);
+	ASSERT_TRUE(link.Equals(SuffixTree::Link(suffix_tree.dummy_, 0, 1)));
 }
 
 TEST_F(SuffixTreeTest, HasLinkTest) {
@@ -178,9 +175,7 @@ TEST_F(SuffixTreeTest, GetLinkTest) {
 	suffix_tree.LinkNodes(suffix_tree.root_, suffix_tree.dummy_, 0, 1);
 	SuffixTree::Link link;
 	ASSERT_NO_THROW(link = suffix_tree.GetLink(suffix_tree.root_, suffix_tree.sample_[0]));
-	ASSERT_EQ(link.target_node_index, suffix_tree.dummy_);
-	ASSERT_EQ(link.sample_start_index, 0);
-	ASSERT_EQ(link.sample_end_index, 1);
+	ASSERT_TRUE(link.Equals(SuffixTree::Link(suffix_tree.dummy_, 0, 1)));
 	ASSERT_THROW(suffix_tree.GetLink(suffix_tree.dummy_, suffix_tree.sample_[0]), std::out_of_range);
 	suffix_tree.nodes_[suffix_tree.root_].links.erase(suffix_tree.sample_[0]);
 	ASSERT_THROW(suffix_tree.GetLink(suffix_tree.root_, suffix_tree.sample_[0]), std::out_of_range);
@@ -201,15 +196,15 @@ TEST_F(SuffixTreeTest, CanonicalizeNodeReferenceSimpleTest) {
 
 	SuffixTree::NodeReference node_reference(0, 0, old_sample.size() / 2);
 	suffix_tree.CanonicalizeNodeReference(&node_reference);
-	ASSERT_EQ(SuffixTree::NodeReference(0, 0, old_sample.size() / 2), node_reference);
+	ASSERT_TRUE(node_reference.Equals(SuffixTree::NodeReference(0, 0, old_sample.size() / 2)));
 
 	node_reference = SuffixTree::NodeReference(0, 0, old_sample.size());
 	suffix_tree.CanonicalizeNodeReference(&node_reference);
-	ASSERT_EQ(SuffixTree::NodeReference(1, old_sample.size(), old_sample.size()), node_reference);
+	ASSERT_TRUE(node_reference.Equals(SuffixTree::NodeReference(1, old_sample.size(), old_sample.size())));
 
 	node_reference = SuffixTree::NodeReference(0, 0, 3 * old_sample.size() / 2);
 	suffix_tree.CanonicalizeNodeReference(&node_reference);
-	ASSERT_EQ(SuffixTree::NodeReference(1, old_sample.size(), 3 * old_sample.size() / 2), node_reference);
+	ASSERT_TRUE(node_reference.Equals(SuffixTree::NodeReference(1, old_sample.size(), 3 * old_sample.size() / 2)));
 }
 
 TEST_F(SuffixTreeTest, CanonicalizeNodeReferenceNormalTest) {
@@ -227,9 +222,9 @@ TEST_F(SuffixTreeTest, CanonicalizeNodeReferenceNormalTest) {
 	for (size_t string_end_index = 0; string_end_index <= suffix_tree.sample_.size(); ++string_end_index) {
 		SuffixTree::NodeReference node_reference(0, 0, string_end_index);
 		suffix_tree.CanonicalizeNodeReference(&node_reference);
-		ASSERT_EQ(node_reference.closest_ancestor, string_end_index / old_sample.size());
-		ASSERT_EQ(node_reference.sample_start_index, node_reference.closest_ancestor * old_sample.size());
-		ASSERT_EQ(node_reference.sample_end_index, string_end_index);
+		SuffixTree::NodeReference correct_node_reference(string_end_index / old_sample.size(), node_reference.closest_ancestor * old_sample.size(),
+														 string_end_index);
+		ASSERT_TRUE(node_reference.Equals(correct_node_reference));
 	}
 }
 
@@ -248,28 +243,28 @@ TEST_F(SuffixTreeTest, TestAndSplitTest) {
 	SuffixTree::NodeReference node_reference(0, 0, 0);
 	SuffixTree::TestAndSplitResult test_split_result;
 	test_split_result = suffix_tree.TestAndSplit(node_reference);
-	ASSERT_EQ(test_split_result, SuffixTree::TestAndSplitResult(true, 0));
+	ASSERT_TRUE(test_split_result.Equals(SuffixTree::TestAndSplitResult(true, 0)));
 	ASSERT_EQ(old_nodes_size, suffix_tree.nodes_.size());
 
 	// explicit node, link doesn't exist
 	node_reference.sample_start_index = first_sample_part.size() / 2;
 	node_reference.sample_end_index = first_sample_part.size() / 2;
 	test_split_result = suffix_tree.TestAndSplit(node_reference);
-	ASSERT_EQ(test_split_result, SuffixTree::TestAndSplitResult(false, 0));
+	ASSERT_TRUE(test_split_result.Equals(SuffixTree::TestAndSplitResult(false, 0)));
 	ASSERT_EQ(old_nodes_size, suffix_tree.nodes_.size());
 
 	// implicit node, link exists
 	node_reference.sample_start_index = 0;
 	node_reference.sample_end_index = first_sample_part.size() / 2 - 1;
 	test_split_result = suffix_tree.TestAndSplit(node_reference);
-	ASSERT_EQ(test_split_result, SuffixTree::TestAndSplitResult(true, 0));
+	ASSERT_TRUE(test_split_result.Equals(SuffixTree::TestAndSplitResult(true, 0)));
 	ASSERT_EQ(old_nodes_size, suffix_tree.nodes_.size());
 
 	// implicit node, link doesn't exist
 	node_reference.sample_start_index = 0;
 	node_reference.sample_end_index = first_sample_part.size() / 2;
 	test_split_result = suffix_tree.TestAndSplit(node_reference);
-	ASSERT_EQ(test_split_result, SuffixTree::TestAndSplitResult(false, old_nodes_size));
+	ASSERT_TRUE(test_split_result.Equals(SuffixTree::TestAndSplitResult(false, old_nodes_size)));
 	ASSERT_EQ(suffix_tree.nodes_.size() - old_nodes_size, 1); // one node was created because of split
 	SuffixTree::Link first_link_part, second_link_part;
 	ASSERT_NO_THROW(first_link_part = suffix_tree.nodes_[0].links.at(suffix_tree.sample_[first_sample_part.size()]));
@@ -287,7 +282,7 @@ TEST_F(SuffixTreeTest, AddNextLetterTestZero) {
 	int old_nodes_size = suffix_tree.nodes_.size();
 	suffix_tree.sample_ += "a";
 	SuffixTree::NodeReference node_reference = suffix_tree.AddNextLetter(suffix_tree.active_point_);
-	ASSERT_EQ(node_reference, SuffixTree::NodeReference(suffix_tree.root_, 1, 1));
+	ASSERT_TRUE(node_reference.Equals(SuffixTree::NodeReference(suffix_tree.root_, 1, 1)));
 	ASSERT_EQ(suffix_tree.nodes_.size(), old_nodes_size); // no new nodes created
 	CheckCorrectDummy();
 	CheckCorrectRoot();
@@ -298,7 +293,7 @@ TEST_F(SuffixTreeTest, AddNextLetterTestOne) {
 	suffix_tree.sample_ = "a";
 	suffix_tree.InitDummy(0, suffix_tree.sample_.size());
 	SuffixTree::NodeReference node_reference = suffix_tree.AddNextLetter(suffix_tree.active_point_);
-	ASSERT_EQ(node_reference, SuffixTree::NodeReference(suffix_tree.dummy_, 0, 0));
+	ASSERT_TRUE(node_reference.Equals(SuffixTree::NodeReference(suffix_tree.dummy_, 0, 0)));
 	ASSERT_EQ(suffix_tree.nodes_.size() - old_nodes_size, 1); // one node was created
 	CheckCorrectDummy();
 	CheckCorrectRoot();
@@ -310,7 +305,7 @@ TEST_F(SuffixTreeTest, AddNextLetterTestTwo) {
 	suffix_tree.sample_ += "b";
 	suffix_tree.InitDummy(0, suffix_tree.sample_.size());
 	SuffixTree::NodeReference node_reference = suffix_tree.AddNextLetter(suffix_tree.active_point_);
-	ASSERT_EQ(node_reference, SuffixTree::NodeReference(suffix_tree.dummy_, 2, 2));
+	ASSERT_TRUE(node_reference.Equals(SuffixTree::NodeReference(suffix_tree.dummy_, 2, 2)));
 	ASSERT_EQ(suffix_tree.nodes_.size() - old_nodes_size, 3); // 1 split node + 2 inf-branch node
 	CheckCorrectDummy();
 	CheckCorrectRoot();
@@ -331,15 +326,15 @@ TEST_F(SuffixTreeTest, GetLinkIteratorTest) {
 	suffix_tree.AppendSample("abc");
 	SuffixTree::LinkMapConstIterator it = suffix_tree.GetLinkIterator(suffix_tree.dummy_, 'a');
 	ASSERT_NE(it, suffix_tree.nodes_[suffix_tree.dummy_].links.end());
-	ASSERT_EQ(it->second, suffix_tree.nodes_[suffix_tree.dummy_].links['a']);
+	ASSERT_TRUE(it->second.Equals(suffix_tree.nodes_[suffix_tree.dummy_].links['a']));
 
 	it = suffix_tree.GetLinkIterator(suffix_tree.dummy_, 'b');
 	ASSERT_NE(it, suffix_tree.nodes_[suffix_tree.dummy_].links.end());
-	ASSERT_EQ(it->second, suffix_tree.nodes_[suffix_tree.dummy_].links['b']);
+	ASSERT_TRUE(it->second.Equals(suffix_tree.nodes_[suffix_tree.dummy_].links['b']));
 
 	it = suffix_tree.GetLinkIterator(suffix_tree.dummy_, 'c');
 	ASSERT_NE(it, suffix_tree.nodes_[suffix_tree.dummy_].links.end());
-	ASSERT_EQ(it->second, suffix_tree.nodes_[suffix_tree.dummy_].links['c']);
+	ASSERT_TRUE(it->second.Equals(suffix_tree.nodes_[suffix_tree.dummy_].links['c']));
 
 	it = suffix_tree.GetLinkIterator(suffix_tree.dummy_, suffix_tree.non_existing_char_);
 	ASSERT_EQ(it, suffix_tree.nodes_[suffix_tree.dummy_].links.end());
@@ -375,6 +370,7 @@ TEST_F(SuffixTreeTest, SizeTest) {
 	}
 }
 
+#define UNUSED_VISITOR_METHOD_ARGUMENT(expr) (void)(expr)
 class LexicalDFSTraversalVisitor {
 private:
 	typedef SuffixTree::LinkMapConstIterator LinkMapConstIterator;
@@ -390,34 +386,35 @@ public:
 	}
 
 	void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link) {
-		UNUSED(return_link);
-		UNUSED(in_link);
+		UNUSED_VISITOR_METHOD_ARGUMENT(return_link);
+		UNUSED_VISITOR_METHOD_ARGUMENT(in_link);
 	}
 
 	void ExamineEdge(const SuffixTree::Link& link) {
-		UNUSED(link);
+		UNUSED_VISITOR_METHOD_ARGUMENT(link);
 	}
 
 	LinkMapConstIterator ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it,
 			const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it) {
-		UNUSED(active_node);
-		UNUSED(link_map_begin_it);
-		UNUSED(link_map_end_it);
+		UNUSED_VISITOR_METHOD_ARGUMENT(active_node);
+		UNUSED_VISITOR_METHOD_ARGUMENT(link_map_begin_it);
+		UNUSED_VISITOR_METHOD_ARGUMENT(link_map_end_it);
 		return link_map_next_letter_it;
 	}
 
 	void FinishNode(const SuffixTree::Link& in_link) {
-		UNUSED(in_link);
+		UNUSED_VISITOR_METHOD_ARGUMENT(in_link);
 	}
 
 	std::vector<int> traversal;
 };
+#undef UNUSED_VISITOR_METHOD_ARGUMENT
 
 TEST_F(SuffixTreeTest, DepthFirstSearchTraversalTest) {
 	suffix_tree.AppendSample("banana$");
 	std::vector<int> correct_traversal {1, 11, 9, 10, 5, 6, 3, 2, 7, 8, 4};
 	LexicalDFSTraversalVisitor visitor(suffix_tree);
-	suffix_tree.DepthFirstSearchTraversal<LexicalDFSTraversalVisitor>(visitor);
+	suffix_tree.DepthFirstSearchTraversal<LexicalDFSTraversalVisitor>(&visitor);
 	ASSERT_EQ(correct_traversal.size(), visitor.traversal.size());
 	for (size_t node_index = 0; node_index < correct_traversal.size(); ++node_index) {
 		ASSERT_EQ(correct_traversal[node_index], visitor.traversal[node_index]);

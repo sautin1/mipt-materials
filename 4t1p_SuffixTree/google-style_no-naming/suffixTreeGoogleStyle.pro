@@ -4,9 +4,9 @@ CONFIG -= app_bundle
 CONFIG -= qt
 CONFIG += c++11
 
-SOURCES += main.cpp \
-    suffix_tree.cpp \
-    find_occurrences.cpp
+SOURCES += main.cc \
+    suffix_tree.cc \
+    find_occurrences.cc
 
 HEADERS += \
     suffix_tree.h \
