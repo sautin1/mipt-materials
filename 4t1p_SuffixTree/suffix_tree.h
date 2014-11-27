@@ -92,7 +92,7 @@ public:
 	void DepthFirstSearchTraversal(TraversalVisitor& visitor) const;
 
 private:
-	// testers of private methods
+	// testers for private methods
 	friend class SuffixTreeTest;
 	FRIEND_TEST(SuffixTreeTest, CreateNodeTest);
 	FRIEND_TEST(SuffixTreeTest, InitDummyTest);
@@ -107,7 +107,7 @@ private:
 	FRIEND_TEST(SuffixTreeTest, AddNextLetterTestZero);
 	FRIEND_TEST(SuffixTreeTest, AddNextLetterTestOne);
 	FRIEND_TEST(SuffixTreeTest, AddNextLetterTestTwo);
-	// testers of public methods
+	// testers for public methods
 	FRIEND_TEST(SuffixTreeTest, UpdateNonExistingCharTest);
 	FRIEND_TEST(SuffixTreeTest, AppendSampleTest);
 	FRIEND_TEST(SuffixTreeTest, GetLinkIteratorTest);
@@ -115,6 +115,8 @@ private:
 	FRIEND_TEST(SuffixTreeTest, sampleTest);
 	FRIEND_TEST(SuffixTreeTest, SizeTest);
 	FRIEND_TEST(SuffixTreeTest, DepthFirstSearchTraversalTest);
+	FRIEND_TEST(FindAllOccurrencesTest, StressTestCyclicString);
+	FRIEND_TEST(FindAllOccurrencesTest, StressTestShuffledString);
 };
 
 template <typename TraversalVisitor>

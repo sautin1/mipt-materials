@@ -1,5 +1,6 @@
 #ifndef TEST_SUFFIX_TREE_H
 #define TEST_SUFFIX_TREE_H
+#define UNUSED(expr) (void)(expr)
 
 #include <gtest/gtest.h>
 #include <algorithm>
@@ -7,14 +8,6 @@
 
 class SuffixTreeTest : public ::testing::Test {
 protected:
-	virtual void SetUp() {
-		// will be called right before each test
-	}
-
-	virtual void TearDown() {
-		// will be called right after each test
-	}
-
 	void CheckBananaTree() {
 		ASSERT_EQ(suffix_tree.nodes_.size(), 12);
 
@@ -396,14 +389,26 @@ public:
 		traversal.push_back(in_link.target_node_index);
 	}
 
-	void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link) {}
-	void ExamineEdge(const SuffixTree::Link& link) {}
+	void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link) {
+		UNUSED(return_link);
+		UNUSED(in_link);
+	}
+
+	void ExamineEdge(const SuffixTree::Link& link) {
+		UNUSED(link);
+	}
+
 	LinkMapConstIterator ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it,
 			const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it) {
+		UNUSED(active_node);
+		UNUSED(link_map_begin_it);
+		UNUSED(link_map_end_it);
 		return link_map_next_letter_it;
 	}
 
-	void FinishNode(const SuffixTree::Link& in_link) {}
+	void FinishNode(const SuffixTree::Link& in_link) {
+		UNUSED(in_link);
+	}
 
 	std::vector<int> traversal;
 };
@@ -418,11 +423,5 @@ TEST_F(SuffixTreeTest, DepthFirstSearchTraversalTest) {
 		ASSERT_EQ(correct_traversal[node_index], visitor.traversal[node_index]);
 	}
 }
-
-int start_testing(int argc, char** argv) {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}
-
 
 #endif // TEST_SUFFIX_TREE_H
