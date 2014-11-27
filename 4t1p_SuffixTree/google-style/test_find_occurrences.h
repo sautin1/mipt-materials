@@ -21,7 +21,7 @@ void PrefixFunction(const std::string& string, std::vector<int>& prefix_function
 class FindAllOccurrencesTest : public ::testing::Test {
  protected:
   FindAllOccurrencesTest()
-    : string_length_(1e4), sample_cycle_("bca"), pattern_("abc"), occurrences_() {
+    : string_length_(1e6), sample_cycle_("bca"), pattern_("abc"), occurrences_() {
     sample_.reserve(string_length_);
     for (size_t cycle_index = 0; cycle_index < CycleQuantity(); ++cycle_index) {
       sample_ += sample_cycle_;
