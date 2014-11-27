@@ -1,3 +1,16 @@
+// Copyright 2014, MIPT
+// All rights reserved.
+//
+// Author: sautin1@yandex.ru (Andrew Sautin)
+//
+// The Suffix Tree C++ Library Tester
+//
+// This file defines the public API for working with suffix tree.
+//
+// For building the suffix tree Ukkonen's algorithm is used.
+//
+// Method DepthFirstSearchTraversal() is created for users to solve different problems on strings.
+
 #include "suffix_tree.h"
 
 SuffixTree::Link::Link()
@@ -134,7 +147,6 @@ SuffixTree::Link SuffixTree::GetLink(int node_index, char letter) const {
 	return link;
 }
 
-// if v is explicit and ==0 then returns v. Otherwise, returns closest ancestor of v
 void SuffixTree::CanonicalizeNodeReference(NodeReference* node_reference) const {
 	if (node_reference->sample_end_index == node_reference->sample_start_index) {
 		// explicit node
@@ -172,13 +184,12 @@ SuffixTree::TestAndSplitResult SuffixTree::TestAndSplit(const NodeReference& nod
 	}
 }
 
-// runs through the nodes between active_point till end_point and adds new link. Returns end_point.
 SuffixTree::NodeReference SuffixTree::AddNextLetter(NodeReference active_point) {
 	int previous_node = root_;
 	TestAndSplitResult test_and_split_result = TestAndSplit(active_point);
 	while (!test_and_split_result.reached_endpoint) {
 		// create infinite branch
-		LinkNodes(test_and_split_result.node_index, CreateNode(), active_point.sample_end_index, INF);
+		LinkNodes(test_and_split_result.node_index, CreateNode(), active_point.sample_end_index, kInfinity);
 
 		// create suffix link for previous node
 		if (previous_node != root_) {
@@ -186,7 +197,7 @@ SuffixTree::NodeReference SuffixTree::AddNextLetter(NodeReference active_point) 
 		}
 		previous_node = test_and_split_result.node_index;
 
-		// go by suffix_link to next vertex
+		// go through suffix_link to next vertex
 		active_point.closest_ancestor = nodes_[active_point.closest_ancestor].suffix_link_node_index;
 		CanonicalizeNodeReference(&active_point);
 
