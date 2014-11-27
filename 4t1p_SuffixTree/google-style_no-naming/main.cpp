@@ -1,5 +1,6 @@
-#include "test_find_occurrences.h"
+#include <iostream>
 #include "test_suffix_tree.h"
+#include "test_find_occurrences.h"
 
 int test(int argc, char** argv) {
 	::testing::InitGoogleTest(&argc, argv);
