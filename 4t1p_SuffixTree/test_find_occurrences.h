@@ -10,7 +10,8 @@ void PrefixFunction(const std::string& string, std::vector<int>& prefix);
 class FindAllOccurrencesTest : public ::testing::Test {
 protected:
 	FindAllOccurrencesTest()
-		: string_length(1e3), sample_cycle("bca"), pattern("abc") {
+		: string_length(1e6), sample_cycle("bca"), pattern("abc") {
+		sample.reserve(string_length);
 		for (size_t cycle_index = 0; cycle_index < cycle_quantity(); ++cycle_index) {
 			sample += sample_cycle;
 		}
@@ -21,7 +22,7 @@ protected:
 	}
 
 	std::vector<int> FindAllOccurrencesKMP() {
-		std::string string_for_kmp = pattern + "$" + sample;
+		std::string string_for_kmp(pattern + "$" + sample);
 		std::vector<int> prefix_function;
 		PrefixFunction(string_for_kmp, prefix_function);
 		std::vector<int> occurrences;

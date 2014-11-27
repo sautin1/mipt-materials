@@ -86,7 +86,7 @@ void SuffixTree::InitTree() {
 	nodes_[root_].suffix_link_node_index = dummy_;
 }
 
-std::string SuffixTree::sample() const {
+const std::string& SuffixTree::sample() const {
 	return sample_;
 }
 
@@ -109,13 +109,8 @@ SuffixTree::Link SuffixTree::GetLink(int node_index, char letter) const {
 }
 
 bool SuffixTree::HasLink(int node_index, char letter) const {
-	bool has_link = true;
-	try {
-		GetLink(node_index, letter);
-	} catch (const std::out_of_range& exception) {
-		has_link = false;
-	}
-	return has_link;
+	LinkMapConstIterator link_map_letter_it = nodes_[node_index].links.find(letter);
+	return link_map_letter_it != nodes_[node_index].links.end();
 }
 
 SuffixTree::LinkMapConstIterator SuffixTree::GetLinkIterator(int node_index, char letter) const {

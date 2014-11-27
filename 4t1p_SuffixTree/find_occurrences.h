@@ -1,5 +1,6 @@
 #ifndef SUBSTRINGS_H
 #define SUBSTRINGS_H
+#define UNUSED(expr) (void)(expr)
 
 #include <vector>
 #include "suffix_tree.h"

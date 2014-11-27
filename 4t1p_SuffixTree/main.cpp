@@ -12,4 +12,3 @@ int main(int argc, char** argv)
 	int test_result = test(argc, argv);
 	return test_result;
 }
-

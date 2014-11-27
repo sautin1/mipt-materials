@@ -84,7 +84,7 @@ public:
 	// API for visitor
 	LinkMapConstIterator GetLinkIterator(int node_index, char letter) const;
 	bool IsLeaf(int node_index) const;
-	std::string sample() const;
+	const std::string& sample() const;
 	char non_existing_char() const;
 	size_t Size() const;
 

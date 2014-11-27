@@ -21,6 +21,7 @@ void FindOccurrencesTraversalVisitor::DiscoverNode(const SuffixTree::Link& in_li
 }
 
 void FindOccurrencesTraversalVisitor::ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link) {
+	UNUSED(in_link);
 	if (pattern_end_node > 0) {
 		if (suffix_tree.IsLeaf(return_link.target_node_index)) {
 			suffix_length -= suffix_tree.sample().size() - return_link.sample_start_index;
@@ -58,6 +59,7 @@ void FindOccurrencesTraversalVisitor::ExamineEdge(const SuffixTree::Link& link) 
 
 LinkMapConstIterator FindOccurrencesTraversalVisitor::ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it,
 		const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it) {
+	UNUSED(link_map_begin_it);
 	if (pattern_end_node == -1) {
 		return link_map_end_it;
 	} else if (pattern_end_node == 0) {
