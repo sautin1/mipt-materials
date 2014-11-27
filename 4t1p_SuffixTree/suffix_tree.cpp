@@ -26,18 +26,27 @@ bool SuffixTree::NodeReference::operator == (const NodeReference& node_reference
 	return is_equal;
 }
 
-SuffixTree::TestAndSplitResult::TestAndSplitResult(bool _is_split, int _node_index)
-	: reached_endpoint(_is_split), node_index(_node_index) {}
+SuffixTree::TestAndSplitResult::TestAndSplitResult() {}
+
+SuffixTree::TestAndSplitResult::TestAndSplitResult(bool _reached_endpoint, int _node_index)
+	: reached_endpoint(_reached_endpoint), node_index(_node_index) {}
+
+bool SuffixTree::TestAndSplitResult::operator == (const TestAndSplitResult& test_split_result) const {
+	return (node_index == test_split_result.node_index) && (reached_endpoint == test_split_result.reached_endpoint);
+}
 
 SuffixTree::DepthFirstSearchStackItem::DepthFirstSearchStackItem(const Link& _enter_link, LinkMapConstIterator _next_link_letter_it)
 	: enter_link(_enter_link), next_link_letter_it(_next_link_letter_it) {}
 
+SuffixTree::SuffixTree()
+	: sample_(), non_existing_char_(1) {
+	InitTree();
+}
+
 SuffixTree::SuffixTree(const std::string& sample)
-	: sample_(sample), non_existing_char_(1) {
-	InitLetterSet(0, sample_.size());
-	UpdateNonExistingChar();
-	sample_ += non_existing_char_;
-	BuildTree();
+	: sample_(), non_existing_char_(1) {
+	InitTree();
+	AppendSample(sample + non_existing_char_);
 }
 
 int SuffixTree::CreateNode() {
@@ -179,15 +188,6 @@ SuffixTree::NodeReference SuffixTree::AddNextLetter(NodeReference active_point) 
 		nodes_[previous_node].suffix_link_node_index = test_and_split_result.node_index;
 	}
 	return active_point;
-}
-
-void SuffixTree::BuildTree() {
-	InitTree();
-	for (size_t letter_index = 0; letter_index < sample_.size(); ++letter_index) {
-		active_point_ = AddNextLetter(active_point_);
-		++active_point_.sample_end_index;
-		CanonicalizeNodeReference(&active_point_);
-	}
 }
 
 void SuffixTree::AppendSample(const std::string& append_sample) {

@@ -42,7 +42,9 @@ private:
 	struct TestAndSplitResult {
 		bool reached_endpoint;
 		int node_index; // if reached_endpoint is true, then node_index is end_point
-		TestAndSplitResult(bool _is_split, int _node_index);
+		TestAndSplitResult();
+		TestAndSplitResult(bool _reached_endpoint, int _node_index);
+		bool operator == (const TestAndSplitResult& test_split_result) const;
 	};
 
 	struct DepthFirstSearchStackItem {
@@ -64,7 +66,6 @@ private:
 	TestAndSplitResult TestAndSplit(const NodeReference& node_reference);
 
 	NodeReference AddNextLetter(NodeReference active_point);
-	void BuildTree();
 
 	std::vector<Node> nodes_;
 	std::set<char> letter_set_;
@@ -73,7 +74,9 @@ private:
 	NodeReference active_point_;
 	char non_existing_char_;
 public:
+	SuffixTree();
 	SuffixTree(const std::string& sample);
+	SuffixTree(const SuffixTree& copy_tree);
 	void UpdateNonExistingChar();
 
 	void AppendSample(const std::string& append_sample);
@@ -89,6 +92,8 @@ public:
 	void DepthFirstSearchTraversal(TraversalVisitor& visitor) const;
 
 private:
+	// testers of private methods
+	friend class SuffixTreeTest;
 	FRIEND_TEST(SuffixTreeTest, CreateNodeTest);
 	FRIEND_TEST(SuffixTreeTest, InitDummyTest);
 	FRIEND_TEST(SuffixTreeTest, InitLetterSetTest);
@@ -99,8 +104,17 @@ private:
 	FRIEND_TEST(SuffixTreeTest, CanonicalizeNodeReferenceSimpleTest);
 	FRIEND_TEST(SuffixTreeTest, CanonicalizeNodeReferenceNormalTest);
 	FRIEND_TEST(SuffixTreeTest, TestAndSplitTest);
-
+	FRIEND_TEST(SuffixTreeTest, AddNextLetterTestZero);
+	FRIEND_TEST(SuffixTreeTest, AddNextLetterTestOne);
+	FRIEND_TEST(SuffixTreeTest, AddNextLetterTestTwo);
+	// testers of public methods
+	FRIEND_TEST(SuffixTreeTest, UpdateNonExistingCharTest);
+	FRIEND_TEST(SuffixTreeTest, AppendSampleTest);
+	FRIEND_TEST(SuffixTreeTest, GetLinkIteratorTest);
+	FRIEND_TEST(SuffixTreeTest, IsLeafTest);
+	FRIEND_TEST(SuffixTreeTest, sampleTest);
 	FRIEND_TEST(SuffixTreeTest, SizeTest);
+	FRIEND_TEST(SuffixTreeTest, DepthFirstSearchTraversalTest);
 };
 
 template <typename TraversalVisitor>
