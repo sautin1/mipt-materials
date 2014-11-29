@@ -160,7 +160,7 @@ std::vector<int> FindAllOccurrences(const SuffixTree& suffix_tree, const std::st
 ```
 
 **Описание**: находит все вхождения строки `search_string` в строке `suffix_tree.sample()`, по которой построено суффиксное дерево `suffix_tree`. При этом строка, по которой построено `suffix_tree`, должна завершаться символом конца строки.
-Возвращает вектор индексов строки `suffix_tree.sample()`, задающих начало вхождений 'search_string' в нее.
+Возвращает вектор индексов строки `suffix_tree.sample()`, задающих начало вхождений `search_string` в нее.
 
 ## Встраивание
 --------------
