@@ -25,18 +25,21 @@
 -----------------------
 ### Класс `SuffixTree`
 Объект класса `SuffixTree` может быть сконструирован 3-мя способами:
+
 1. Конструктор по умолчанию. Создает суффиксное дерево для пустой строки:
-```c++
-SuffixTree()
-```
+    ```c++
+    SuffixTree()
+    ```
+    
 2. Конструктор копирования. Полностью копирует суффиксное дерево `suffix_tree`:
-```c++
-SuffixTree(const SuffixTree& suffix_tree)
-```
+    ```c++
+    SuffixTree(const SuffixTree& suffix_tree)
+    ```
+    
 3. Конструктор, принимающий строку в качестве аргумента. Строит суффиксное дерево по строке `sample`, добавляя в конец символ конца строки (символ, отличный от любого, содержащегося в `sample`):
-```c++
-SuffixTree(const std::string& sample)
-```
+    ```c++
+    SuffixTree(const std::string& sample)
+    ```
 
 Далее считаем, что суффиксное дерево построено по строке `sample`.
 
@@ -123,20 +126,20 @@ template <typename TraversalVisitor> void DepthFirstSearchTraversal(TraversalVis
 * последний выход из вершины, т.е. выход из вершины без последующего в нее возвращения.
 
 `TraversalVisitor` - класс, у которого должны быть определены следующие методы:
-1. `void InitVisitor()`
-  Вызывается перед началом обхода.
-2. `void DiscoverNode(const SuffixTree::Link& in_link)`
-  Вызывается при посещении некоторой вершины `node` в первый раз (т.е. при переходе от ее родителя `parent`). 
+
+1. `void InitVisitor()`. Вызывается перед началом обхода.
+  
+2. `void DiscoverNode(const SuffixTree::Link& in_link)`. Вызывается при посещении некоторой вершины `node` в первый раз (т.е. при переходе от ее родителя `parent`). 
   `in_link` - ребро, по которому перешли в вершину `node` из ее родителя `parent`.
-3. `void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link)`
-  Вызывается при возвращении в некоторую вершину `node` из потомка `son`. 
+  
+3. `void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link)`. Вызывается при возвращении в некоторую вершину `node` из потомка `son`. 
   `return_link` - ребро из вершины `node` в потомка `son`.
   `in_link` - ребро из родителя вершины `node` в вершину `node`.
-4. `void ExamineEdge(const SuffixTree::Link& link)`
-  Вызывается перед переходом по ребру от родителя к потомку.
+  
+4. `void ExamineEdge(const SuffixTree::Link& link)`. Вызывается перед переходом по ребру от родителя к потомку.
   `link` - ребро, по которому совершается переход.
-5. `LinkMapConstIterator ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it, const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it)`
-Вызывается при выборе ребра, по которому следует перейти из текущей вершины `active_node`.
+  
+5. `LinkMapConstIterator ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it, const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it)`. Вызывается при выборе ребра, по которому следует перейти из текущей вершины `active_node`.
 Пусть `old_link` - это последнее ребро, по которому был совершен переход из вершины `active_node` в потомка `active_node`. Если ранее таких переходов из вершины `active_node` сделано не было, то `old_link` не определено.
 `active_node` - текущая вершина в обходе суффиксного дерева.
 `link_map_begin_it` - `const_interator` класса `std::map<char, Link>` на исходящее из вершины `active_node` ребро, метка которого лексикографически меньше меток всех исходящих из вершины `active_node` ребер.
@@ -144,8 +147,8 @@ template <typename TraversalVisitor> void DepthFirstSearchTraversal(TraversalVis
   * которое совпадает с `link_map_begin_it`, если посещение вершины `active_node` произошло в первый раз;
   * которое совпадает с `link_map_end_it`, если `old_link` определено и его метка является лексикографически наибольшей среди меток всех исходящих из `active_node` ребер (лексикографически следующего ребра из этой вершины не существует).
   * метка которого лексикографически следует за меткой `old_link` среди меток всех исходящих из `active_node` ребер, в ином случае. (Говорим, что строка `s1` лексикографически следует за строкой `s2` среди строк множества `S`, когда строка `s2` находится сразу после строки `s1` в массиве всех строк из `S`, отсортированном лексикографически).
-6. `void FinishNode(const SuffixTree::Link& in_link)`
-  Вызывается перед последним выходом из вершины `node`.
+  
+6. `void FinishNode(const SuffixTree::Link& in_link)`. Вызывается перед последним выходом из вершины `node`.
   `in_link` - ребро из родителя вершины `node` в вершину `node`.
 
 **Сложность**: зависит от поведения метода `TraversalVisitor::ChooseNextNeighbour`. При реализации этого метода для обычного обхода графа - O(длина sample).
@@ -162,16 +165,20 @@ std::vector<int> FindAllOccurrences(const SuffixTree& suffix_tree, const std::st
 ## Встраивание
 --------------
 **Для пользователей Linux:**
+
 1. Скачать архив 'libstringalgo_linux.zip' из директории 'libstringalgo' или [по ссылке](https://github.com/sautin1/2c1t-prog/blob/4t1p_SuffixTree/4t1p_SuffixTree/libstringalgo/libstringalgo_linux.zip?raw=true).
+
 2. В терминале перейти в директорию, в которую был скачан архив, разархивировать файл 'libstringalgo_linux.zip':
-```bash
-$ unzip libstringalgo_linux.zip
-```
+    ```bash
+    $ unzip libstringalgo_linux.zip
+    ```
+
 3. Во всех файлах проекта, где предполагается использование функционала библиотеки, подключить соответствующие header-файлы библиотеки:
-```c++
-#include "libstringalgo/suffix_tree.h"
-#include "libstringalgo/find_occurrences.h"
-```
+    ```c++
+    #include "libstringalgo/suffix_tree.h"
+    #include "libstringalgo/find_occurrences.h"
+    ```
+
 4. Подключить библиотеку в IDE:
   * *Для Qt Creator.* В окне проекта ПКМ по названию проекта -> Add Library... -> External Library -> В поле 'Library file' вписать путь до файла 'libstringalgo.a', в поле 'Include path' вписать путь до директории, в которую был распакован архив 'libstringalgo.zip'. Также добавить в файл проекта (.pro) строку:
   ```c++
@@ -183,10 +190,13 @@ $ g++ -std=c++11 -I ${PATH_TO_LIBRARY}/libstringalgo/ ${FILENAME}.cpp -L ${PATH_
 ```
 
 **Для пользователей Windows:**
+
 1. Скачать архив 'libstringalgo_win.zip' из директории 'libstringalgo' или [по ссылке](https://github.com/sautin1/2c1t-prog/blob/4t1p_SuffixTree/4t1p_SuffixTree/libstringalgo/libstringalgo_win.zip?raw=true).
+
 2. Разархивировать файл 'libstringalgo_win.zip' в директорию того проекта, где предполагается использование библиотеки.
+
 3. В настройках IDE включить поддержку C++11. Добавить файлы библиотеки в список файлов проекта. Во всех файлах проекта, где предполагается использование функционала библиотеки, подключить соответствующие header-файлы библиотеки:
-```c++
-#include "libstringalgo/suffix_tree.h"
-#include "libstringalgo/find_occurrences.h"
-```
+    ```c++
+    #include "libstringalgo/suffix_tree.h"
+    #include "libstringalgo/find_occurrences.h"
+    ```
