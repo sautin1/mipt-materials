@@ -139,15 +139,25 @@ template <typename TraversalVisitor> void DepthFirstSearchTraversal(TraversalVis
 2. `void DiscoverNode(const SuffixTree::Link& in_link)`. Вызывается при посещении некоторой вершины `node` в первый раз (т.е. при переходе от ее родителя `parent`). 
   `in_link` - ребро, по которому перешли в вершину `node` из ее родителя `parent`.
   
+<<<<<<< HEAD
 3. `void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link)`. Вызывается при возвращении в некоторую вершину `node` из потомка `son`.
   `return_link` - ребро из вершины `node` в потомка `son`.
   `in_link` - ребро из родителя вершины `node` в вершину `node`.
 Если метод вызван для ребра, являющегося суффиксной ссылкой, то аргумент `return_link` невалиден и не должен использоваться.
+=======
+3. `void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link)`. Вызывается при возвращении в некоторую вершину `node` из потомка `son`. 
+  `return_link` - ребро из вершины `node` в потомка `son`.
+  `in_link` - ребро из родителя вершины `node` в вершину `node`.
+>>>>>>> e87dbc738c7ad43ad2bc97b8d9cb4c2d0e41d13a
   
 4. `void ExamineEdge(const SuffixTree::Link& link)`. Вызывается перед переходом по ребру от родителя к потомку.
   `link` - ребро, по которому совершается переход.
   
+<<<<<<< HEAD
 5. `DFSChooseNextNeighbourResult ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it, const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it, int suffix_link)`. Вызывается при выборе ребра, по которому следует перейти из текущей вершины `active_node`.
+=======
+5. `LinkMapConstIterator ChooseNextNeighbour(int active_node, const LinkMapConstIterator& link_map_begin_it, const LinkMapConstIterator& link_map_next_letter_it, const LinkMapConstIterator& link_map_end_it)`. Вызывается при выборе ребра, по которому следует перейти из текущей вершины `active_node`.
+>>>>>>> e87dbc738c7ad43ad2bc97b8d9cb4c2d0e41d13a
 Пусть `old_link` - это последнее ребро, по которому был совершен переход из вершины `active_node` в потомка `active_node`. Если ранее таких переходов из вершины `active_node` сделано не было, то `old_link` не определено.
 `active_node` - текущая вершина в обходе суффиксного дерева.
 `link_map_begin_it` - `const_interator` класса `std::map<char, Link>` на исходящее из вершины `active_node` ребро, метка которого лексикографически меньше меток всех исходящих из вершины `active_node` ребер.
@@ -183,8 +193,13 @@ std::vector<int> FindAllOccurrences(const SuffixTree& suffix_tree, const std::st
 
 3. Во всех файлах проекта, где предполагается использование функционала библиотеки, подключить соответствующие header-файлы библиотеки:
     ```c++
+<<<<<<< HEAD
     #include "suffix_tree.h"
     #include "find_occurrences.h"
+=======
+    #include "libstringalgo/suffix_tree.h"
+    #include "libstringalgo/find_occurrences.h"
+>>>>>>> e87dbc738c7ad43ad2bc97b8d9cb4c2d0e41d13a
     ```
 
 4. Подключить библиотеку в IDE:
