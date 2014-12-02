@@ -7,12 +7,15 @@
 //
 // This header file declares the public API for testing API from "suffix_tree.h".
 
-#ifndef TEST_suffix_tree_H
-#define TEST_suffix_tree_H
+#ifndef TEST_SUFFIX_TREE_H
+#define TEST_SUFFIX_TREE_H
 
 #include "suffix_tree.h"
 
 #include <algorithm>
+#include <set>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -421,14 +424,17 @@ class LexicalDFSTraversalVisitor {
     UNUSED_VISITOR_METHOD_ARGUMENT(link);
   }
 
-  LinkMapConstIterator ChooseNextNeighbour(int active_node,
-                                           const LinkMapConstIterator& link_map_begin_it,
-                                           const LinkMapConstIterator& link_map_next_letter_it,
-                                           const LinkMapConstIterator& link_map_end_it) {
+  SuffixTree::DFSChooseNextNeighbourResult ChooseNextNeighbour(
+      int active_node,
+      const LinkMapConstIterator& link_map_begin_it,
+      const LinkMapConstIterator& link_map_next_letter_it,
+      const LinkMapConstIterator& link_map_end_it,
+      int suffix_link) {
     UNUSED_VISITOR_METHOD_ARGUMENT(active_node);
     UNUSED_VISITOR_METHOD_ARGUMENT(link_map_begin_it);
     UNUSED_VISITOR_METHOD_ARGUMENT(link_map_end_it);
-    return link_map_next_letter_it;
+    UNUSED_VISITOR_METHOD_ARGUMENT(suffix_link);
+    return SuffixTree::DFSChooseNextNeighbourResult(false, link_map_next_letter_it);
   }
 
   void FinishNode(const SuffixTree::Link& in_link) {
@@ -443,9 +449,72 @@ class LexicalDFSTraversalVisitor {
   const SuffixTree& suffix_tree_;
   std::vector<int> traversal_;
 };
+
+class SuffixLinksJumperVisitor {
+ public:
+  typedef SuffixTree::LinkMapConstIterator LinkMapConstIterator;
+  typedef SuffixTree::DFSChooseNextNeighbourResult ChooseNextNeighbourResult;
+  explicit SuffixLinksJumperVisitor(const SuffixTree& suffix_tree)
+    : suffix_tree_(suffix_tree), traversal_(), target_reached_(false), jumps_started_(false) {}
+
+  void InitVisitor() {}
+
+  void DiscoverNode(const SuffixTree::Link& in_link) {
+    if (in_link.target_node_index == 5) {
+      jumps_started_ = true;
+    }
+    traversal_.push_back(in_link.target_node_index);
+  }
+
+  void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link) {
+    UNUSED_VISITOR_METHOD_ARGUMENT(return_link);
+    if (in_link.target_node_index == 1 && in_link.sample_start_index == -1) {
+      target_reached_ = true;
+    }
+    traversal_.push_back(in_link.target_node_index);
+  }
+
+  void ExamineEdge(const SuffixTree::Link& link) {
+    UNUSED_VISITOR_METHOD_ARGUMENT(link);
+  }
+
+  SuffixTree::DFSChooseNextNeighbourResult ChooseNextNeighbour(
+      int active_node,
+      const LinkMapConstIterator& link_map_begin_it,
+      const LinkMapConstIterator& link_map_next_letter_it,
+      const LinkMapConstIterator& link_map_end_it,
+      int suffix_link) {
+    UNUSED_VISITOR_METHOD_ARGUMENT(active_node);
+    UNUSED_VISITOR_METHOD_ARGUMENT(link_map_begin_it);
+    UNUSED_VISITOR_METHOD_ARGUMENT(suffix_link);
+    if (target_reached_) {
+      return ChooseNextNeighbourResult(false, link_map_end_it);
+    } else {
+      if (jumps_started_) {
+        return ChooseNextNeighbourResult(true, link_map_end_it);
+      } else {
+        return ChooseNextNeighbourResult(false, link_map_next_letter_it);
+      }
+    }
+  }
+
+  void FinishNode(const SuffixTree::Link& in_link) {
+    UNUSED_VISITOR_METHOD_ARGUMENT(in_link);
+  }
+
+  const std::vector<int>& traversal() {
+    return traversal_;
+  }
+
+ private:
+  const SuffixTree& suffix_tree_;
+  std::vector<int> traversal_;
+  bool target_reached_;
+  bool jumps_started_;
+};
 #undef UNUSED_VISITOR_METHOD_ARGUMENT
 
-TEST_F(SuffixTreeTest, DepthFirstSearchTraversalTest) {
+TEST_F(SuffixTreeTest, DepthFirstSearchTraversalLexicalBananaTest) {
   suffix_tree_.AppendSample("banana$");
   std::vector<int> correct_traversal{1, 11, 9, 10, 5, 6, 3, 2, 7, 8, 4};
   LexicalDFSTraversalVisitor visitor(suffix_tree_);
@@ -456,4 +525,15 @@ TEST_F(SuffixTreeTest, DepthFirstSearchTraversalTest) {
   }
 }
 
-#endif  // TEST_suffix_tree_H
+TEST_F(SuffixTreeTest, DepthFirstSearchTraversalSuffixLinksBananaTest) {
+  suffix_tree_.AppendSample("banana$");
+  std::vector<int> correct_traversal{1, 11, 1, 9, 10, 9, 5, 7, 9, 1, 9, 7, 5, 9, 1};
+  SuffixLinksJumperVisitor visitor(suffix_tree_);
+  suffix_tree_.DepthFirstSearchTraversal<SuffixLinksJumperVisitor>(&visitor);
+  ASSERT_EQ(correct_traversal.size(), visitor.traversal().size());
+  for (size_t node_index = 0; node_index < correct_traversal.size(); ++node_index) {
+    ASSERT_EQ(correct_traversal[node_index], visitor.traversal()[node_index]);
+  }
+}
+
+#endif  // TEST_SUFFIX_TREE_H

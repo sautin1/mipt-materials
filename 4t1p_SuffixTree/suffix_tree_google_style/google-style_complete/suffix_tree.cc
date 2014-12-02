@@ -27,6 +27,11 @@ bool SuffixTree::Link::Equals(const Link& link) const {
   return is_equal;
 }
 
+SuffixTree::DFSChooseNextNeighbourResult::DFSChooseNextNeighbourResult(
+    bool _use_suffix_link,
+    const LinkMapConstIterator& _chosen_neighbour)
+  : use_suffix_link(_use_suffix_link), chosen_neighbour(_chosen_neighbour) {}
+
 SuffixTree::Node::Node()
   : links(), suffix_link_node_index(-1) {}
 

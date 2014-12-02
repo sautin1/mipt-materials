@@ -24,9 +24,10 @@
 // which is a compressed trie containing all the suffixes of the given sample.
 class SuffixTree {
  public:
-  // Class Link represents a simple directed link in the suffix tree.
+  // Struct Link represents a simple directed link in the suffix tree.
   // It is a link, connecting two nodes of the suffix tree and
   // storing a label (substring of a sample) on it.
+  // If (sample_start_index == -1), then instance represents suffix link.
   struct Link {
     int target_node_index;
     int sample_start_index, sample_end_index;
@@ -34,7 +35,21 @@ class SuffixTree {
     Link(int _target_node_index, int _sample_start_index, int _sample_end_index);
     bool Equals(const Link& link) const;
   };
+
   typedef std::map<char, Link>::const_iterator LinkMapConstIterator;
+
+  // Instances of struct DFSChooseNextNeighbourResult must be returned
+  // by TravelVisitor::ChooseNextNeighbour, used in DepthFirstSearchTraversal method.
+  // use_suffix_link is true, if the user wishes to go through suffix link.
+  // chosen_neighbour is the link map iterator to the link,
+  // which user wants to be gone through next.
+  struct DFSChooseNextNeighbourResult {
+    bool use_suffix_link;
+    LinkMapConstIterator chosen_neighbour;
+    DFSChooseNextNeighbourResult() = default;
+    DFSChooseNextNeighbourResult(bool _use_suffix_link,
+                                 const LinkMapConstIterator& _chosen_neighbour);
+  };
 
   // Index which is beforehand greater than every index of sample.
   static const int kInfinity = std::numeric_limits<int>::max();
@@ -49,10 +64,6 @@ class SuffixTree {
   // Assignment operator.
   SuffixTree& operator = (const SuffixTree& other) = default;
 
-  // Updates non_existing_char_:
-  // if non_existing_char_ exists in sample_, then the character with the lowest code
-  // which doesn't exist in sample_ will be assigned to non_existing_char.
-  void UpdateNonExistingChar();
   // Appends append_sample to already constructed tree.
   // It is supposed to be used after the call of default constructor.
   void AppendSample(const std::string& append_sample);
@@ -78,13 +89,15 @@ class SuffixTree {
   //    is called when a node is visited for the first time.
   // 3) void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link)
   //    is called when a node is visited not for the first time.
-  // 4) void ExamineEdge(const SuffixTree::Link& link)
-  //    is called before going through a link.
-  // 5) LinkMapConstIterator ChooseNextNeighbour(int active_node,
+  // 4) DFSChooseNextNeighbourResult ChooseNextNeighbour(
+  //      int active_node,
   //      const LinkMapConstIterator& link_map_begin_it,
   //      const LinkMapConstIterator& link_map_next_letter_it,
-  //      const LinkMapConstIterator& link_map_end_it)
+  //      const LinkMapConstIterator& link_map_end_it,
+  //      int suffix_link)
   //    is called when choosing the node to go next to.
+  // 5) void ExamineEdge(const SuffixTree::Link& link)
+  //    is called before going through a link.
   // 6) void FinishNode(const SuffixTree::Link& in_link)
   //    is called before leaving the node forever.
   // As a result, visitor can completely control the flow of the traversal.
@@ -126,7 +139,7 @@ class SuffixTree {
     bool Equals(const TestAndSplitResult& test_split_result) const;
   };
 
-  // Elements of type DepthFirstSearchStackItem are stored in dfs_stack in
+  // Instances of type DepthFirstSearchStackItem are stored in dfs_stack in
   // DepthFirstSearchTraversal() method.
   struct DepthFirstSearchStackItem {
     Link enter_link;
@@ -143,6 +156,10 @@ class SuffixTree {
   void InitLetterSet(int start_index, int sample_end_index);
   // Initializes empty suffix tree.
   void InitTree();
+  // Updates non_existing_char_:
+  // if non_existing_char_ exists in sample_, then the character with the lowest code
+  // which doesn't exist in sample_ will be assigned to non_existing_char.
+  void UpdateNonExistingChar();
 
   // Creates link from source_node_index node to target_node_index node
   // with label sample_[sample_start_index..sample_end_index].
@@ -185,7 +202,7 @@ class SuffixTree {
   char non_existing_char_;
 
   friend class SuffixTreeTest;
-  // testers for private methods
+  // friend-testers for private methods
   FRIEND_TEST(SuffixTreeTest, CreateNodeTest);
   FRIEND_TEST(SuffixTreeTest, InitDummyTest);
   FRIEND_TEST(SuffixTreeTest, InitLetterSetTest);
@@ -199,16 +216,13 @@ class SuffixTree {
   FRIEND_TEST(SuffixTreeTest, AddNextLetterTestZero);
   FRIEND_TEST(SuffixTreeTest, AddNextLetterTestOne);
   FRIEND_TEST(SuffixTreeTest, AddNextLetterTestTwo);
-  // testers for public methods
+  // friend-testers for public methods
   FRIEND_TEST(SuffixTreeTest, UpdateNonExistingCharTest);
   FRIEND_TEST(SuffixTreeTest, AppendSampleTest);
   FRIEND_TEST(SuffixTreeTest, GetLinkIteratorTest);
   FRIEND_TEST(SuffixTreeTest, IsLeafTest);
   FRIEND_TEST(SuffixTreeTest, sampleTest);
   FRIEND_TEST(SuffixTreeTest, SizeTest);
-  FRIEND_TEST(SuffixTreeTest, DepthFirstSearchTraversalTest);
-  FRIEND_TEST(FindAllOccurrencesTest, StressTestCyclicString);
-  FRIEND_TEST(FindAllOccurrencesTest, StressTestShuffledString);
 };
 
 template <typename TraversalVisitor>
@@ -232,20 +246,35 @@ void SuffixTree::DepthFirstSearchTraversal(TraversalVisitor* visitor) const {
     LinkMapConstIterator link_map_begin = nodes_[active_node].links.begin();
     LinkMapConstIterator link_map_end = nodes_[active_node].links.end();
     LinkMapConstIterator neighbour_letter_it;
-    neighbour_letter_it = visitor->ChooseNextNeighbour(active_node,
-                                                      link_map_begin,
-                                                      next_link_letter_it,
-                                                      nodes_[active_node].links.end());
-    if (neighbour_letter_it != link_map_end) {
-      Link neighbour_link = neighbour_letter_it->second;
-      visitor->ExamineEdge(neighbour_link);
-      dfs_stack.top().next_link_letter_it = ++neighbour_letter_it;
-      int target_node = neighbour_link.target_node_index;
-      dfs_stack.push(DepthFirstSearchStackItem(neighbour_link, nodes_[target_node].links.begin()));
+    DFSChooseNextNeighbourResult choose_next_neighbour_result;
+    choose_next_neighbour_result = visitor->ChooseNextNeighbour(
+          active_node,
+          link_map_begin,
+          next_link_letter_it,
+          nodes_[active_node].links.end(),
+          nodes_[active_node].suffix_link_node_index);
+    neighbour_letter_it = choose_next_neighbour_result.chosen_neighbour;
+    if (!choose_next_neighbour_result.use_suffix_link) {
+      // goto neighbour
+      if (neighbour_letter_it != link_map_end) {
+        Link neighbour_link = neighbour_letter_it->second;
+        visitor->ExamineEdge(neighbour_link);
+        dfs_stack.top().next_link_letter_it = ++neighbour_letter_it;
+        int target_node = neighbour_link.target_node_index;
+        LinkMapConstIterator neighbour_link_map_begin = nodes_[target_node].links.begin();
+        dfs_stack.push(DepthFirstSearchStackItem(neighbour_link, neighbour_link_map_begin));
+      } else {
+        visitor->FinishNode(enter_link);
+        last_used_link = dfs_stack.top().enter_link;
+        dfs_stack.pop();
+      }
     } else {
-      visitor->FinishNode(enter_link);
-      last_used_link = dfs_stack.top().enter_link;
-      dfs_stack.pop();
+      // use suffix link
+      int target_node = nodes_[active_node].suffix_link_node_index;
+      Link neighbour_link(target_node, -1, 0);
+      visitor->ExamineEdge(neighbour_link);
+      dfs_stack.top().next_link_letter_it = neighbour_letter_it;
+      dfs_stack.push(DepthFirstSearchStackItem(neighbour_link, nodes_[target_node].links.begin()));
     }
   }
 }

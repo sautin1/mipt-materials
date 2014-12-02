@@ -11,6 +11,9 @@
 
 #include "find_occurrences.h"
 
+#include <algorithm>
+#include <string>
+
 #define UNUSED_VISITOR_METHOD_ARGUMENT(expr) (void)(expr)
 FindOccurrencesTraversalVisitor::FindOccurrencesTraversalVisitor(const SuffixTree& suffix_tree,
                                                                  const std::string& pattern)
@@ -71,22 +74,25 @@ void FindOccurrencesTraversalVisitor::ExamineEdge(const SuffixTree::Link& link) 
   }
 }
 
-LinkMapConstIterator FindOccurrencesTraversalVisitor::ChooseNextNeighbour(int active_node,
+SuffixTree::DFSChooseNextNeighbourResult FindOccurrencesTraversalVisitor::ChooseNextNeighbour(
+    int active_node,
     const LinkMapConstIterator& link_map_begin_it,
     const LinkMapConstIterator& link_map_next_letter_it,
-    const LinkMapConstIterator& link_map_end_it) {
+    const LinkMapConstIterator& link_map_end_it,
+    int suffix_link) {
   UNUSED_VISITOR_METHOD_ARGUMENT(link_map_begin_it);
+  UNUSED_VISITOR_METHOD_ARGUMENT(suffix_link);
   if (pattern_end_node_ == -1) {
-    return link_map_end_it;
+    return SuffixTree::DFSChooseNextNeighbourResult(false, link_map_end_it);
   } else if (pattern_end_node_ == 0) {
     LinkMapConstIterator link_map_letter_it;
     link_map_letter_it = suffix_tree_.GetLinkIterator(active_node, pattern_[pattern_index_++]);
     if (link_map_letter_it == link_map_end_it) {
       pattern_end_node_ = -1;
     }
-    return link_map_letter_it;
+    return SuffixTree::DFSChooseNextNeighbourResult(false, link_map_letter_it);
   } else {
-    return link_map_next_letter_it;
+    return SuffixTree::DFSChooseNextNeighbourResult(false, link_map_next_letter_it);
   }
 }
 

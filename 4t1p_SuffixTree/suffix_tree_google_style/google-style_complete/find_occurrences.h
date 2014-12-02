@@ -10,6 +10,7 @@
 #ifndef SUBSTRINGS_H
 #define SUBSTRINGS_H
 
+#include <string>
 #include <vector>
 
 #include "suffix_tree.h"
@@ -26,10 +27,12 @@ class FindOccurrencesTraversalVisitor {
   void DiscoverNode(const SuffixTree::Link& in_link);
   void ReturnToNode(const SuffixTree::Link& return_link, const SuffixTree::Link& in_link);
   void ExamineEdge(const SuffixTree::Link& link);
-  LinkMapConstIterator ChooseNextNeighbour(int active_node,
-                                           const LinkMapConstIterator& link_map_begin_it,
-                                           const LinkMapConstIterator& link_map_next_letter_it,
-                                           const LinkMapConstIterator& link_map_end_it);
+  SuffixTree::DFSChooseNextNeighbourResult ChooseNextNeighbour(
+      int active_node,
+      const LinkMapConstIterator& link_map_begin_it,
+      const LinkMapConstIterator& link_map_next_letter_it,
+      const LinkMapConstIterator& link_map_end_it,
+      int suffix_link);
   void FinishNode(const SuffixTree::Link& in_link);
 
   const std::vector<int>& occurrences() const;

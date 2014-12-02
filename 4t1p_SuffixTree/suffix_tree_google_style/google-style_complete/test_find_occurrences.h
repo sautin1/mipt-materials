@@ -13,6 +13,8 @@
 #include "find_occurrences.h"
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
