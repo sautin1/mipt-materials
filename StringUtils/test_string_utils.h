@@ -35,29 +35,6 @@ class TestLongCyclicString : public ::testing::Test {
   std::string sample_;
 };
 
-TEST(FewSmallTests, LongestPalindromicSubstring) {
-  std::vector<std::string> samples {
-    "banana",
-    "forgeeksskeegfor",
-    "abcbcbb",
-    "WOWILIKEEKIL",
-    "ThesampletextthatcouldbereadedthesameinbothordersArozaupalanalapuazorA",
-    "11",
-    "bbaaabb"};//,
-    //"ABCGUFCBA"}; // crash test -> algo wrong
-  std::vector<SubstringLocation> answers = {SubstringLocation(1, 6),
-                                            SubstringLocation(3, 13),
-                                            SubstringLocation(1, 6),
-                                            SubstringLocation(4, 12),
-                                            SubstringLocation(49, 70),
-                                            SubstringLocation(0, 2),
-                                            SubstringLocation(0, 7)};
-  for (size_t sample_index = 0; sample_index < samples.size(); ++sample_index) {
-    SubstringLocation tested_substring = LongestPalindromicSubstring(samples[sample_index]);
-    ASSERT_TRUE(tested_substring.Equals(answers[sample_index]));
-  }
-}
-
 TEST(FewSmallTests, DistinctSubstringQuantityTest) {
   std::vector<std::string> samples = {
     "banana",
@@ -120,13 +97,6 @@ TEST(FewSmallTests, LongestCommonSubstringSize) {
       ASSERT_EQ(tested_sizes[suffix_index], answers[sample_index][suffix_index]);
     }
   }
-}
-
-TEST_F(TestLongCyclicString, LongestPalindromicSubstringTest) {
-  SubstringLocation substring = LongestPalindromicSubstring(sample_);
-  ASSERT_EQ(substring.end - substring.begin, sample_.size() - 1);
-  ASSERT_LE(substring.end, sample_.size());
-  ASSERT_GE(substring.begin, 0);
 }
 
 TEST_F(TestLongCyclicString, DistinctSubstringQuantityTest) {

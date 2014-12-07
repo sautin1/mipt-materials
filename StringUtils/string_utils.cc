@@ -48,21 +48,10 @@ char GetNonExistingChar(const std::string& sample) {
   return GetFewNonExistingChars(sample, 1).front();
 }
 
-SubstringLocation LongestPalindromicSubstring(const std::string& sample) {
-  std::string reversed_sample(sample);
-  std::reverse(reversed_sample.begin(), reversed_sample.end());
-
-  char non_existing_char = GetNonExistingChar(sample);
-  SuffixTree suffix_tree(reversed_sample, std::string(1, non_existing_char));
-  LongestPalindromicSubstringVisitor visitor(sample);
-  suffix_tree.TreeTraversal<LongestPalindromicSubstringVisitor>(&visitor);
-  return visitor.longest_common_substring();
-}
-
 size_t DistinctSubstringQuantity(const std::string& sample) {
   SuffixTree suffix_tree(sample, "");
-  AllSubstringsVisitor visitor;
-  suffix_tree.TreeTraversal<AllSubstringsVisitor>(&visitor);
+  DistinctSubstringQuantityVisitor visitor;
+  suffix_tree.TreeTraversal<DistinctSubstringQuantityVisitor>(&visitor);
   return visitor.substring_quantity();
 }
 

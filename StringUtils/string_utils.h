@@ -20,6 +20,13 @@
 #include "IvanShafranLib/suffix_tree.h"
 #include "IvanShafranLib/find_all_occurrences.h"
 
+// Struct NodeReference represents a place where node (either explicit or implicit)
+// can be met in the suffix tree.
+// This place is represented by:
+// 1) closest_ancestor - the index of the closest explicit node on the way
+// from root_ node to the place;
+// 2) two indices, representing the substring on the label of the link
+// from closest_ancestor to the place.
 struct NodeReference {
   int closest_ancestor;
   int sample_start_index;
@@ -28,6 +35,11 @@ struct NodeReference {
   NodeReference(int _ancestor_node, int _sample_start_index, int _sample_end_index);
 };
 
+// Struct SubstringLocation represents a substring of a string.
+// begin - index of the starting character of the substring in the initial string.
+// end - index of the last character of the substring in the initial string, increased by 1.
+// As a result, if sample is an initial string, then the substring is encoded this way:
+// sample[begin; end).
 struct SubstringLocation {
   int begin;
   int end;
@@ -37,110 +49,11 @@ struct SubstringLocation {
 };
 
 #define UNUSED_VISITOR_METHOD_ARGUMENT(expr) (void)(expr)
-class LongestPalindromicSubstringVisitor : public SuffixTreeVisitor {
-public:
-  explicit LongestPalindromicSubstringVisitor(const std::string& pattern)
-    : pattern_(pattern), longest_common_substring_(0, 0),
-      node_reference_(1, 0, 0), use_suffix_link_(false), pattern_index_(0) {}
-
-  void BeforeVertexProcessing(int node) {
-    UNUSED_VISITOR_METHOD_ARGUMENT(node);
-    use_suffix_link_ = false;
-    exists_edge_by_letter_ = false;
-  }
-
-  void ProcessLink(int source_node, int target_node,
-                   int edge_start_index, int edge_end_index,
-                   bool* do_transition) {
-    if (pattern_index_ == pattern_.size()) {
-      // job finished
-      *do_transition = false;
-      return;
-    }
-    if (pattern_[pattern_index_] != suffix_tree_string_->at(edge_start_index)) {
-      // wrong edge
-      *do_transition = false;
-      return;
-    } else {
-      // edge by needed letter
-      exists_edge_by_letter_ = true;
-    }
-    int edge_size = edge_end_index - edge_start_index;
-    if (node_reference_.sample_end_index > node_reference_.sample_start_index) {
-      // came here using suffix link
-      if (node_reference_.sample_end_index - node_reference_.sample_start_index >= edge_size) {
-        // can skip the edge
-        pattern_index_ += edge_size;
-        node_reference_.sample_start_index += edge_size;
-        node_reference_.closest_ancestor = target_node;
-        *do_transition = true;
-      } else {
-        // cannot skip the edge
-        use_suffix_link_ = true;
-        *do_transition = false;
-      }
-      return;
-    }
-    int edge_index;
-    int letters_passed = 0;
-    for (edge_index = edge_start_index; edge_index < edge_end_index; ++edge_index) {
-      if (pattern_index_ == pattern_.size()) {
-        break;
-      }
-      if (pattern_[pattern_index_] != suffix_tree_string_->at(edge_index)) {
-        break;
-      } else {
-        ++letters_passed;
-        ++node_reference_.sample_end_index;
-        ++pattern_index_;
-      }
-    }
-    int pattern_substring_size = distance_from_root_->at(source_node) + letters_passed;
-    int pattern_substring_start = pattern_index_ - pattern_substring_size;
-    UpdateLongestCommonSubstring(SubstringLocation(pattern_substring_start, pattern_index_));
-    if (edge_index == edge_end_index) {
-      // ran through the whole edge
-      node_reference_.closest_ancestor = target_node;
-      node_reference_.sample_start_index = node_reference_.sample_end_index;
-      *do_transition = true;
-    } else {
-      // the edge is not finished
-      use_suffix_link_ = pattern_index_ < pattern_.size();
-      if (use_suffix_link_) {
-        pattern_index_ -= letters_passed;
-      }
-      *do_transition = false;
-    }
-  }
-
-  void ProcessSuffixLink(int source_node, int target_node, bool* do_transition) {
-    UNUSED_VISITOR_METHOD_ARGUMENT(target_node);
-    *do_transition = (use_suffix_link_ || !exists_edge_by_letter_) &&
-                      source_node != 0;
-  }
-
-  SubstringLocation longest_common_substring() const {
-    return longest_common_substring_;
-  }
-
-private:
-  void UpdateLongestCommonSubstring(SubstringLocation new_substring) {
-    if (longest_common_substring_.Less(new_substring)) {
-      longest_common_substring_ = new_substring;
-    }
-  }
-
-  const std::string& pattern_;
-  SubstringLocation longest_common_substring_;
-  NodeReference node_reference_;
-  bool use_suffix_link_;
-  bool exists_edge_by_letter_;
-  size_t pattern_index_;
-};
-
-class AllSubstringsVisitor : public SuffixTreeVisitor {
+// TraversalVisitor class for SuffixTree.DepthFirstSearchTraversal() method.
+// Is designed for the needs of DistinctSubstringQuantity() function.
+class DistinctSubstringQuantityVisitor : public SuffixTreeVisitor {
  public:
-  AllSubstringsVisitor()
+  DistinctSubstringQuantityVisitor()
     : substring_quantity_(0) {}
 
   void ProcessLink(int source_node, int target_node,
@@ -165,6 +78,8 @@ class AllSubstringsVisitor : public SuffixTreeVisitor {
   size_t substring_quantity_;
 };
 
+// TraversalVisitor class for SuffixTree.DepthFirstSearchTraversal() method.
+// Is designed for the needs of BuildSuffixArray() function.
 class BuildSuffixArrayVisitor : public SuffixTreeVisitor {
  public:
   void ProcessLink(int source_node, int target_node,
@@ -197,6 +112,8 @@ class BuildSuffixArrayVisitor : public SuffixTreeVisitor {
   std::vector<int> suffix_array_;
 };
 
+// TraversalVisitor class for SuffixTree.DepthFirstSearchTraversal() method.
+// Is designed for the needs of LongestCommonSubstringSize() function.
 class LongestCommonSubstringSizeVisitor : public SuffixTreeVisitor {
  public:
   LongestCommonSubstringSizeVisitor(int sample_quantity, const std::vector<int>& sample_number)
@@ -257,12 +174,23 @@ class LongestCommonSubstringSizeVisitor : public SuffixTreeVisitor {
 
 #undef UNUSED_VISITOR_METHOD_ARGUMENT
 
+// Returns a character that cannot be found in sample.
 char GetNonExistingChar(const std::string& sample);
+
+// Returns char_quantity unique characters that cannot be found in sample.
 std::vector<char> GetFewNonExistingChars(const std::string& sample, size_t char_quantity);
 
-SubstringLocation LongestPalindromicSubstring(const std::string& sample);
+// Counts the number of distinct substrings of the sample string.
 size_t DistinctSubstringQuantity(const std::string& sample);
+
+// builds a suffix array on the base of sample string.
 std::vector<int> BuildSuffixArray(const std::string& sample);
+
+// For each k in range[2, sample_vector.size()-1] counts the maximal length of a substring,
+// which is a common substring of at least k samples in sample_vector.
+// The results are stored in a vector with offset of 2,
+// e.g. for k == 2 maximal length of a common substring is stored in result_vector[k-2].
+// Complexity: O(sample_vector.size() * total_length_of_all_samples)
 std::vector<int> LongestCommonSubstringSize(const std::vector<std::string>& sample_vector);
 
 #endif // STRING_UTILS_H
