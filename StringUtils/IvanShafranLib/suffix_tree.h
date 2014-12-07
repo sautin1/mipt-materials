@@ -18,18 +18,10 @@ class SuffixTreeVisitor {
   const std::string* suffix_tree_string_;
   const std::vector<int>* distance_from_root_;
   const std::vector<int>* parent_;
-   
-  void set_suffix_tree_string(const std::string* suffix_tree_string) {
-    this->suffix_tree_string_ = suffix_tree_string;
-  }
+  int root_, dummy_;
+  int number_of_vertices_;
 
-  void set_distance_from_root(const std::vector<int>* distance) {
-    this->distance_from_root_ = distance;
-  }
-
-  void set_parent(const std::vector<int>* parent) { 
-    this->parent_ = parent;
-  }
+  void InitVisitor() {}
 
   void BeforeVertexProcessing(int vertex) {}
 
@@ -61,9 +53,14 @@ public:
 
   template <class TreeTraversalVisitor>
   void TreeTraversal(TreeTraversalVisitor* visitor) const {
-    visitor->set_suffix_tree_string(&(this->get_string()));
-    visitor->set_distance_from_root(&(this->distance_from_root_));
-    visitor->set_parent(&(this->parent_));
+    visitor->suffix_tree_string_ = &(this->get_string());
+    visitor->distance_from_root_ = &(this->distance_from_root_);
+    visitor->parent_ = &(this->parent_);
+    visitor->root_ = this->root_;
+    visitor->dummy_ = this->dummy_;
+    visitor->number_of_vertices_ = this->number_of_vertices_;
+
+    visitor->InitVisitor();
 
     size_t number_of_vertices = this->tree_.size();
     int new_layer_index = 0;
@@ -166,7 +163,7 @@ public:
   std::vector<Vertex> tree_;
   std::string string_;
   int root_, dummy_;
-  int next_new_vertex_;
+  int number_of_vertices_;
   Point active_point_;
   std::string alphabet_;
   std::map<int, int> map_of_alphabet_index_;
@@ -210,8 +207,8 @@ public:
   }
 
   int NewVertex() {
-    int index = this->next_new_vertex_;
-    this->next_new_vertex_++;
+    int index = this->number_of_vertices_;
+    this->number_of_vertices_++;
     return index;
   }
 
@@ -220,7 +217,7 @@ public:
     this->tree_.resize(max_vertex_number, Vertex(this->GetSizeOfAlhpabet()));
     this->distance_from_root_.resize(max_vertex_number);
     this->parent_.resize(max_vertex_number, NULL_VERTEX);
-    this->next_new_vertex_ = 0;
+    this->number_of_vertices_ = 0;
 
     dummy_ = NewVertex();
     root_ = NewVertex();

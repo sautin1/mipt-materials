@@ -63,7 +63,7 @@ class FindAllOccurencesVisitor : public SuffixTreeVisitor {
   }
 };
 
-std::vector<int> FindAllOccurrences(const SuffixTree& tree, std::string pattern) {
+std::vector<int> FindAllOccurrences(const SuffixTree& tree, const std::string& pattern) {
   FindAllOccurencesVisitor visitor(&pattern);
   tree.TreeTraversal(&visitor);
 

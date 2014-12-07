@@ -65,11 +65,18 @@ c публичным конструктором <code>SuffixTree(const std::string& string, std::strin
 <li><code>const std::string* suffix_tree_string_</code> - указатель на строку, по которой построенно суффиксное дерево.</li>
 <li><code>const std::vector<int>* distance_from_root_</code> - указатель на вектор расстояний от корня до вершин.</li>
 <li><code>const std::vector<int>* parent_</code> - указатель на вектор родителей вершин.</li>
+<li><code>int root_</code> - индекс корня</li>
+<li><code>int dummy_</code> - индекс пустышки</li>
+<li><code>int number_of_vertices</code> - количество вершин в суффиксном дереве</li>
 </ol>
 
 <p>При необходимости должны переопределяться методы:</p>
 
-<pre><code>//вызывается перед обработкой ссылок(переходов) вершины vertex;
+<pre><code>
+//вызывается однажды, перед обходом дерева
+void InitVisitor() {}
+
+//вызывается перед обработкой ссылок(переходов) вершины vertex;
 //vertex - индекс вершины во внутренней структуре SuffixTree;
 //индекс вершины является уникальным неотрицательным числом типа int;
 void BeforeVertexProcessing(int vertex) {}
