@@ -63,37 +63,6 @@ Rule::Rule(const string &s) {
     }
 }
 
-void Grammar::write() {
-    cerr << "Starting symbol is " << Symbol::idToName[start] << "\n";
-    cerr << "rules are:\n";
-    for (auto &rule : rules) {
-        cerr << Symbol::idToName[rule.from] << " -> ";
-        for (auto &x : rule.to)
-            cerr << Symbol::idToName[x] << " ";
-        cerr << "\n";
-    }
-}
-
-void Grammar::writeFirst() {
-    cerr << "FIRST:\n";
-    for (int id = 0; id < Symbol::lastUnusedId; ++id) {
-        cerr << Symbol::idToName[id] << ": ";
-        for (auto x : first[id])
-            cerr << Symbol::idToName[x] << ", ";
-        cerr << "\n";
-    }
-}
-
-void Grammar::writeFollow() {
-    cout << "FOLLOW:\n";
-    for (int id = 0; id < Symbol::lastUnusedId; ++id) {
-        cerr << Symbol::idToName[id] << ": ";
-        for (auto x : follow[id])
-            cerr << Symbol::idToName[x] << ", ";
-        cerr << "\n";
-    }
-}
-
 void Grammar::extend() {
     Symbol::add("@");
     int st = Symbol::nameToId["@"];
@@ -317,24 +286,15 @@ Set SetConstruction::closure(Set s, Grammar &g) {
 
 Set SetConstruction::goTo(Set I, int x, Grammar &g) {
     Set J;
-    //cerr << "Here we are. ";
-    //cerr << "x = " << Symbol::idToName[x] << "\n";
     for (State S : I) {
         int dotPos = S.getDotPosition();
         
-        //Debug::writeState(S);
-
         if (dotPos == (int) S.to.size() - 1 || S.to[dotPos + 1] != x)
             continue;
         swap(S.to[dotPos], S.to[dotPos + 1]);
-
-        //cerr << "Let insert "; 
-        //Debug::writeState(S);
         J.insert(S);
     }
-    //cerr << "Size is " << J.size() << "\n";
     J = closure(J, g);
-    //cerr << "Size is " << J.size() << "\n";
     return closure(J, g);
 }
 
@@ -344,13 +304,6 @@ vector<Set> SetConstruction::items(Grammar &g) {
     Set st;
     st.insert(state);
     C.push_back(closure(st, g));
-
-    /*
-    cerr << "-----------||\n";
-    for (auto x : closure(st, g))
-        Debug::writeState(x);
-    cerr << "-----------||\n";
-    */
 
     bool changed = true;
 
@@ -378,34 +331,6 @@ vector<Set> SetConstruction::items(Grammar &g) {
     return C;
 }  
 
-void SetConstruction::writeConstructedSets(Grammar &g) {
-    auto C = items(g);
-
-    cerr << "Constructed sets: \n";
-
-    for (auto x : C) {
-        for (auto y : x)
-            Debug::writeState(y);
-        cerr << "-------------\n";
-    }
-}
-
-void Debug::writeState(const State &st) {
-    cerr << Symbol::idToName[st.from] << " -> ";
-    for (auto id : st.to)
-        cerr << Symbol::idToName[id] << " ";
-    cerr << "; " << Symbol::idToName[st.lookahead] << "\n";
-}
-
-string Debug::toString(const Action &act) {
-    switch (act.type) {
-        case ACCEPT : return "acc";
-        case REDUCE : return "red";
-        case SHIFT  : return "shi" + to_string(act.shift);
-        default     : return "err";
-    }
-}
-
 bool LRAnalyzer::buildTable(Grammar &g) {
     item = SetConstruction::items(g);
 
@@ -418,9 +343,6 @@ bool LRAnalyzer::buildTable(Grammar &g) {
                 Rule r(st.from, to);
 
                 if (Symbol::idToName[st.from] == "@" && st.lookahead == Symbol::endId) {
-                    //if (action[make_pair(i, a)].type != ERROR)
-                    //    cerr << "first\n";
-                    //    return false;
 
                     action[make_pair(i, a)] = Action(ACCEPT);
                 } else {
@@ -440,10 +362,6 @@ bool LRAnalyzer::buildTable(Grammar &g) {
 
                 int j = find(item.begin(), item.end(), toItem) - item.begin();
 
-                //if (action[make_pair(i, a)].type != ERROR)
-                //   cerr << "third\n";
-                //    return false;
-
                 action[make_pair(i, a)] = Action(j);
             }
         }
@@ -459,48 +377,6 @@ bool LRAnalyzer::buildTable(Grammar &g) {
                 goTo[make_pair(i, id)] = j;
             }
     return true;
-}
-
-void LRAnalyzer::writeTable() {
-    const int w = 7;
-    cerr << "Action Table: \n";
-    cerr << string(w, ' ');
-    for (int id = 0; id < Symbol::lastUnusedId; ++id)
-        if (id != Symbol::epsId && (Symbol::isTerminal(id) || id == Symbol::endId)) {
-            cerr << setw(w) << Symbol::idToName[id];
-        }
-    cerr << "\n";
-
-    for (int i = 0; i < (int) item.size(); ++i) {
-        cerr << setw(w) << i;
-        for (int id = 0; id < Symbol::lastUnusedId; ++id)
-            if (id != Symbol::epsId && (Symbol::isTerminal(id) || id == Symbol::endId)) {
-                cerr << setw(w) << Debug::toString(action[make_pair(i, id)]);
-            }
-        cerr << "\n";
-    }
-
-    cerr << "Goto Table:\n";
-
-    cerr << string(w, ' ');
-    for (int id = 0; id < Symbol::lastUnusedId; ++id)
-        if (!Symbol::isTerminal(id) && !Symbol::isSpecial(id)) {
-            cerr << setw(w) << Symbol::idToName[id];
-        }
-    cerr << "\n";
-
-    for (int i = 0; i < (int) item.size(); ++i) {
-        cerr << setw(w) << i;
-        for (int id = 0; id < Symbol::lastUnusedId; ++id)
-            if (!Symbol::isTerminal(id) && !Symbol::isSpecial(id)) {
-                if (goTo.count(make_pair(i, id)) == 1)
-                    cerr << setw(w) << goTo[make_pair(i, id)];
-                else
-                    cerr << setw(w) << ' ';
-            }
-        cerr << "\n";
-    }
-
 }
 
 bool LRAnalyzer::routine(string word) {
@@ -554,24 +430,18 @@ int main(int argv, char **argc) {
     Grammar g = readGrammar(input);
     g.eliminateNullable();
     g.extend();
-    //g.write();
 
     g.calcFirst();
-    //g.writeFirst();
 
     g.calcFollow();
-    //g.writeFollow();
 
     Symbol::addDot();
-
-    //SetConstruction::writeConstructedSets(g);
 
     LRAnalyzer a;
     if (!a.buildTable(g)) {
         cerr << "Input grammar is not LR-grammar. Aborting...\n";
         return -1;
     }
-    //a.writeTable();
 
     int m;
     cin >> m;
