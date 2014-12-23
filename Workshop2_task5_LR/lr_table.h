@@ -24,9 +24,12 @@ public:
 
 	// принимает грамматику, строит таблицу
 	LRTable(const Grammar& _grammar);
+	Grammar& getGrammar() const;
+	std::vector<LRTableAction>& operator[] (int index) const;
+
 private:
-	Grammar grammar;
-	std::vector<std::vector<LRTableAction>> table;
+	Grammar grammar_;
+	std::vector<std::vector<LRTableAction>> table_;
 };
 
 #endif // LR_TABLE_H

@@ -56,19 +56,30 @@ const std::vector<ProductionToken>& ProductionRule::getRight() const {
 	return right_;
 }
 
-// ProductionRuleHasher
+// ProductionTokenHasher
 
-size_t ProductionRuleHasher::operator() (const ProductionRule& rule) const {
-	return std::hash<std::string>()(rule.getLeft().getName());
+size_t ProductionTokenHasher::operator() (const ProductionToken& token) const {
+	return std::hash<std::string>()(token.getName());
 }
 
 // Grammar
 
-Grammar::Grammar(const std::vector<ProductionRule>& rules)
-	: rules_(rules.begin(), rules.end()) {}
+int Grammar::getTokenHash(const ProductionToken& token) {
+	auto token_it = token_hashes_.find(token);
+	if (token_it != token_hashes_.end()) {
+		return token_it->second;
+	} else {
+		return token_hashes_[token] = ++max_hash;
+	}
+}
 
 void Grammar::addRule(const ProductionRule& rule) {
-	rules_.insert(rule);
+	int left_hash = getTokenHash(rule.getLeft());
+	std::vector<int> right_hashes;
+	for (size_t token_index = 0; token_index < rule.getRight().size(); ++token_index) {
+		right_hashes.push_back(getTokenHash(rule.getRight().at(token_index)));
+	}
+	rules_.insert(std::pair<int, std::vector<int>>(left_hash, right_hashes));
 }
 
 // Misc

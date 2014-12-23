@@ -5,6 +5,7 @@
 #include <functional>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -43,17 +44,20 @@ private:
 	std::vector<ProductionToken> right_;
 };
 
-struct ProductionRuleHasher {
-	size_t operator() (const ProductionRule& rule) const;
+struct ProductionTokenHasher {
+	size_t operator() (const ProductionToken& token) const;
 };
 
 class Grammar {
 public:
 	Grammar() = default;
-	explicit Grammar(const std::vector<ProductionRule>& rules);
 	void addRule(const ProductionRule& rule);
+	int getTokenHash(const ProductionToken& token);
 private:
-	std::unordered_multiset<ProductionRule, ProductionRuleHasher> rules_;
+
+	int max_hash;
+	std::unordered_map<ProductionToken, int, ProductionTokenHasher> token_hashes_;
+	std::unordered_multimap<int, std::vector<int>> rules_; // индексируется хешами токена, стоящего слева.
 };
 
 Grammar readGrammar(std::ifstream& fin);
