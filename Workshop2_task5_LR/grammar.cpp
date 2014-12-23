@@ -2,8 +2,30 @@
 
 // ProductionToken
 
+ProductionToken::ProductionToken()
+	: nonterminal_alphabet(nonterminal_name_letters.begin(), nonterminal_name_letters.end()),
+	  terminal_alphabet(terminal_name_letters.begin(), terminal_name_letters.end()),
+	  end_letters_alphabet(end_name_letters.begin(), end_name_letters.end()) {}
+
+ProductionToken::ProductionToken(const std::string& name)
+	: nonterminal_alphabet(nonterminal_name_letters.begin(), nonterminal_name_letters.end()),
+	  terminal_alphabet(terminal_name_letters.begin(), terminal_name_letters.end()),
+	  end_letters_alphabet(end_name_letters.begin(), end_name_letters.end()), name_(name) {
+	if (terminal_alphabet.count(name_[0]) == 1) {
+		type_ = ProductionTokenTypeTerminal;
+	} else if (nonterminal_alphabet.count(name_[0]) == 1) {
+		type_ = ProductionTokenTypeNonterminal;
+	} else if (end_letters_alphabet.count(name_[0]) == 1) {
+		type_ = ProductionTokenTypeEnd;
+	} else {
+		throw std::logic_error("Wrong production token name");
+	}
+}
+
 ProductionToken::ProductionToken(const ProductionTokenType& type, const std::string& name)
-	: type_(type), name_(name) {}
+	: nonterminal_alphabet(nonterminal_name_letters.begin(), nonterminal_name_letters.end()),
+	  terminal_alphabet(terminal_name_letters.begin(), terminal_name_letters.end()),
+	  end_letters_alphabet(end_name_letters.begin(), end_name_letters.end()), type_(type), name_(name) {}
 
 bool ProductionToken::operator== (const ProductionToken& other) const {
 	return name_ == other.name_;
@@ -42,5 +64,31 @@ size_t ProductionRuleHasher::operator() (const ProductionRule& rule) const {
 
 // Grammar
 
-Grammar::Grammar() {
+Grammar::Grammar(const std::vector<ProductionRule>& rules)
+	: rules_(rules.begin(), rules.end()) {}
+
+void Grammar::addRule(const ProductionRule& rule) {
+	rules_.insert(rule);
+}
+
+// Misc
+
+Grammar readGrammar(std::ifstream& fin) {
+	Grammar grammar;
+	int size;
+	fin >> size;
+	for (int rule_index = 0; rule_index < size; ++rule_index) {
+		std::string rule_string;
+		std::getline(fin, rule_string);
+		std::istringstream sstream(rule_string);
+		std::string rule_token;
+		sstream >> rule_token;
+		ProductionToken left_token(ProductionTokenTypeNonterminal, rule_token);
+		std::vector<ProductionToken> right_tokens;
+		while (sstream >> rule_token) {
+			right_tokens.push_back(ProductionToken(rule_token));
+		}
+		grammar.addRule(ProductionRule(left_token, right_tokens));
+	}
+	return grammar;
 }
