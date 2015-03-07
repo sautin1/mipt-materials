@@ -4,16 +4,9 @@ open System
 open System.Net
 open System.Collections.Specialized
 
-let (email, name) = ("sautin1@yandex.ru", "Саутин А.А.") // адрес почты и фамилия с инициалами
+let (email, name) = ("", "") // адрес почты и фамилия с инициалами
 
-let rec pascal c r = 
-  match (c,r) with // а тут решение
-    | _ when c < 0 -> 0
-    | _ when r < 0 -> 0
-    | _ when c > r -> 0
-    | _ when r = c -> 1
-    | (0,r) -> 1
-    | (c,r) -> (pascal c (r-1)) + (pascal (c-1) (r-1))
+let pascal c r = 1 // а тут решение
 
 let printIt n = 
   "[" +
