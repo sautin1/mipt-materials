@@ -6,17 +6,6 @@ Point::Point(int _x, int _y)
 PointSet::PointSet(const std::vector<Point>& _points)
 	: points(_points) {}
 
-int PointSet::getLowestLeft() const {
-	int lowest_point_index = 0;
-	for (size_t point_index = 0; point_index < points.size(); ++point_index) {
-		if ((points[point_index].y == points[lowest_point_index].y
-			 && points[point_index].x < points[lowest_point_index].x)
-				|| points[point_index].y < points[lowest_point_index].y) {
-			lowest_point_index = point_index;
-		}
-	}
-	return lowest_point_index;
-}
 
 Point PointSet::operator[] (int index) const {
 	return points[index];
@@ -54,16 +43,17 @@ PointsPolarAngleAndLengthComparator::PointsPolarAngleAndLengthComparator(Point _
 bool PointsPolarAngleAndLengthComparator::operator () (const Point& p1, const Point& p2) const {
 	Vector v1(origin, p1);
 	Vector v2(origin, p2);
-	return (v2.isClockwiseRotation(v1) || (v1.isParallel(v2) && v1.lengthSquared() < v2.lengthSquared()));
+	return (v2.isClockwiseRotation(v1) || (v1.isParallel(v2) && (v1.lengthSquared() < v2.lengthSquared())));
 }
 
-PointsIndexPolarAngleAndLengthComparator::PointsIndexPolarAngleAndLengthComparator(const PointSet& _pointSet, int _origin)
+PointsIndexPolarAngleAndLengthComparator::PointsIndexPolarAngleAndLengthComparator(const PointSet& _pointSet,
+																				   const Point& _origin)
 	: origin(_origin), pointSet(_pointSet) {}
 
 bool PointsIndexPolarAngleAndLengthComparator::operator () (int i1, int i2) const {
 	const Point& p1 = pointSet[i1];
 	const Point& p2 = pointSet[i2];
-	return PointsPolarAngleAndLengthComparator(pointSet[origin])(p1, p2);
+	return PointsPolarAngleAndLengthComparator(origin)(p1, p2);
 }
 
 long long crossProduct(const Vector& v1, const Vector& v2) {
@@ -79,6 +69,10 @@ Polygon::Polygon(std::vector<Point> _nodes)
 	if (_nodes.size() < 3) {
 		throw std::logic_error("Too few nodes to build a polygon");
 	}
+}
+
+size_t Polygon::size() const {
+	return nodes.size();
 }
 
 double Polygon::signed_area() {

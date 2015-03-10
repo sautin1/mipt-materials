@@ -19,7 +19,6 @@ struct PointSet {
 	explicit PointSet(const std::vector<Point>& _points);
 	Point operator[] (int index) const;
 	Point& operator[] (int index);
-	int getLowestLeft() const;
 };
 
 struct Vector {
@@ -42,10 +41,10 @@ struct PointsPolarAngleAndLengthComparator {
 };
 
 struct PointsIndexPolarAngleAndLengthComparator {
-	int origin;
+	const Point& origin;
 	const PointSet& pointSet;
 
-	PointsIndexPolarAngleAndLengthComparator(const PointSet& _pointSet, int _origin);
+	PointsIndexPolarAngleAndLengthComparator(const PointSet& _pointSet, const Point& _origin);
 	bool operator () (int i1, int i2) const;
 };
 
@@ -56,6 +55,7 @@ struct Polygon {
 	std::vector<Point> nodes;
 
 	Polygon(std::vector<Point> _nodes);
+	size_t size() const;
 	double signed_area();
 	double area();
 	double perimeter();
