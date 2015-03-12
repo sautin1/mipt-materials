@@ -1,179 +1,165 @@
 #include "convex_hull.h"
 
-ConvexHull::ConvexHull(const PointSet& point_set, bool is_sorted, const Point& origin)
-	: point_set_(point_set) {
-	if (point_set.points.size() < 3) {
-		throw std::logic_error("Too few nodes to build a convex hull");
-	}
-	// fill permutation
-	points_sorted_.reserve(point_set_.points.size());
-	for (size_t point_index = 0; point_index < point_set_.points.size(); ++point_index) {
-		points_sorted_.push_back(point_index);
-	}
-	// sort points by polar angle
-	if (!is_sorted) {
-		std::sort(points_sorted_.begin(), points_sorted_.end(),
-				  PointsIndexPolarAngleAndLengthComparator(point_set_, origin));
-	}
-
-	// put first 2 points
-	hull_.push_back(points_sorted_[0]);
-	hull_.push_back(points_sorted_[1]);
-	// build hull
-	Vector v_old(point_set_[hull_[0]], point_set_[hull_[1]]);
-	for (size_t point_index = 2; point_index < points_sorted_.size(); ++point_index) {
-		Vector v_new(point_set_[hull_.back()], point_set_[points_sorted_[point_index]]);
-		while (hull_.size() > 1 && !v_new.isClockwiseRotation(v_old)) {
-			hull_.pop_back();
-			v_new = Vector(point_set_[hull_.back()], point_set_[points_sorted_[point_index]]);
-			v_old = Vector(point_set_[hull_[hull_.size() - 2]], point_set_[hull_.back()]);
+void splitPointSetByVector(const PointSet& point_set, const Vector& secant,
+						   PointSet& top_points, PointSet& low_points) {
+	for (size_t point_index = 0; point_index < point_set.points.size(); ++point_index) {
+		Vector to_point(secant.start_point, point_set.points[point_index]);
+		if (secant.isClockwiseRotation(to_point) || secant.isParallel(to_point)) {
+			top_points.points.push_back(point_set.points[point_index]);
 		}
-		hull_.push_back(points_sorted_[point_index]);
+		if (!secant.isClockwiseRotation(to_point)) {
+			low_points.points.push_back(point_set.points[point_index]);
+		}
+	}
+	/* //just some fun with lambdas
+	auto lambda_predicate_top = [&secant](const Point& p) -> bool {
+		Vector v(secant.start_point, p);
+		return secant.isClockwiseRotation(v) || secant.isParallel(v);
+	};
+	auto lambda_predicate_low = [&secant](const Point& p) -> bool {
+		Vector v(secant.start_point, p);
+		return !secant.isClockwiseRotation(v);
+	};
+	std::remove_copy_if(point_set.points.begin(), point_set.points.end(),
+						top_points.points.begin(), lambda_predicate_top);
+	std::remove_copy_if(point_set.points.begin(), point_set.points.end(),
+						top_points.points.begin(), lambda_predicate_top);*/
+}
+
+void sortPolarAngle(PointSet& point_set, const Point& origin) {
+	std::sort(point_set.points.begin(), point_set.points.end(),
+			  PointComparatorPolarAngleAndLength(origin));
+}
+
+void sortPolarAngle(PointSet& point_set) {
+	Point origin = *(std::min_element(point_set.points.begin(), point_set.points.end(),
+									  PointComparatorLeftLow()));
+	sortPolarAngle(point_set, origin);
+}
+
+template <class InputIterator>
+Polygon convexHull(const InputIterator& begin_it, const InputIterator& end_it) {
+	std::vector<Point> hull;
+	if (end_it - begin_it == 0) {
+		return Polygon();
+	}
+	hull.push_back(*begin_it);
+	if (end_it - begin_it == 1) {
+		return Polygon(hull);
+	}
+	hull.push_back(*(begin_it+1));
+	Vector v_old(hull[0], hull[1]);
+	for (auto point_it = begin_it + 2; point_it != end_it; ++point_it) {
+		Vector v_new(hull.back(), *point_it);
+		while (hull.size() > 1 && !v_new.isClockwiseRotation(v_old)) {
+			hull.pop_back();
+			v_new = Vector(hull.back(), *point_it);
+			v_old = Vector(hull[hull.size() - 2], hull.back());
+		}
+		hull.push_back(*point_it);
 		v_old = v_new;
 	}
+	return Polygon(hull);
 }
 
-Polygon ConvexHull::getHullPolygon() const {
-	std::vector<Point> nodes;
-	nodes.reserve(hull_.size());
-	for (size_t node_index = 0; node_index < hull_.size(); ++node_index) {
-		nodes.push_back(point_set_[hull_[node_index]]);
-	}
-	return Polygon(nodes);
-}
-
-std::vector<int> ConvexHull::getHullNodesIndices() const {
-	return hull_;
-}
-
-std::vector<int> ConvexHull::getPointsIndicesAngleSorted() const {
-	return points_sorted_;
-}
-
-PointSet ConvexHull::getAngleSortedPointSet() const {
-	PointSet pointSet;
-	pointSet.points.reserve(points_sorted_.size());
-	for (size_t point_index = 0; point_index < points_sorted_.size(); ++point_index) {
-		pointSet.points.push_back(point_set_[points_sorted_[point_index]]);
-	}
-	return pointSet;
-}
-
-const PointSet& ConvexHull::getPointSet() const {
-	return point_set_;
-}
-
-PointComparatorLeftLow::PointComparatorLeftLow(const PointSet& point_set)
-	: pointSet_(point_set) {}
-
-bool PointComparatorLeftLow::operator () (int i1, int i2) const {
-	return (pointSet_[i1].x < pointSet_[i2].x ||
-			(pointSet_[i1].x == pointSet_[i2].x && pointSet_[i1].y < pointSet_[i2].y));
-}
-
-double min_area_shrunk_hull(const ConvexHull& hull) {
-	Polygon hull_poly = hull.getHullPolygon();
-	std::vector<int> hull_indices = hull.getHullNodesIndices();
-	std::vector<int> points_sorted = hull.getPointsIndicesAngleSorted();
-	const PointSet& point_set = hull.getPointSet();
-	double min_area = hull_poly.area();
-
-	int sorted_point_index = 0;
-	for (size_t hull_node_index = 1; hull_node_index < hull_poly.size() - 1; ++hull_node_index) {
-		int prev_node = hull_indices[hull_node_index - 1];
-		int remove_node = hull_indices[hull_node_index];
-		int next_node = hull_indices[hull_node_index + 1];
-		Polygon triangle(std::vector<Point> {point_set[prev_node],
-											 point_set[remove_node],
-											 point_set[next_node]});
-		double area = hull_poly.area() - triangle.area();
-		PointSet triangle_inner_points(std::vector<Point> (1, point_set[prev_node]));
-		Vector triangle_base(point_set[prev_node], point_set[next_node]);
-		int remove_hull_point_index;
-		while (points_sorted[sorted_point_index] != next_node) {
-			if (points_sorted[sorted_point_index] == remove_node) {
-				remove_hull_point_index = sorted_point_index;
-			} else {
-				Vector v_point(point_set[prev_node], point_set[points_sorted[sorted_point_index]]);
-				if (triangle_base.isClockwiseRotation(v_point)) {
-					triangle_inner_points.points.push_back(point_set[points_sorted[sorted_point_index]]);
-				}
-			}
-			++sorted_point_index;
+double minAreaOfHullWithInternalNodeRemoved(const PointSet& point_set, Polygon& hull) {
+	double min_area = 0;
+	auto prev_point_it = point_set.points.begin();
+	auto remove_point_it = std::find(point_set.points.begin(), point_set.points.end(),
+									 hull.points[1]);
+	for (size_t node_index = 1; node_index < hull.size() - 1; ++node_index) {
+		// node_index is the point we want to remove
+		auto next_point_it = std::find(remove_point_it, point_set.points.end(),
+									   hull.points[node_index + 1]);
+		Polygon triangle(std::vector<Point> {*prev_point_it, *remove_point_it, *next_point_it});
+		if (node_index == 1) {
+			min_area = triangle.area();
 		}
-		triangle_inner_points.points.push_back(point_set[next_node]);
-		if (triangle_inner_points.points.size() >= 3) {
-			// build convex hull on them and add its area
-			ConvexHull inner_up_hull(triangle_inner_points, true, hull_poly.nodes.front());
-			area += inner_up_hull.getHullPolygon().area();
+		PointSet triangle_point_set(next_point_it - prev_point_it);
+		auto last_triangle_point_it = std::copy(prev_point_it, remove_point_it,
+												triangle_point_set.points.begin());
+		std::copy(remove_point_it + 1, next_point_it + 1, last_triangle_point_it);
+		Polygon new_hull = convexHull(triangle_point_set.points.begin(),
+									  triangle_point_set.points.end());
+		if (new_hull.area() - triangle.area() < min_area) {
+			min_area = new_hull.area() - triangle.area();
 		}
-		min_area = std::min(min_area, area);
-		sorted_point_index = remove_hull_point_index;
+		remove_point_it = next_point_it;
+		prev_point_it = remove_point_it;
 	}
+	return min_area + hull.area();
+}
+
+Polygon minAreaTriangularHullWithNodeRemoved(const Polygon& triangle, PointSet& point_set) {
+	sortPolarAngle(point_set, triangle.points[0]);
+	auto prev_point_it = std::find(point_set.points.begin(),
+								   point_set.points.end(),
+								   triangle.points[0]);
+	auto remove_point_it = std::find(prev_point_it,
+									 point_set.points.end(),
+									 triangle.points[1]);
+	auto next_point_it = std::find(remove_point_it,
+								   point_set.points.end(),
+								   triangle.points[2]);
+	PointSet triangle_point_set(next_point_it - prev_point_it);
+	auto last_triangle_point_it = std::copy(prev_point_it, remove_point_it,
+											triangle_point_set.points.begin());
+	std::copy(remove_point_it + 1, next_point_it + 1, last_triangle_point_it);
+	return convexHull(triangle_point_set.points.begin(),
+					  triangle_point_set.points.end());
+}
+
+double minAreaOfHullWithNodeRemoved(const PointSet& point_set) {
+	auto min_max_points = std::minmax_element(point_set.points.begin(), point_set.points.end(),
+											  PointComparatorLeftLow());
+	Point left_low = *min_max_points.first;
+	Point right_top = *min_max_points.second;
+	Vector secant(left_low, right_top);
+	PointSet top_points;
+	PointSet low_points;
+	splitPointSetByVector(point_set, secant, top_points, low_points);
+	sortPolarAngle(top_points, left_low);
+	sortPolarAngle(low_points, right_top);
+	Polygon top_hull = convexHull(top_points.points.begin(), top_points.points.end());
+	Polygon low_hull = convexHull(low_points.points.begin(), low_points.points.end());
+	double total_area = top_hull.area() + low_hull.area();
+	double min_top_hull_area = minAreaOfHullWithInternalNodeRemoved(top_points, top_hull);
+	double min_low_hull_area = minAreaOfHullWithInternalNodeRemoved(low_points, low_hull);
+	double min_area = std::min(min_top_hull_area + low_hull.area(),
+							   min_low_hull_area + top_hull.area());
+
+	// remove left_low point
+	PointSet point_set_copy(point_set.points);
+	{
+		Polygon triangle(std::vector<Point> {low_hull.points[low_hull.size() - 2],
+											 left_low,
+											 top_hull.points[1]});
+		Polygon left_low_hull = minAreaTriangularHullWithNodeRemoved(triangle, point_set_copy);
+		min_area = std::min(total_area - triangle.area() + left_low_hull.area(), min_area);
+	}
+
+	// remove right_top point
+	{
+		Polygon triangle(std::vector<Point> {top_hull.points[top_hull.size() - 2],
+											 right_top,
+											 low_hull.points[1]});
+		Polygon right_top_hull = minAreaTriangularHullWithNodeRemoved(triangle, point_set_copy);
+		min_area = std::min(total_area - triangle.area() + right_top_hull.area(), min_area);
+	}
+
 	return min_area;
 }
 
-double min_area_shrunk_point_set(const PointSet& point_set) {
-	std::vector<int> indices;
-	indices.reserve(point_set.points.size());
-	for (size_t point_index = 0; point_index < point_set.points.size(); ++point_index) {
-		indices.push_back(point_index);
-	}
-	PointComparatorLeftLow comparator(point_set);
-	int left_low_point = *(std::min_element(indices.begin(), indices.end(), comparator));
-	int right_high_point = *(std::max_element(indices.begin(), indices.end(), comparator));
-	PointSet up_point_set;
-	PointSet down_point_set;
-	Vector diameter(point_set[left_low_point], point_set[right_high_point]);
-	for (size_t point_index = 0; point_index < point_set.points.size(); ++point_index) {
-		Vector v(point_set[left_low_point], point_set[point_index]);
-		if (diameter.isClockwiseRotation(v) || diameter.isParallel(v)) {
-			up_point_set.points.push_back(point_set[point_index]);
-		}
-		if (!diameter.isClockwiseRotation(v)) {
-			down_point_set.points.push_back(point_set[point_index]);
-		}
-	}
-	ConvexHull up_hull(up_point_set, false, point_set[left_low_point]);
-	ConvexHull down_hull(down_point_set, false, point_set[right_high_point]);
-	Polygon up_hull_poly = up_hull.getHullPolygon();
-	Polygon down_hull_poly = down_hull.getHullPolygon();
-	double area = up_hull_poly.area() + down_hull_poly.area();
-	double min_area = std::min(up_hull_poly.area() + min_area_shrunk_hull(down_hull),
-							   down_hull_poly.area() + min_area_shrunk_hull(up_hull));
+bool PointComparatorLeftLow::operator () (const Point& p1, const Point& p2) const {
+	return (p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y));
+}
 
-	/*int sorted_point_index = 0;
-	for (size_t hull_node_index = 1; hull_node_index < hull_poly.size() - 1; ++hull_node_index) {
-		int prev_node = hull_indices[hull_node_index - 1];
-		int remove_node = hull_indices[hull_node_index];
-		int next_node = hull_indices[hull_node_index + 1];
-		Polygon triangle(std::vector<Point> {point_set[prev_node],
-											 point_set[remove_node],
-											 point_set[next_node]});
-		double area = hull_poly.area() - triangle.area();
-		PointSet triangle_inner_points(std::vector<Point> (1, point_set[prev_node]));
-		Vector triangle_base(point_set[prev_node], point_set[next_node]);
-		int remove_hull_point_index;
-		while (points_sorted[sorted_point_index] != next_node) {
-			if (points_sorted[sorted_point_index] == remove_node) {
-				remove_hull_point_index = sorted_point_index;
-			} else {
-				Vector v_point(point_set[prev_node], point_set[points_sorted[sorted_point_index]]);
-				if (triangle_base.isClockwiseRotation(v_point)) {
-					triangle_inner_points.points.push_back(point_set[points_sorted[sorted_point_index]]);
-				}
-			}
-			++sorted_point_index;
-		}
-		triangle_inner_points.points.push_back(point_set[next_node]);
-		if (triangle_inner_points.points.size() >= 3) {
-			// build convex hull on them and add its area
-			ConvexHull inner_up_hull(triangle_inner_points, true, hull_poly.nodes.front());
-			area += inner_up_hull.getHullPolygon().area();
-		}
-		min_area = std::min(min_area, area);
-		sorted_point_index = remove_hull_point_index;
-	}*/
+PointComparatorPolarAngleAndLength::PointComparatorPolarAngleAndLength(Point _origin)
+	: origin(_origin) {}
 
-	return min_area;
+bool PointComparatorPolarAngleAndLength::operator () (const Point& p1, const Point& p2) const {
+	Vector v1(origin, p1);
+	Vector v2(origin, p2);
+	return (v2.isClockwiseRotation(v1) || (v1.isParallel(v2)
+										   && (v1.lengthSquared() < v2.lengthSquared())));
 }

@@ -8,8 +8,9 @@
 struct Point {
 	int x;
 	int y;
-
+	Point() = default;
 	Point(int _x, int _y);
+	bool operator == (const Point& other) const;
 };
 
 struct PointSet {
@@ -17,44 +18,29 @@ struct PointSet {
 
 	PointSet() = default;
 	explicit PointSet(const std::vector<Point>& _points);
-	Point operator[] (int index) const;
-	Point& operator[] (int index);
+	explicit PointSet(size_t initial_size);
 };
 
 struct Vector {
 	int x;
 	int y;
+	Point start_point;
 
 	Vector() = default;
 	Vector(int _x, int _y);
 	Vector(const Point& from, const Point& to);
 	long long lengthSquared() const;
 	double length() const;
-	bool isClockwiseRotation(Vector other) const;
-	bool isParallel(Vector other) const;
-};
-
-struct PointsPolarAngleAndLengthComparator {
-	Point origin;
-	explicit PointsPolarAngleAndLengthComparator(Point _origin);
-	bool operator () (const Point& p1, const Point& p2) const;
-};
-
-struct PointsIndexPolarAngleAndLengthComparator {
-	const Point& origin;
-	const PointSet& pointSet;
-
-	PointsIndexPolarAngleAndLengthComparator(const PointSet& _pointSet, const Point& _origin);
-	bool operator () (int i1, int i2) const;
+	bool isClockwiseRotation(const Vector& other) const;
+	bool isParallel(const Vector& other) const;
 };
 
 long long crossProduct(const Vector& v1, const Vector& v2);
 long long dotProduct(const Vector& v1, const Vector& v2);
 
-struct Polygon {
-	std::vector<Point> nodes;
-
-	Polygon(std::vector<Point> _nodes);
+struct Polygon: public PointSet {
+	Polygon() = default;
+	explicit Polygon(const std::vector<Point>& nodes);
 	size_t size() const;
 	double signed_area();
 	double area();

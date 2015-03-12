@@ -3,23 +3,21 @@
 Point::Point(int _x, int _y)
 	: x(_x), y(_y) {}
 
+bool Point::operator == (const Point& other) const {
+	return x == other.x && y == other.y;
+}
+
 PointSet::PointSet(const std::vector<Point>& _points)
 	: points(_points) {}
 
-
-Point PointSet::operator[] (int index) const {
-	return points[index];
-}
-
-Point& PointSet::operator[] (int index) {
-	return points[index];
-}
+PointSet::PointSet(size_t initial_size)
+	: points(initial_size) {}
 
 Vector::Vector(int _x, int _y)
 	: x(_x), y(_y) {}
 
 Vector::Vector(const Point& from, const Point& to)
-	: x(to.x - from.x), y(to.y - from.y) {}
+	: x(to.x - from.x), y(to.y - from.y), start_point(from) {}
 
 long long Vector::lengthSquared() const {
 	return dotProduct(*this, *this);
@@ -29,31 +27,12 @@ double Vector::length() const {
 	return std::sqrt(lengthSquared());
 }
 
-bool Vector::isClockwiseRotation(Vector other) const {
+bool Vector::isClockwiseRotation(const Vector& other) const {
 	return crossProduct(other, *this) < 0;
 }
 
-bool Vector::isParallel(Vector other) const {
+bool Vector::isParallel(const Vector& other) const {
 	return crossProduct(*this, other) == 0;
-}
-
-PointsPolarAngleAndLengthComparator::PointsPolarAngleAndLengthComparator(Point _origin)
-	: origin(_origin) {}
-
-bool PointsPolarAngleAndLengthComparator::operator () (const Point& p1, const Point& p2) const {
-	Vector v1(origin, p1);
-	Vector v2(origin, p2);
-	return (v2.isClockwiseRotation(v1) || (v1.isParallel(v2) && (v1.lengthSquared() < v2.lengthSquared())));
-}
-
-PointsIndexPolarAngleAndLengthComparator::PointsIndexPolarAngleAndLengthComparator(const PointSet& _pointSet,
-																				   const Point& _origin)
-	: origin(_origin), pointSet(_pointSet) {}
-
-bool PointsIndexPolarAngleAndLengthComparator::operator () (int i1, int i2) const {
-	const Point& p1 = pointSet[i1];
-	const Point& p2 = pointSet[i2];
-	return PointsPolarAngleAndLengthComparator(origin)(p1, p2);
 }
 
 long long crossProduct(const Vector& v1, const Vector& v2) {
@@ -64,15 +43,11 @@ long long dotProduct(const Vector& v1, const Vector& v2) {
 	return v1.x * v2.x + v1.y * v2.y;
 }
 
-Polygon::Polygon(std::vector<Point> _nodes)
-	: nodes(_nodes), is_counted_area_(false), is_counted_perimeter_(false) {
-	if (_nodes.size() < 3) {
-		throw std::logic_error("Too few nodes to build a polygon");
-	}
-}
+Polygon::Polygon(const std::vector<Point>& nodes)
+	: PointSet(nodes), is_counted_area_(false), is_counted_perimeter_(false) {}
 
 size_t Polygon::size() const {
-	return nodes.size();
+	return points.size();
 }
 
 double Polygon::signed_area() {
@@ -80,10 +55,13 @@ double Polygon::signed_area() {
 		return area_;
 	}
 	area_ = 0;
-	Vector v1 = Vector(nodes[0], nodes[1]);
+	if (size() == 1) {
+		return area_;
+	}
+	Vector v1(points[0], points[1]);
 	Vector v2;
-	for (size_t node_index = 2; node_index < nodes.size(); ++node_index) {
-		v2 = Vector(nodes[0], nodes[node_index]);
+	for (size_t node_index = 2; node_index < points.size(); ++node_index) {
+		v2 = Vector(points[0], points[node_index]);
 		area_ += crossProduct(v1, v2) / 2.0;
 		v1 = v2;
 	}
@@ -99,10 +77,10 @@ double Polygon::perimeter() {
 		return perimeter_;
 	}
 	perimeter_ = 0;
-	for (size_t node_index = 1; node_index < nodes.size(); ++node_index) {
-		Vector v(nodes[node_index - 1], nodes[node_index]);
+	for (size_t node_index = 1; node_index < points.size(); ++node_index) {
+		Vector v(points[node_index - 1], points[node_index]);
 		perimeter_ += v.length();
 	}
-	perimeter_ += Vector(nodes.back(), nodes.front()).length();
+	perimeter_ += Vector(points.back(), points.front()).length();
 	return perimeter_;
 }

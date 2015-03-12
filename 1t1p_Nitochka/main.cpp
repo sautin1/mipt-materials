@@ -3,7 +3,7 @@
 #include "convex_hull.h"
 
 int main() {
-	std::ifstream fin("test.in");
+	std::ifstream fin("test4.in");
 	int point_quantity;
 	fin/*std::cin*/ >> point_quantity;
 	PointSet point_set;
@@ -15,8 +15,9 @@ int main() {
 	}
 	fin.close();
 
-	double min_area = min_area_shrunk_point_set(point_set);
-	std::cout << min_area << '\n';
+	double result_area = minAreaOfHullWithNodeRemoved(point_set);
+	std::cout << result_area << '\n';
+
 	return 0;
 }
 
