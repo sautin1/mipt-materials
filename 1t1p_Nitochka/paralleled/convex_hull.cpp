@@ -1,5 +1,8 @@
 #include "convex_hull.h"
 
+double start_timer = 0;
+double stop_timer = 0;
+
 void splitPointSetByVector(const PointSet& point_set, const Vector& secant,
 						   PointSet& top_points, PointSet& low_points) {
 	for (size_t point_index = 0; point_index < point_set.points.size(); ++point_index) {
@@ -63,7 +66,7 @@ Polygon convexHull(const InputIterator& begin_it, const InputIterator& end_it) {
 }
 
 double minAreaOfHullWithInternalNodeRemoved(const PointSet& point_set, Polygon& hull) {
-	double min_area = 0;
+	double min_area = std::numeric_limits<double>::infinity();
 	std::vector<std::vector<Point>::const_iterator> hull_nodes_in_set;
 	auto point_set_it = point_set.points.begin();
 	for (size_t hull_node_index = 0; hull_node_index < hull.size(); ++hull_node_index) {
@@ -73,20 +76,21 @@ double minAreaOfHullWithInternalNodeRemoved(const PointSet& point_set, Polygon& 
 		hull_nodes_in_set.push_back(point_set_it);
 		++point_set_it;
 	}
+#pragma omp parallel for schedule(static) reduction (min: min_area)
+//#pragma omp parallel for schedule(dynamic) reduction (min: min_area)
+//#pragma omp parallel for schedule(guided) reduction (min: min_area)
 	for (size_t node_index = 1; node_index < hull.size() - 1; ++node_index) {
 		auto prev_point_it = hull_nodes_in_set[node_index - 1];
 		auto remove_point_it = hull_nodes_in_set[node_index];
 		auto next_point_it = hull_nodes_in_set[node_index + 1];
 		Polygon triangle(std::vector<Point> {*prev_point_it, *remove_point_it, *next_point_it});
-		if (node_index == 1) {
-			min_area = triangle.area();
-		}
 		PointSet triangle_point_set(next_point_it - prev_point_it);
 		auto last_triangle_point_it = std::copy(prev_point_it, remove_point_it,
 												triangle_point_set.points.begin());
 		std::copy(remove_point_it + 1, next_point_it + 1, last_triangle_point_it);
 		Polygon new_hull = convexHull(triangle_point_set.points.begin(),
 									  triangle_point_set.points.end());
+
 		if (new_hull.area() - triangle.area() < min_area) {
 			min_area = new_hull.area() - triangle.area();
 		}
@@ -127,8 +131,12 @@ double minAreaOfHullWithNodeRemoved(const PointSet& point_set) {
 	Polygon top_hull = convexHull(top_points.points.begin(), top_points.points.end());
 	Polygon low_hull = convexHull(low_points.points.begin(), low_points.points.end());
 	double total_area = top_hull.area() + low_hull.area();
+
+	/**/omp_set_num_threads(4);
+	/**/start_timer = omp_get_wtime();
 	double min_top_hull_area = minAreaOfHullWithInternalNodeRemoved(top_points, top_hull);
 	double min_low_hull_area = minAreaOfHullWithInternalNodeRemoved(low_points, low_hull);
+	/**/stop_timer = omp_get_wtime();
 	double min_area = std::min(min_top_hull_area + low_hull.area(),
 							   min_low_hull_area + top_hull.area());
 

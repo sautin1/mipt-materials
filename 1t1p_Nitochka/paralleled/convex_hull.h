@@ -7,6 +7,9 @@
 
 #include "geometry.h"
 
+extern double start_timer;
+extern double stop_timer;
+
 // splits the set of points into two sets not changing their relative ordering.
 // The first set contains points that are located higher or on the vector.
 // The second set contains points that are located lower or on the vector.
