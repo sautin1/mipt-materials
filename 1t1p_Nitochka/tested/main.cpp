@@ -1,4 +1,173 @@
-#include "convex_hull.h"
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <functional>
+#include <stdexcept>
+#include <vector>
+
+struct Point {
+	int x;
+	int y;
+	Point() = default;
+	Point(int _x, int _y);
+	bool operator == (const Point& other) const;
+};
+
+struct PointSet {
+	std::vector<Point> points;
+
+	PointSet() = default;
+	explicit PointSet(const std::vector<Point>& _points);
+	explicit PointSet(size_t initial_size);
+};
+
+struct Vector {
+	int x;
+	int y;
+	Point start_point;
+
+	Vector() = default;
+	Vector(int _x, int _y);
+	Vector(const Point& from, const Point& to);
+	long long lengthSquared() const;
+	double length() const;
+	bool isClockwiseRotation(const Vector& other) const;
+	bool isParallel(const Vector& other) const;
+};
+
+long long crossProduct(const Vector& v1, const Vector& v2);
+long long dotProduct(const Vector& v1, const Vector& v2);
+
+struct Polygon: public PointSet {
+	Polygon() = default;
+	explicit Polygon(const std::vector<Point>& nodes);
+	size_t size() const;
+	double signed_area();
+	double area();
+	double perimeter();
+private:
+	double area_;
+	double perimeter_;
+	bool is_counted_area_;
+	bool is_counted_perimeter_;
+};
+
+
+Point::Point(int _x, int _y)
+	: x(_x), y(_y) {}
+
+bool Point::operator == (const Point& other) const {
+	return x == other.x && y == other.y;
+}
+
+PointSet::PointSet(const std::vector<Point>& _points)
+	: points(_points) {}
+
+PointSet::PointSet(size_t initial_size)
+	: points(initial_size) {}
+
+Vector::Vector(int _x, int _y)
+	: x(_x), y(_y) {}
+
+Vector::Vector(const Point& from, const Point& to)
+	: x(to.x - from.x), y(to.y - from.y), start_point(from) {}
+
+long long Vector::lengthSquared() const {
+	return dotProduct(*this, *this);
+}
+
+double Vector::length() const {
+	return std::sqrt(lengthSquared());
+}
+
+bool Vector::isClockwiseRotation(const Vector& other) const {
+	return crossProduct(other, *this) < 0;
+}
+
+bool Vector::isParallel(const Vector& other) const {
+	return crossProduct(*this, other) == 0;
+}
+
+long long crossProduct(const Vector& v1, const Vector& v2) {
+	return v1.x * v2.y - v1.y * v2.x;
+}
+
+long long dotProduct(const Vector& v1, const Vector& v2) {
+	return v1.x * v2.x + v1.y * v2.y;
+}
+
+Polygon::Polygon(const std::vector<Point>& nodes)
+	: PointSet(nodes), is_counted_area_(false), is_counted_perimeter_(false) {}
+
+size_t Polygon::size() const {
+	return points.size();
+}
+
+double Polygon::signed_area() {
+	if (is_counted_area_) {
+		return area_;
+	}
+	area_ = 0;
+	if (size() == 1) {
+		return area_;
+	}
+	Vector v1(points[0], points[1]);
+	Vector v2;
+	for (size_t node_index = 2; node_index < points.size(); ++node_index) {
+		v2 = Vector(points[0], points[node_index]);
+		area_ += crossProduct(v1, v2) / 2.0;
+		v1 = v2;
+	}
+	return area_;
+}
+
+double Polygon::area() {
+	return std::abs(signed_area());
+}
+
+double Polygon::perimeter() {
+	if (is_counted_perimeter_) {
+		return perimeter_;
+	}
+	perimeter_ = 0;
+	for (size_t node_index = 1; node_index < points.size(); ++node_index) {
+		Vector v(points[node_index - 1], points[node_index]);
+		perimeter_ += v.length();
+	}
+	perimeter_ += Vector(points.back(), points.front()).length();
+	return perimeter_;
+}
+
+
+// splits the set of points into two sets not changing their relative ordering.
+// The first set contains points that are located higher or on the vector.
+// The second set contains points that are located lower or on the vector.
+void splitPointSetByVector(const PointSet& point_set, const Vector& secant,
+						   PointSet& top_points, PointSet& low_points);
+
+// sorts points in the set by polar angle.
+void sortPolarAngle(PointSet& point_set, const Point& origin);
+
+// takes set of points, sorted by polar angle, and builds convex hull on them.
+template <class InputIterator>
+Polygon convexHull(const InputIterator& begin_it, const InputIterator& end_it);
+
+// returns area of a convex hull of minimal area on all points from point_set except one.
+// First and last points are not removed.
+double minAreaOfHullWithInternalNodeRemoved(const PointSet& point_set, Polygon& hull);
+
+// returns area of a convex hull of minimal area on all points from point_set except one.
+double minAreaOfHullWithNodeRemoved(const PointSet& point_set);
+
+struct PointComparatorPolarAngleAndLength {
+	Point origin;
+	explicit PointComparatorPolarAngleAndLength(Point _origin);
+	bool operator () (const Point& p1, const Point& p2) const;
+};
+
+struct PointComparatorLeftLow {
+	bool operator () (const Point& p1, const Point& p2) const;
+};
 
 void splitPointSetByVector(const PointSet& point_set, const Vector& secant,
 						   PointSet& top_points, PointSet& low_points) {
@@ -163,3 +332,29 @@ bool PointComparatorPolarAngleAndLength::operator () (const Point& p1, const Poi
 	return (v2.isClockwiseRotation(v1) || (v1.isParallel(v2)
 										   && (v1.lengthSquared() < v2.lengthSquared())));
 }
+
+
+int main() {
+	std::ios_base::sync_with_stdio(false);
+	for (;;) {
+		int point_quantity;
+		std::cin >> point_quantity;
+		if (point_quantity == 0) {
+			break;
+		}
+		PointSet point_set;
+		point_set.points.reserve(point_quantity);
+		for (int nail_index = 0; nail_index < point_quantity; ++nail_index) {
+			int x, y;
+			std::cin >> x >> y;
+			point_set.points.push_back(Point(x, y));
+		}
+
+		double result_area = minAreaOfHullWithNodeRemoved(point_set);
+		std::cout.precision(2);
+		std::cout << std::fixed << result_area << '\n';
+	}
+
+	return 0;
+}
+
