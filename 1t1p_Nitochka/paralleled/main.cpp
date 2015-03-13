@@ -7,4 +7,3 @@ int main() {
 	timeTestLauncher(10);
 	return 0;
 }
-

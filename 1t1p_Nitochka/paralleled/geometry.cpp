@@ -7,6 +7,10 @@ bool Point::operator == (const Point& other) const {
 	return x == other.x && y == other.y;
 }
 
+bool Point::operator != (const Point& other) const {
+	return !operator ==(other);
+}
+
 PointSet::PointSet(const std::vector<Point>& _points)
 	: points(_points) {}
 

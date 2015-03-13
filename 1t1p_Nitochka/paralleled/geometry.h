@@ -12,6 +12,7 @@ struct Point {
 	Point() = default;
 	Point(int _x, int _y);
 	bool operator == (const Point& other) const;
+	bool operator != (const Point& other) const;
 };
 
 struct PointSet {
