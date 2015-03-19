@@ -1,3 +1,4 @@
+import Data.List
 --(email, name) = ("sautin@phystech.edu", encodeUtf8 "Саутин А.А. (2)") -- адрес почты и фамилия с инициалами
 
 art =
@@ -24,11 +25,7 @@ flipVert :: [[a]] -> [[a]]
 flipVert = reverse
 
 rotate90 :: [[a]] -> [[a]]
-rotate90 [] = []
-rotate90 all@(x:xs) = foldl (flip consCol) (replicate (length x) []) all
-	where
-		consCol :: [a] -> [[a]] -> [[a]]
-		consCol = zipWith (:)
+rotate90 = flipHor.transpose
 
 rotate180 :: [[a]] -> [[a]]
 rotate180 = applyNTimes 2 rotate90
