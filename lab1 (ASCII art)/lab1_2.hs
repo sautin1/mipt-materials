@@ -14,6 +14,9 @@ art =
 	"@..@...............@.."
 	]
 
+showResult :: [String] -> IO ()
+showResult sl = putStrLn (intercalate "\n" sl)
+
 applyNTimes :: Int -> (a -> a) -> a -> a
 applyNTimes n f x = (iterate f x !! n)
 
