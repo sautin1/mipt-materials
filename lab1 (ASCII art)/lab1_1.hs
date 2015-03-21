@@ -1,24 +1,13 @@
 --(email, name) = ("sautin@phystech.edu", encodeUtf8 "Саутин А.А. (2)") -- адрес почты и фамилия с инициалами
 
-art =
-	[
-	"@..@..................",
-	"..@..@................",
-	"....@..@..@@@@@@@@@@@@",
-	"......@..@............",
-	"........@..@..........",
-	"......@..@...@..@@@@@@",
-	"....@..@.......@......",
-	"..@..@...........@....",
-	"@..@...............@.."
-	]
+import Art
 
 intercalate :: String -> [String] -> String
 intercalate _ [] = ""
 intercalate del (x:xs) = x ++ del ++ intercalate del xs
 
-showResult :: [String] -> IO ()
-showResult sl = putStrLn (intercalate "\n" sl)
+showArt :: [String] -> IO ()
+showArt sl = putStrLn (intercalate "\n" sl)
 
 applyNTimes :: Int -> (a -> a) -> a -> a
 applyNTimes n f x = (iterate f x !! n)
