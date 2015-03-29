@@ -103,7 +103,7 @@ main = do
 	withSocketsDo $ do
 	dir <- getCurrentDirectory
 	initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab1"
-	handle <- openFile (dir ++ "/Lab1.hs") ReadMode
+	handle <- openFile (dir ++ "/lab1.hs") ReadMode
 	hSetEncoding handle utf8_bom
 	content <- hGetContents handle
 	let req = urlEncodedBody [("email", email), ("content", C.pack content)] $ initReq { method = "POST" }
