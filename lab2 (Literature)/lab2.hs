@@ -4,6 +4,7 @@ import qualified Data.Char as Char
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified System.IO as I -- to enable UTF-8
 import System.Environment
 
 type Sentence = [String]
@@ -43,9 +44,9 @@ characters dict = filter (isCharacter dict)
 
 main = do
     args <- getArgs
-    dictData <- readFile $ args !! 0
+    dictData <- I.readFile $ args !! 0
     let dict = Set.fromList $ lines dictData
-    contents <- getContents
+    contents <- I.getContents
     let charactersAll = map (characters dict) $ splitSentences contents
     let relationsAll = map (groupRelations.makeRelations) charactersAll -- list of maps from (Character, Character) to Integer
     let relationsCount = Map.unionsWith (+) relationsAll
@@ -54,4 +55,4 @@ main = do
     --mapM_ print charactersAll
     --putStrLn ""
     --putStrLn "Relations:"
-    mapM_ print relationsSorted
+    mapM_ I.print relationsSorted
