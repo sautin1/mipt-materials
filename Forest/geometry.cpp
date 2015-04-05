@@ -1,8 +1,10 @@
 #include "geometry.h"
 
 bool equals(double x, double y) {
-	return std::abs(x - y) < kEpsilon;
+	return abs(x - y) < kEpsilon;
 }
+
+Point::Point() {}
 
 Point::Point(Coord _x, Coord _y)
 	: x(_x), y(_y) {}
@@ -11,11 +13,15 @@ bool Point::operator == (const Point& other) const {
 	return x == other.x && y == other.y;
 }
 
+PointSet::PointSet() {}
+
 PointSet::PointSet(const std::vector<Point>& _points)
 	: points(_points) {}
 
 PointSet::PointSet(size_t initial_size)
 	: points(initial_size) {}
+
+Vector::Vector() {}
 
 Vector::Vector(Coord _x, Coord _y)
 	: x(_x), y(_y) {}
@@ -28,7 +34,7 @@ long long Vector::lengthSquared() const {
 }
 
 double Vector::length() const {
-	return std::sqrt(lengthSquared());
+	return sqrt(1.0 * lengthSquared());
 }
 
 bool Vector::isClockwiseRotation(const Vector& other) const {
@@ -85,6 +91,8 @@ Coord dotProduct(const Vector& v1, const Vector& v2) {
 	return v1.x * v2.x + v1.y * v2.y;
 }
 
+Polygon::Polygon() {}
+
 Polygon::Polygon(const std::vector<Point>& nodes)
 	: PointSet(nodes), is_counted_area_(false), is_counted_perimeter_(false) {}
 
@@ -111,7 +119,7 @@ double Polygon::signed_area() {
 }
 
 double Polygon::area() {
-	return std::abs(signed_area());
+	return abs(signed_area());
 }
 
 double Polygon::perimeter() {
@@ -131,7 +139,7 @@ Circle::Circle(const Point& _c, double _rad)
 	: c(_c), rad(_rad) {}
 
 double distance(const Point& p, const Line& l) {
-	return std::abs(l.a * p.x + l.b * p.y + l.c) / std::sqrt(std::pow(l.a, 2) + std::pow(l.b, 2));
+	return abs(l.a * p.x + l.b * p.y + l.c) / sqrt(1.0 * (pow(l.a, 2) + pow(l.b, 2)));
 }
 
 bool intersects(const Line& line, const Circle& circle) {
@@ -149,7 +157,7 @@ std::vector<Line> getTangents(Circle c1, Circle c2) {
 		for (int j = -1; j <= 1; j += 2) {
 			double rad = j * c2.rad - i * c1.rad;
 			double discr = len - pow(rad, 2);
-//			if (discr < -kEpsilon) {
+//			if (discr < kEpsilon) {
 //				throw std::logic_error("Got negative discriminant");
 //			}
 			discr = sqrt(abs(discr));

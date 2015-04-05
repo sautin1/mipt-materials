@@ -2,6 +2,7 @@
 #define GEOMETRY_H
 
 #include <algorithm>
+#include <cmath>
 #include <stdexcept>
 #include <vector>
 
@@ -14,7 +15,7 @@ bool equals(double x, double y);
 struct Point {
 	Coord x;
 	Coord y;
-	Point() = default;
+	Point();
 	Point(Coord _x, Coord _y);
 	bool operator == (const Point& other) const;
 };
@@ -22,7 +23,7 @@ struct Point {
 struct PointSet {
 	std::vector<Point> points;
 
-	PointSet() = default;
+	PointSet();
 	explicit PointSet(const std::vector<Point>& _points);
 	explicit PointSet(size_t initial_size);
 };
@@ -31,7 +32,7 @@ struct Vector {
 	Coord x;
 	Coord y;
 
-	Vector() = default;
+	Vector();
 	Vector(Coord _x, Coord _y);
 	Vector(const Point& from, const Point& to);
 	long long lengthSquared() const;
@@ -55,7 +56,7 @@ Coord crossProduct(const Vector& v1, const Vector& v2);
 Coord dotProduct(const Vector& v1, const Vector& v2);
 
 struct Polygon: public PointSet {
-	Polygon() = default;
+	Polygon();
 	explicit Polygon(const std::vector<Point>& nodes);
 	size_t size() const;
 	double signed_area();
