@@ -9,8 +9,15 @@ module ChessTrie (
 	insert,
 	fromList,
 	ChessTrie.show,
-	longestOpen,
-	winOpening
+	traverse,
+	goDeeper,
+	reverseResult,
+	whiteProb,
+	blackProb,
+	longestOpenVisit,
+	winOpenVisit,
+	whiteOpenVisitWithLast,
+	blackOpenVisitWithLast
 ) where
 
 import qualified Data.Map as Map
@@ -46,11 +53,10 @@ data ChessTrie = ChessTrie {
 					value 	:: TrieValue
 				} deriving (Show, Eq)
 
+-- basic trie functions
+
 empty :: ChessTrie
 empty = ChessTrie (Map.empty) $ TrieValue 0 0 0 ""
-
--- leave it private (do not export)
-add v1 newKey v2 = TrieValue (occB v1 + (occB v2)) (occW v1 + (occW v2)) (occTot v1 + (occTot v2)) newKey
 
 lookup :: Opening -> ChessTrie -> Maybe TrieValue
 lookup [] tr = Just (value tr)
@@ -60,6 +66,9 @@ lookup (t:ts) tr =
 		Nothing -> Nothing
 		where
 			subtrie = Map.lookup t $ trans tr
+
+-- leave it private (do not export)
+add v1 newKey v2 = TrieValue (occW v1 + (occW v2)) (occB v1 + (occB v2)) (occTot v1 + (occTot v2)) newKey
 
 insert :: Game -> ChessTrie -> ChessTrie
 insert (tList, ww) = insert' tList (initVal ww) ""
@@ -84,63 +93,82 @@ show tr = show' (Prelude.show . value) "" tr
 			where
 				foldedSubtrie = foldl (\acc t -> show' (("\t"++).f) acc t) "" . Map.elems $ trans tr
 
-longestOpen :: ChessTrie -> (Opening, Int)
-longestOpen = longest' ([], 0) ([], 0)
+-- traverses trie, accumulating two values: acc - value we want to get after the traverse, cur - state of the node (e.g. (key, depth))
+traverse :: (a -> b -> a -> ChessTrie -> a) -> (ChessTrie -> b -> b) -> a -> b -> ChessTrie -> a
+traverse visit newCur stA stC trie = traverse' stA stC trie
 	where
-		longest' acc@(bestK, bestD) cur@(curK, curD) tr
-			| (occTot $ value tr) <= 1 = acc 					-- is not an opening, no openings lower -> fail
-			| (Map.null $ trans tr) && (curD <= bestD) = acc 	-- is an opening, is a leaf, has bad depth
-			| (Map.null $ trans tr) = cur 						-- is an opening, is a leaf, has good depth
-			| subD <= curD = cur 								-- is an opening, not leaf, subtree has no better opening
-			| otherwise = sub 									-- is an opening, not leaf, subtree has better opening
-				where
-					sub@(subK, subD) = fst $ Map.fold folderF (acc, cur) $ trans tr
-						where
-							folderF tr (a@(aK, aD), c@(cK, cD)) = (longest' a newCur tr, c)
-								where
-									newCur = (cK ++ [key $ value tr], cD + 1)
+		traverse' acc cur tr = visit acc cur sub tr
+			where
+				sub = fst $ Map.fold f (acc, cur) $ trans tr
+					where
+						f tr (acc', cur') = (traverse' acc' (newCur tr cur') tr, cur')
 
+-- auxiliary util for winOpenVisit and longestOpenVisit
+goDeeper :: ChessTrie -> (Opening, Integer) -> (Opening, Integer)
+goDeeper tr (kl, d) = ((key $ value tr) : kl, d + 1) -- opening needs to be reverted
+--goDeeper tr (kl, d) = (kl ++ [key $ value tr], d + 1) -- works slower
 
-winOpening :: ChessTrie -> (Opening, Float)
-winOpening = win' ([], 0.0) ([], 0)
-	where
-		win' acc@(bestK, bestP) cur@(curK, curD) tr
-			| (occTot $ value tr) <= 1 						= acc	-- is not an opening, no openings lower -> fail
-			| (Map.null $ trans tr) && (curP <= bestP) 		= acc	-- is an opening, is a leaf, has bad probability
-			| (Map.null $ trans tr) && (curD == 0) 			= acc	-- is an opening, is a leaf, has good probability, no last turn (game has just started)
-			| (Map.null $ trans tr) && (curD `mod` 2 == 1)  = acc	-- is an opening, is a leaf, has good probability, last is black's turn
-			| (Map.null $ trans tr) 				= (curK, curP)	-- is an opening, is a leaf, has good depth
-			| subP <= curP 							= (curK, curP)	-- is an opening, not leaf, subtree has no better opening
-			| otherwise 							= sub			-- is an opening, not leaf, subtree has better opening
-				where
-					curP = (fromInteger $ occW $ value tr) / (fromInteger $ occTot $ value tr)
-					sub@(subK, subP) = fst $ Map.fold folderF (acc, cur) $ trans tr
-						where
-							folderF tr (a, c@(cK, cD)) = (win' a newCur tr, c)
-								where
-									newCur = (cK ++ [key $ value tr], cD + 1)
+-- should be used after goDeeper to get correct opening
+reverseResult :: (Opening, Integer) -> (Opening, Integer)
+reverseResult (op, n) = (reverse op, n)
 
---reverseOpening
+-- functions for winOpenVisit
 
-----traverse :: ChessTrie
---traverse = whiteWinTrav ([], 0.0) ([], 0) sub
---	where
---		sub@(subK, subP) = fst $ Map.fold f (acc, cur) $ trans tr
---			where
---				f tr (a)
-		
+whiteProb :: ChessTrie -> Float
+whiteProb tr = (fromInteger $ occW $ value tr) / (fromInteger $ occTot $ value tr)
 
-updateKeyDepth :: String -> (Opening, Integer) -> (Opening, Integer)
-updateKeyDepth s (kl, d) = ((s:kl), d + 1)
+blackProb :: ChessTrie -> Float
+blackProb tr = (fromInteger $ occB $ value tr) / (fromInteger $ occTot $ value tr)
 
-whiteWinTrav :: (Opening, Float) -> (Opening, Integer) -> (Opening, Float) -> ChessTrie -> (Opening, Float)
-whiteWinTrav acc@(accK, accP) cur@(curK, curD) sub@(subK, subP) tr
-	| (occTot $ value tr) <= 1 = acc -- not opening
-	| (Map.null $ trans tr) && (curD `mod` 2 /= 0) = acc -- opening, leaf, not white's turn
-	| (Map.null $ trans tr) && (curP <= accP) = acc -- is an opening, leaf, white's turn, bad probability
-	| (Map.null $ trans tr) = (curK, curP) -- opening, leaf, white's turn, good probability
-	| curD == 0 = sub -- opening, not leaf, empty key
-	| subP <= curP = (curK, curP) -- opening, not leaf, nonempty key, good probability
-	| otherwise = sub -- opening, not leaf, nonempty key, bad probability
+-- visitors for traverse
+
+longestOpenVisit :: (Opening, Integer) -> (Opening, Integer) -> (Opening, Integer) -> ChessTrie -> (Opening, Integer)
+longestOpenVisit acc@(accK, accD) cur@(curK, curD) sub@(subK, subD) tr
+	| (occTot $ value tr) <= 1 = acc 								-- not opening
+	| (accD <= subD) && (curD <= subD) = sub			 			-- opening, subP - good depth
+	| (subD <= curD) && (accD <= curD) = cur 						-- opening, curP - good depth
+	| otherwise = acc 												-- opening, accP - good depth
+
+-- finds best opening for a player
+winOpenVisit :: (ChessTrie -> Float) -> (Opening, Float) -> (Opening, Integer) -> (Opening, Float) -> ChessTrie -> (Opening, Float)
+winOpenVisit prob acc@(accK, accP) cur@(curK, curD) sub@(subK, subP) tr
+	| (occTot $ value tr) <= 1 = acc 								-- not opening
+	| (Map.null $ trans tr) && (accP <= curP) = (curK, curP)		-- opening, leaf, 		curP - good probability
+	|  Map.null $ trans tr = acc 		 							-- opening, leaf, 		curP - bad probability
+	|  curD == 0 = sub 			 									-- opening, not leaf,	root
+	| (accP <= subP) && (curP <= subP) = sub			 			-- opening, not leaf, 	not root, subP - good probability
+	| (subP <= curP) && (accP <= curP) = (curK, curP)				-- opening, not leaf, 	not root, curP - good probability
+	| otherwise = acc 												-- opening, not leaf, 	not root, accP - good probability
+		where
+			curP = prob tr
+
+-- finds best opening for 'white' where a turn of 'white' is the last one
+whiteOpenVisitWithLast :: (Opening, Float) -> (Opening, Integer) -> (Opening, Float) -> ChessTrie -> (Opening, Float)
+whiteOpenVisitWithLast acc@(accK, accP) cur@(curK, curD) sub@(subK, subP) tr
+	| (occTot $ value tr) <= 1 = acc 								-- not opening
+	| (Map.null $ trans tr) && (curD `mod` 2 /= 1) = acc 			-- opening, leaf, 		not white's turn
+	| (Map.null $ trans tr) && (accP <= curP) = (curK, curP)		-- opening, leaf, 		white's turn, 		curP - good probability
+	|  Map.null $ trans tr = acc 		 							-- opening, leaf, 		white's turn, 		curP - bad probability
+	| (curD `mod` 2 /= 1) && (accP <= subP) = sub					-- opening, not leaf, 	not white's turn,	accP - bad probability
+	|  curD `mod` 2 /= 1 = acc 										-- opening, not leaf, 	not white's turn, 	accP - good probability
+	| (accP <= subP) && (curP <= subP) = sub			 			-- opening, not leaf, 	white's turn,		not root, subP - good probability
+	| (subP <= curP) && (accP <= curP) = (curK, curP)				-- opening, not leaf, 	white's turn,		not root, curP - good probability
+	| otherwise = acc 												-- opening, not leaf, 	white's turn,		not root, accP - good probability
 		where
 			curP = (fromInteger $ occW $ value tr) / (fromInteger $ occTot $ value tr)
+
+-- finds best opening for 'black' where a turn of 'black' is the last one
+blackOpenVisitWithLast :: (Opening, Float) -> (Opening, Integer) -> (Opening, Float) -> ChessTrie -> (Opening, Float)
+blackOpenVisitWithLast acc@(accK, accP) cur@(curK, curD) sub@(subK, subP) tr
+	| (occTot $ value tr) <= 1 = acc 								-- not opening
+	| (Map.null $ trans tr) && (curD `mod` 2 /= 0) = acc 			-- opening, leaf, 		not black's turn
+	| (Map.null $ trans tr) && (accP <= curP) = (curK, curP)		-- opening, leaf, 		black's turn, 		curP - good probability
+	|  Map.null $ trans tr = acc 		 							-- opening, leaf, 		black's turn, 		curP - bad probability
+	| (curD `mod` 2 /= 0) && (accP <= subP) = sub					-- opening, not leaf, 	not black's turn,	accP - bad probability
+	|  curD `mod` 2 /= 0 = acc 										-- opening, not leaf, 	not black's turn, 	accP - good probability
+	|  curD == 0 = sub 			 									-- opening, not leaf, 	black's turn, 		root
+	| (accP <= subP) && (curP <= subP) = sub			 			-- opening, not leaf, 	black's turn,		subP - good probability
+	| (subP <= curP) && (accP <= curP) = (curK, curP)				-- opening, not leaf, 	black's turn,		curP - good probability
+	| otherwise = acc 												-- opening, not leaf, 	black's turn,		accP - good probability
+		where
+			curP = (fromInteger $ occB $ value tr) / (fromInteger $ occTot $ value tr)

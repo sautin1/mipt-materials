@@ -12,11 +12,10 @@ main = do
 	let gameList = map Trie.buildGame usefulData -- list of games
 	let trie = Trie.fromList gameList
 
-	putStrLn "-- finding longest opening --"
-	let longest@(ls, ld) = Trie.longestOpen trie
-	putStrLn "in format (opening, length):"
+	putStrLn ">> finding longest opening in format (opening, length)"
+	let longest@(ls, ld) = Trie.reverseResult $ Trie.traverse Trie.longestOpenVisit Trie.goDeeper ([], 0) ([], 0) trie
 	print $ longest
-	putStrLn "\nValue, stored in trie with this opening"
-	putStrLn "(occW - white wins, occB - black wins,\noccTot - total games, key - last turn):"
+	putStrLn "\n>> Value, stored in trie with this opening"
+	putStrLn ">> (occW - white wins, occB - black wins, occTot - total games, key - last turn)"
 	print $ Trie.lookup ls trie
 	hClose handle
