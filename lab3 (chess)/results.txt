@@ -23,5 +23,5 @@ Program output on input from "db.pgn":
 
 Time measurements using "timer.sh":
 
-parallel 	: 6.734984210
+parallel    : 6.734984210
 not parallel: 7.822703871
