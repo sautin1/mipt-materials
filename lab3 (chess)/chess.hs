@@ -2,14 +2,17 @@
 
 import System.IO
 import System.Environment
+import Control.Monad.Par (parMap, runPar) -- for enabling parMap
 import qualified ChessTrie as Trie
+import qualified Data.Map as Map
 
 main = do
     args <- getArgs
     handle <- openFile (args !! 0) ReadMode
     contents <- hGetContents handle
     let usefulData = filter (\s -> (s /= "\r") && (head s /= '[')) $ lines contents -- list of useful strings
-    let gameList = map Trie.buildGame usefulData -- list of games
+    let gameList = runPar $ parMap Trie.buildGame usefulData -- list of games
+    --let gameList = map Trie.buildGame usefulData -- list of games -- without paralleling
     let trie = Trie.fromList gameList
 
     putStrLn "1. Longest opening (opening, length):"
