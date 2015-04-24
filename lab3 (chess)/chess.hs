@@ -12,10 +12,43 @@ main = do
 	let gameList = map Trie.buildGame usefulData -- list of games
 	let trie = Trie.fromList gameList
 
-	putStrLn ">> finding longest opening in format (opening, length)"
-	let longest@(ls, ld) = Trie.reverseResult $ Trie.traverse Trie.longestOpenVisit Trie.goDeeper ([], 0) ([], 0) trie
+	putStrLn "1. Longest opening (opening, length):"
+	let longest = Trie.reverseResult $ Trie.traverse Trie.longestOpenVisit Trie.goDeeper ([], 0) ([], 0) trie
 	print $ longest
-	putStrLn "\n>> Value, stored in trie with this opening"
-	putStrLn ">> (occW - white wins, occB - black wins, occTot - total games, key - last turn)"
-	print $ Trie.lookup ls trie
+	--print $ Trie.lookup (fst longest) trie
+
+	putStrLn "\n2.1. Best white opening (opening, probability):"
+	let bw = Trie.reverseResult $ Trie.traverse (Trie.winOpenWithLastVisit Trie.whiteTurn Trie.whiteProb) Trie.goDeeper 
+		([], 0.0) ([], 0) trie
+	print $ bw
+	--print $ Trie.lookup (fst bw) trie
+
+	putStrLn "\n2.2. Best black opening (opening, probability):"
+	let bb = Trie.reverseResult $ Trie.traverse (Trie.winOpenWithLastVisit Trie.blackTurn Trie.blackProb) Trie.goDeeper 
+		([], 0.0) ([], 0) trie
+	print $ bb
+	--print $ Trie.lookup (fst bb) trie
+
+	putStrLn "\n3.1. Best opening for white (opening, probability):"
+	let bfw = Trie.reverseResult $ Trie.traverse (Trie.winOpenVisit Trie.whiteProb) Trie.goDeeper ([], 0.0) ([], 0) trie
+	print $ bfw
+	--print $ Trie.lookup (fst bfw) trie
+
+	putStrLn "\n3.2. Best opening for black (opening, probability):"
+	let bfb = Trie.reverseResult $ Trie.traverse (Trie.winOpenVisit Trie.blackProb) Trie.goDeeper ([], 0.0) ([], 0) trie
+	print $ bfb
+	--print $ Trie.lookup (fst bfb) trie
+
+	putStrLn "\n4.1. Worst white turn (opening, delta probability):"
+	let ww = Trie.reverseResult $ Trie.traverse (Trie.worstTurnVisit Trie.whiteTurn Trie.whiteProb) (Trie.goDeeperProb Trie.whiteProb) 
+		([], -1.0) (([], 0), 0.0) trie
+	print $ ww
+	--print $ Trie.lookup (fst ww) trie
+
+	putStrLn "\n4.2. Worst black turn (opening, delta probability):"
+	let wb = Trie.reverseResult $ Trie.traverse (Trie.worstTurnVisit Trie.blackTurn Trie.blackProb) (Trie.goDeeperProb Trie.blackProb) 
+		([], -1.0) (([], 0), 0.0) trie
+	print $ wb
+	--print $ Trie.lookup (fst wb) trie
+
 	hClose handle
