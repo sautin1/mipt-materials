@@ -11,7 +11,7 @@ main = do
     print games
     putStrLn "Trie:"
     let trie = Trie.fromList games
-    putStrLn $ Trie.show trie
+    putStrLn $ show trie
 
     putStrLn "\nLongest opening:"
     let longest = Trie.reverseResult $ Trie.traverse Trie.longestOpenVisit Trie.goDeeper ([], 0) ([], 0) trie

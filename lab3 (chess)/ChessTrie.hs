@@ -8,7 +8,6 @@ module ChessTrie (
     ChessTrie.lookup,
     insert,
     fromList,
-    ChessTrie.show,
     traverse,
     goDeeper,
     reverseResult,
@@ -54,7 +53,14 @@ data TrieValue = TrieValue {
 data ChessTrie = ChessTrie {
                     trans   :: Map.Map Turn ChessTrie,
                     value   :: TrieValue
-                } deriving (Show, Eq)
+                } deriving Eq
+
+instance Show ChessTrie where
+    show tr = show' (Prelude.show . value) "" tr
+        where 
+            show' f st tr = st ++ (f tr) ++ "\n" ++ foldedSubtrie
+                where
+                    foldedSubtrie = foldl (\acc t -> show' (("\t"++).f) acc t) "" . Map.elems $ trans tr
 
 -- == basic trie functions == --
 
@@ -88,13 +94,6 @@ insert (tList, ww) = insert' tList (initVal ww) ""
 
 fromList :: [Game] -> ChessTrie
 fromList = foldl (flip insert) ChessTrie.empty
-
-show :: ChessTrie -> String
-show tr = show' (Prelude.show . value) "" tr
-    where 
-        show' f st tr = st ++ (f tr) ++ "\n" ++ foldedSubtrie
-            where
-                foldedSubtrie = foldl (\acc t -> show' (("\t"++).f) acc t) "" . Map.elems $ trans tr
 
 -- traverses trie, accumulating two values: acc - value we want to get after the traverse, cur - state of the node (e.g. (key, depth))
 traverse :: (a -> b -> a -> ChessTrie -> a) -> (ChessTrie -> ChessTrie -> b -> b) -> a -> b -> ChessTrie -> a
