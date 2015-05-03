@@ -265,28 +265,30 @@ ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2) {
     p1.sortNodesCCW();
     p2.sortNodesCCW();
     std::vector<Point> sum;
+    sum.reserve(p1.size() + p2.size());
     int left_point1 = std::min_element(p1.points.begin(), p1.points.end()) - p1.points.begin();
     int left_point2 = std::min_element(p2.points.begin(), p2.points.end()) - p2.points.begin();
     sum.push_back(p1.points[left_point1] + p2.points[left_point2]);
     int p1_cur = left_point1;
     int p2_cur = left_point2;
     bool is_traversed1 = false;
+    bool is_traversed2 = false;
     do {
         int p1_next = (p1_cur + 1) % p1.points.size();
         int p2_next = (p2_cur + 1) % p2.points.size();
         Vector v1(p1.points[p1_cur], p1.points[p1_next]);
         Vector v2(p2.points[p2_cur], p2.points[p2_next]);
-        if (!is_traversed1 && v1.isClockwiseRotation(v2)) {
+        if (is_traversed2 || (!is_traversed1 && v1.isClockwiseRotation(v2))) {
             p1_cur = p1_next;
             sum.push_back(protract(sum.back(), v1));
             is_traversed1 = (p1_cur == left_point1);
         } else {
             p2_cur = p2_next;
             sum.push_back(protract(sum.back(), v2));
+            is_traversed2 = (p2_cur == left_point2);
         }
-    } while (p1_cur != left_point1 || p2_cur != left_point2);
+    } while (!is_traversed1 || !is_traversed2);
     sum.pop_back();
-//  return convexHull(sum.begin(), sum.end());
     return ConvexPolygon(removeFlatAngles(sum));
 }
 
