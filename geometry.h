@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctgmath>
 #include <stdexcept>
 #include <vector>
 
@@ -39,17 +40,24 @@ struct Vector {
     Vector() = default;
     Vector(Coord _x, Coord _y);
     Vector(const Point& from, const Point& to);
-    long long lengthSquared() const;
+    Coord lengthSquared() const;
     double length() const;
     bool isClockwiseRotation(const Vector& other) const;
     bool isParallel(const Vector& other) const;
+    bool isCodirect(const Vector& other) const;
     Vector getPerpendicular() const;
+};
+
+struct Segment: public Vector {
+    Point st;
+    Segment(const Point& from, const Point& to);
+    Segment(const Point& p, const Vector& v);
 };
 
 struct Line {
     Point p0;
-    Vector v; // p = p0 + v
-    Coord a, b, c; // ax + by + c = 0
+    Vector v;       // p = p0 + v
+    Coord a, b, c;  // ax + by + c = 0
     Line(const Point& _p0, const Vector& _v);
     Line(Coord _a, Coord _b, Coord _c);
     Line getPerpendicular(const Point& p) const;
@@ -66,25 +74,23 @@ public:
 };
 
 struct Polygon: public PointSet, public Shape {
-//  Polygon() = default;
     explicit Polygon(const std::vector<Point>& nodes);
     size_t size() const;
     double signedArea() const;
     double area() const;
     double perimeter() const;
-    void sortNodesCCW();
-    void sortNodesCW();
 protected:
     double area_;
     double perimeter_;
 private:
-    double countArea();
-    double countPerimeter();
+    void countArea();
+    void countPerimeter();
 };
 
 struct ConvexPolygon: public Polygon {
-//  ConvexPolygon() = default;
     explicit ConvexPolygon(const std::vector<Point>& nodes);
+    void sortNodesCCW();
+    void sortNodesCW();
 };
 
 class Circle: public Shape {
@@ -96,14 +102,14 @@ public:
     double perimeter() const;
 };
 
-template <class InputIterator>
-ConvexPolygon convexHull(const InputIterator& begin_it, const InputIterator& end_it);
-
 double distance(const Point& p, const Line& l);
 Point protract(const Point& p, const Vector& v);
 
-bool isIn(const Point& p, const Vector& v);
-bool isIn(const Point& point, const Polygon& poly);
+bool isOn(const Point& p, const Segment& seg);
+bool isOn(const Point& point, const Polygon& poly);
+bool isIn(const Point& point, const ConvexPolygon& poly);
+
+std::vector<Point> removeFlatAngles(const std::vector<Point>& points);
 
 ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2);
 
