@@ -1,3 +1,4 @@
 http://informatics.mccme.ru/mod/statements/view3.php?chapterid=451#1
 http://93.175.29.133/cgi-bin/new-client?SID=701152841d37ba93&action=139&prob_id=2
 http://93.175.29.133/cgi-bin/new-client?SID=f2703b3117409c33&action=139&prob_id=4
+
