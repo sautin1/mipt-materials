@@ -1,14 +1,14 @@
 #include "geometry.h"
 
 bool equals(double x, double y) {
-    return abs(x - y) < kEpsilon;
+    return std::abs(x - y) < kEpsilon;
 }
 
 Point::Point(Coord _x, Coord _y)
     : x(_x), y(_y) {}
 
 bool Point::operator == (const Point& other) const {
-    return x == other.x && y == other.y;
+    return equals(x, other.x) && equals(y, other.y);
 }
 
 bool Point::operator < (const Point& other) const {
@@ -33,9 +33,9 @@ Vector::Vector(Coord _x, Coord _y)
     : x(_x), y(_y) {}
 
 Vector::Vector(const Point& from, const Point& to)
-    : x(to.x - from.x), y(to.y - from.y) {}
+    : Vector(to.x - from.x, to.y - from.y) {}
 
-long long Vector::lengthSquared() const {
+Coord Vector::lengthSquared() const {
     return dotProduct(*this, *this);
 }
 
@@ -48,12 +48,22 @@ bool Vector::isClockwiseRotation(const Vector& other) const {
 }
 
 bool Vector::isParallel(const Vector& other) const {
-    return crossProduct(*this, other) == 0;
+    return equals(crossProduct(*this, other), 0);
+}
+
+bool Vector::isCodirect(const Vector& other) const {
+    return dotProduct(*this, other) > 0;
 }
 
 Vector Vector::getPerpendicular() const {
     return Vector(y, -x);
 }
+
+Segment::Segment(const Point& from, const Point& to)
+    : Vector(from, to), st(from) {}
+
+Segment::Segment(const Point& p, const Vector& v)
+    : Vector(v), st(p) {}
 
 Line::Line(const Point& _p0, const Vector& _v)
     : p0(_p0), v(_v) {
@@ -67,7 +77,7 @@ Line::Line(const Point& _p0, const Vector& _v)
 
 Line::Line(Coord _a, Coord _b, Coord _c)
     : a(_a), b(_b), c(_c) {
-    if (a == 0 && b == 0) {
+    if (equals(a, 0) && equals(b, 0)) {
         throw std::logic_error("Wrong line coefficients");
     }
     v.x = -b;
@@ -112,14 +122,40 @@ double Polygon::signedArea() const {
 }
 
 double Polygon::area() const {
-    return abs(signedArea());
+    return std::abs(signedArea());
 }
 
 double Polygon::perimeter() const {
     return perimeter_;
 }
 
-void Polygon::sortNodesCCW() {
+void Polygon::countArea() {
+    area_ = 0;
+    if (size() == 1) {
+        return;
+    }
+    Vector v1(points[0], points[1]);
+    Vector v2;
+    for (size_t node_index = 2; node_index < points.size(); ++node_index) {
+        v2 = Vector(points[0], points[node_index]);
+        area_ += crossProduct(v1, v2) / 2.0;
+        v1 = v2;
+    }
+}
+
+void Polygon::countPerimeter() {
+    perimeter_ = 0;
+    for (size_t node_index = 1; node_index < points.size(); ++node_index) {
+        Vector v(points[node_index - 1], points[node_index]);
+        perimeter_ += v.length();
+    }
+    perimeter_ += Vector(points.back(), points.front()).length();
+}
+
+ConvexPolygon::ConvexPolygon(const std::vector<Point>& nodes)
+    : Polygon(nodes) {}
+
+void ConvexPolygon::sortNodesCCW() {
     if (points.size() < 3) {
         return;
     }
@@ -131,35 +167,10 @@ void Polygon::sortNodesCCW() {
     }
 }
 
-void Polygon::sortNodesCW() {
+void ConvexPolygon::sortNodesCW() {
     sortNodesCCW();
     std::reverse(points.begin(), points.end());
     area_ *= -1;
-}
-
-double Polygon::countArea() {
-    area_ = 0;
-    if (size() == 1) {
-        return area_;
-    }
-    Vector v1(points[0], points[1]);
-    Vector v2;
-    for (size_t node_index = 2; node_index < points.size(); ++node_index) {
-        v2 = Vector(points[0], points[node_index]);
-        area_ += crossProduct(v1, v2) / 2.0;
-        v1 = v2;
-    }
-    return area_;
-}
-
-double Polygon::countPerimeter() {
-    perimeter_ = 0;
-    for (size_t node_index = 1; node_index < points.size(); ++node_index) {
-        Vector v(points[node_index - 1], points[node_index]);
-        perimeter_ += v.length();
-    }
-    perimeter_ += Vector(points.back(), points.front()).length();
-    return perimeter_;
 }
 
 Circle::Circle(const Point& _c, double _rad)
@@ -174,49 +185,80 @@ double Circle::perimeter() const {
 }
 
 double distance(const Point& p, const Line& l) {
-    return abs(l.a * p.x + l.b * p.y + l.c) / sqrt(pow(l.a, 2) + pow(l.b, 2));
+    return std::abs(l.a * p.x + l.b * p.y + l.c) / sqrt(pow(l.a, 2) + pow(l.b, 2));
 }
 
 Point protract(const Point& p, const Vector& v) {
     return Point(p.x + v.x, p.y + v.y);
 }
 
-ConvexPolygon::ConvexPolygon(const std::vector<Point>& nodes)
-    : Polygon(nodes) {}
+bool isOn(const Point& p, const Segment& seg) {
+    Segment seg_p(seg.st, p);
+    return (p == seg.st) || (seg.isParallel(seg_p) && seg.isCodirect(seg_p)
+        && seg_p.lengthSquared() <= seg.lengthSquared());
+}
 
-template <class InputIterator>
-ConvexPolygon convexHull(const InputIterator& begin_it, const InputIterator& end_it) {
-    std::vector<Point> hull;
-    if (end_it - begin_it == 0) {
-        return ConvexPolygon(hull);
+bool isOn(const Point& point, const Polygon& poly) {
+    if (poly.points.size() == 1) {
+        return (point == poly.points.front());
     }
-    hull.push_back(*begin_it);
-    if (end_it - begin_it == 1) {
-        return ConvexPolygon(hull);
+    if (poly.points.size() == 2) {
+        return isOn(point, Segment(poly.points.front(), poly.points.back()));
     }
-    hull.push_back(*(begin_it + 1));
-    if (end_it - begin_it == 2) {
-        return ConvexPolygon(hull);
-    }
-    Vector v_old(hull[0], hull[1]);
-    for (auto point_it = begin_it + 2; point_it != end_it; ++point_it) {
-        Vector v_new(hull.back(), *point_it);
-        while (hull.size() > 1 && !v_new.isClockwiseRotation(v_old)) {
-            hull.pop_back();
-            v_new = Vector(hull.back(), *point_it);
-            v_old = Vector(hull[hull.size() - 2], hull.back());
+    bool is_on = false;
+    for (size_t i = 0; i < poly.size(); ++i) {
+        int next = (i + 1) % poly.size();
+        Segment seg(poly.points[i], poly.points[next]);
+        is_on = isOn(point, seg);
+        if (is_on) {
+            break;
         }
-        hull.push_back(*point_it);
-        v_old = v_new;
     }
-    if (hull.size() < 3) {
-        // wrong direction was chosen
-        std::vector<Point> newPoints(begin_it, end_it);
-        std::reverse(newPoints.begin(), newPoints.end());
-        hull = convexHull(newPoints.begin(), newPoints.end()).points;
-        std::reverse(hull.begin(), hull.end());
+    return is_on;
+}
+
+// tested on mccme
+bool isIn(const Point& point, const ConvexPolygon& poly) {
+    if (poly.points.size() == 1) {
+        return (point == poly.points.front());
     }
-    return ConvexPolygon(hull);
+    if (poly.points.size() == 2) {
+        return isOn(point, Segment(poly.points.front(), poly.points.back()));
+    }
+    Segment seg_cur (poly.points[0], poly.points[1]);
+    Segment seg_next(poly.points[0], point);
+    bool is_cw = seg_cur.isClockwiseRotation(seg_next);
+    bool is_in = true;
+    for (size_t i = 1; i < poly.size(); ++i) {
+        int next = (i + 1) % poly.size();
+        seg_cur  = Segment(poly.points[i], poly.points[next]);
+        seg_next = Segment(poly.points[i], point);
+        is_in = (is_cw == seg_cur.isClockwiseRotation(seg_next)) && !isOn(point, seg_cur);
+        if (!is_in) {
+            break;
+        }
+    }
+    return is_in;
+}
+
+std::vector<Point> removeFlatAngles(const std::vector<Point>& points) {
+    if (points.size() < 3) {
+        return points;
+    }
+    std::vector<Point> new_points;
+    for (size_t check = 0; check < points.size(); ++check) {
+        int prev;
+        prev = check - 1;
+        if (prev < 0) {
+            prev += points.size();
+        }
+        size_t next = (check + 1) % points.size();
+        Segment seg(points[prev], points[next]);
+        if (!isOn(points[check], seg)) {
+            new_points.push_back(points[check]);
+        }
+    }
+    return new_points;
 }
 
 ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2) {
@@ -244,35 +286,8 @@ ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2) {
         }
     } while (p1_cur != left_point1 || p2_cur != left_point2);
     sum.pop_back();
-    return convexHull(sum.begin(), sum.end());
-}
-
-bool isIn(const Point& p, const Vector& v) {
-    // need to be implemented
-    return false;
-}
-
-bool isIn(const Point& point, const Polygon& poly) {
-    if (poly.points.size() == 1) {
-        return (point == poly.points.front());
-    }
-    if (poly.points.size() == 2) {
-        return isIn(point, Vector(poly.points.front(), poly.points.back()));
-    }
-    Vector v_cur (poly.points[0], poly.points[1]);
-    Vector v_next(poly.points[0], point);
-    bool is_cw = v_cur.isClockwiseRotation(v_next);
-    bool is_in = true;
-    for (int i = 1; i != 0; i = (i + 1) % poly.size()) {
-        int next = (i + 1) % poly.size();
-        v_cur  = Vector(poly.points[i], poly.points[next]);
-        v_next = Vector(poly.points[i], point);
-        is_in = (is_cw == v_cur.isClockwiseRotation(v_next));
-        if (!is_in) {
-            break;
-        }
-    }
-    return is_in;
+//  return convexHull(sum.begin(), sum.end());
+    return ConvexPolygon(removeFlatAngles(sum));
 }
 
 bool intersects(const Line& line, const Circle& circle) {
@@ -285,7 +300,8 @@ bool intersects(ConvexPolygon p1, const ConvexPolygon& p2) {
         p1.points[i] = p1.points[i] * (-1);
     }
     ConvexPolygon sum = minkowskiSum(p1, p2);
-    return isIn(Point(0, 0), sum);
+    Point origin(0, 0);
+    return isIn(origin, sum) || isOn(origin, sum);
 }
 
 std::vector<Line> getTangents(Circle c1, Circle c2) {
@@ -301,7 +317,7 @@ std::vector<Line> getTangents(Circle c1, Circle c2) {
             if (discr < -kEpsilon) {
                 throw std::logic_error("Got negative discriminant");
             }
-            discr = sqrt(abs(discr));
+            discr = sqrt(std::abs(discr));
             double a = (rad * c2.c.x - c2.c.y * discr) / len;
             double b = (rad * c2.c.y + c2.c.x * discr) / len;
             tangents.push_back(Line(a, b, c - a * c1.c.x - b * c1.c.y));
