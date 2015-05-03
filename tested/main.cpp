@@ -1,4 +1,120 @@
-#include "geometry.h"
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <cmath>
+#include <ctgmath>
+#include <stdexcept>
+#include <vector>
+
+typedef double Coord;
+
+const double kEpsilon = 1e-9;
+const double kPi = 3.1415926535897932384626433;
+
+bool equals(double x, double y);
+
+struct Point {
+    Coord x;
+    Coord y;
+    Point() = default;
+    Point(Coord _x, Coord _y);
+    bool operator == (const Point& other) const;
+    bool operator < (const Point& other) const;
+    Point operator + (const Point& other) const;
+    Point operator * (const Coord mult) const;
+};
+
+struct PointSet {
+    std::vector<Point> points;
+
+    PointSet() = default;
+    explicit PointSet(const std::vector<Point>& _points);
+    explicit PointSet(size_t initial_size);
+};
+
+struct Vector {
+    Coord x;
+    Coord y;
+
+    Vector() = default;
+    Vector(Coord _x, Coord _y);
+    Vector(const Point& from, const Point& to);
+    Coord lengthSquared() const;
+    double length() const;
+    bool isClockwiseRotation(const Vector& other) const;
+    bool isParallel(const Vector& other) const;
+    bool isCodirect(const Vector& other) const;
+    Vector getPerpendicular() const;
+};
+
+struct Segment: public Vector {
+    Point st;
+    Segment(const Point& from, const Point& to);
+    Segment(const Point& p, const Vector& v);
+};
+
+struct Line {
+    Point p0;
+    Vector v;       // p = p0 + v
+    Coord a, b, c;  // ax + by + c = 0
+    Line(const Point& _p0, const Vector& _v);
+    Line(Coord _a, Coord _b, Coord _c);
+    Line getPerpendicular(const Point& p) const;
+    Point getPoint(double t) const;
+};
+
+Coord crossProduct(const Vector& v1, const Vector& v2);
+Coord dotProduct(const Vector& v1, const Vector& v2);
+
+class Shape {
+public:
+    virtual double area() const = 0;
+    virtual double perimeter() const = 0;
+};
+
+struct Polygon: public PointSet, public Shape {
+    explicit Polygon(const std::vector<Point>& nodes);
+    size_t size() const;
+    double signedArea() const;
+    double area() const;
+    double perimeter() const;
+protected:
+    double area_;
+    double perimeter_;
+private:
+    void countArea();
+    void countPerimeter();
+};
+
+struct ConvexPolygon: public Polygon {
+    explicit ConvexPolygon(const std::vector<Point>& nodes);
+    void sortNodesCCW();
+    void sortNodesCW();
+};
+
+class Circle: public Shape {
+public:
+    Point c;
+    double rad;
+    Circle(const Point& _c, double _rad);
+    double area() const;
+    double perimeter() const;
+};
+
+double distance(const Point& p, const Line& l);
+Point protract(const Point& p, const Vector& v);
+
+bool isOn(const Point& p, const Segment& seg);
+bool isOn(const Point& point, const Polygon& poly);
+bool isIn(const Point& point, const ConvexPolygon& poly);
+
+std::vector<Point> removeFlatAngles(const std::vector<Point>& points);
+
+ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2);
+
+bool intersects(const Line& line, const Circle& circle);
+bool intersects(ConvexPolygon p1, const ConvexPolygon& p2);
+std::vector<Line> getTangents(Circle c1, Circle c2);
 
 bool equals(double x, double y) {
     return std::abs(x - y) < kEpsilon;
@@ -33,7 +149,7 @@ Vector::Vector(Coord _x, Coord _y)
     : x(_x), y(_y) {}
 
 Vector::Vector(const Point& from, const Point& to)
-    : Vector(to.x - from.x, to.y - from.y) {}
+    : x(to.x - from.x), y(to.y - from.y) {}
 
 Coord Vector::lengthSquared() const {
     return dotProduct(*this, *this);
@@ -326,4 +442,34 @@ std::vector<Line> getTangents(Circle c1, Circle c2) {
         }
     }
     return tangents;
+}
+
+ConvexPolygon readConvexPolygon(std::istream& fin) {
+    size_t poly_size;
+    fin >> poly_size;
+    std::vector<Point> poly_points;
+    poly_points.reserve(poly_size);
+    for (size_t i = 0; i < poly_size; ++i) {
+        Coord x, y;
+        fin >> x >> y;
+        poly_points.push_back(Point(x, y));
+    }
+    return ConvexPolygon(poly_points);
+}
+
+void printConvexPolygon(const ConvexPolygon& poly) {
+    for (size_t i = 0; i < poly.points.size(); ++i) {
+        std::cout << poly.points[i].x << " ; " << poly.points[i].y << "\n";
+    }
+}
+
+int main() {
+    ConvexPolygon p1 = readConvexPolygon(std::cin);
+    ConvexPolygon p2 = readConvexPolygon(std::cin);
+
+    if (intersects(p1, p2)) {
+        std::cout << "YES\n";
+    } else {
+        std::cout << "NO\n";
+    }
 }

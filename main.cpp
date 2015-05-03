@@ -28,7 +28,7 @@ int main() {
     fin.close();
 
 //  printConvexPolygon(ConvexPolygon(removeFlatAngles(p1.points)));
-//  ConvexPolygon sum = minkowskiSum(p2, p1);
+//  ConvexPolygon sum = minkowskiSum(p1, p2);
 //  printConvexPolygon(sum);
 
     if (intersects(p1, p2)) {

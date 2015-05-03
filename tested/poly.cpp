@@ -1,4 +1,121 @@
-#include "geometry.h"
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <cmath>
+#include <ctgmath>
+#include <stdexcept>
+#include <vector>
+
+typedef double Coord;
+
+const double kEpsilon = 1e-9;
+const double kPi = 3.1415926535897932384626433;
+
+bool equals(double x, double y);
+
+struct Point {
+    Coord x;
+    Coord y;
+    Point() = default;
+    Point(Coord _x, Coord _y);
+    bool operator == (const Point& other) const;
+    bool operator < (const Point& other) const;
+    Point operator + (const Point& other) const;
+    Point operator * (const Coord mult) const;
+};
+
+struct PointSet {
+    std::vector<Point> points;
+
+    PointSet() = default;
+    explicit PointSet(const std::vector<Point>& _points);
+    explicit PointSet(size_t initial_size);
+};
+
+struct Vector {
+    Coord x;
+    Coord y;
+
+    Vector() = default;
+    Vector(Coord _x, Coord _y);
+    Vector(const Point& from, const Point& to);
+    Coord lengthSquared() const;
+    double length() const;
+    bool isClockwiseRotation(const Vector& other) const;
+    bool isParallel(const Vector& other) const;
+    bool isCodirect(const Vector& other) const;
+    Vector getPerpendicular() const;
+};
+
+struct Segment: public Vector {
+    Point st;
+    Segment(const Point& from, const Point& to);
+    Segment(const Point& p, const Vector& v);
+};
+
+struct Line {
+    Point p0;
+    Vector v;       // p = p0 + v
+    Coord a, b, c;  // ax + by + c = 0
+    Line(const Point& _p0, const Vector& _v);
+    Line(Coord _a, Coord _b, Coord _c);
+    Line getPerpendicular(const Point& p) const;
+    Point getPoint(double t) const;
+};
+
+Coord crossProduct(const Vector& v1, const Vector& v2);
+Coord dotProduct(const Vector& v1, const Vector& v2);
+
+class Shape {
+public:
+    virtual double area() const = 0;
+    virtual double perimeter() const = 0;
+};
+
+struct Polygon: public PointSet, public Shape {
+    explicit Polygon(const std::vector<Point>& nodes);
+    size_t size() const;
+    double signedArea() const;
+    double area() const;
+    double perimeter() const;
+protected:
+    double area_;
+    double perimeter_;
+private:
+    void countArea();
+    void countPerimeter();
+};
+
+struct ConvexPolygon: public Polygon {
+    explicit ConvexPolygon(const std::vector<Point>& nodes);
+    void sortNodesCCW();
+    void sortNodesCW();
+};
+
+class Circle: public Shape {
+public:
+    Point c;
+    double rad;
+    Circle(const Point& _c, double _rad);
+    double area() const;
+    double perimeter() const;
+};
+
+//template <class InputIterator>
+//ConvexPolygon convexHull(const InputIterator& begin_it, const InputIterator& end_it);
+
+double distance(const Point& p, const Line& l);
+Point protract(const Point& p, const Vector& v);
+
+bool isOn(const Point& p, const Segment& seg);
+bool isOn(const Point& point, const Polygon& poly);
+bool isIn(const Point& point, const ConvexPolygon& poly);
+
+ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2);
+
+bool intersects(const Line& line, const Circle& circle);
+bool intersects(ConvexPolygon p1, const ConvexPolygon& p2);
+std::vector<Line> getTangents(Circle c1, Circle c2);
 
 bool equals(double x, double y) {
     return std::abs(x - y) < kEpsilon;
@@ -192,6 +309,42 @@ Point protract(const Point& p, const Vector& v) {
     return Point(p.x + v.x, p.y + v.y);
 }
 
+//template <class InputIterator>
+//ConvexPolygon convexHull(const InputIterator& begin_it, const InputIterator& end_it) {
+//  std::vector<Point> hull;
+//  if (end_it - begin_it == 0) {
+//      return ConvexPolygon(hull);
+//  }
+//  hull.push_back(*begin_it);
+//  if (end_it - begin_it == 1) {
+//      return ConvexPolygon(hull);
+//  }
+//  hull.push_back(*(begin_it + 1));
+//  if (end_it - begin_it == 2) {
+//      return ConvexPolygon(hull);
+//  }
+//  Vector v_old(hull[0], hull[1]);
+//  for (auto point_it = begin_it + 2; point_it != end_it; ++point_it) {
+//      Vector v_new(hull.back(), *point_it);
+//      while (hull.size() > 1 && !v_new.isClockwiseRotation(v_old)) {
+//          hull.pop_back();
+//          v_new = Vector(hull.back(), *point_it);
+//          v_old = Vector(hull[hull.size() - 2], hull.back());
+//      }
+//      hull.push_back(*point_it);
+//      v_old = v_new;
+//  }
+//  if (hull.size() < 3) {
+//      // wrong direction was chosen
+//      std::vector<Point> newPoints(begin_it, end_it);
+//      std::reverse(newPoints.begin(), newPoints.end());
+//      hull = convexHull(newPoints.begin(), newPoints.end()).points;
+//      std::reverse(hull.begin(), hull.end());
+//  }
+//  return ConvexPolygon(hull);
+//}
+
+
 bool isOn(const Point& p, const Segment& seg) {
     Segment seg_p(seg.st, p);
     return (p == seg.st) || (seg.isParallel(seg_p) && seg.isCodirect(seg_p)
@@ -217,7 +370,6 @@ bool isOn(const Point& point, const Polygon& poly) {
     return is_on;
 }
 
-// tested on mccme
 bool isIn(const Point& point, const ConvexPolygon& poly) {
     if (poly.points.size() == 1) {
         return (point == poly.points.front());
@@ -241,55 +393,33 @@ bool isIn(const Point& point, const ConvexPolygon& poly) {
     return is_in;
 }
 
-std::vector<Point> removeFlatAngles(const std::vector<Point>& points) {
-    if (points.size() < 3) {
-        return points;
-    }
-    std::vector<Point> new_points;
-    for (size_t check = 0; check < points.size(); ++check) {
-        int prev;
-        prev = check - 1;
-        if (prev < 0) {
-            prev += points.size();
-        }
-        size_t next = (check + 1) % points.size();
-        Segment seg(points[prev], points[next]);
-        if (!isOn(points[check], seg)) {
-            new_points.push_back(points[check]);
-        }
-    }
-    return new_points;
-}
-
 ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2) {
     p1.sortNodesCCW();
     p2.sortNodesCCW();
     std::vector<Point> sum;
-    sum.reserve(p1.size() + p2.size());
     int left_point1 = std::min_element(p1.points.begin(), p1.points.end()) - p1.points.begin();
     int left_point2 = std::min_element(p2.points.begin(), p2.points.end()) - p2.points.begin();
     sum.push_back(p1.points[left_point1] + p2.points[left_point2]);
     int p1_cur = left_point1;
     int p2_cur = left_point2;
     bool is_traversed1 = false;
-    bool is_traversed2 = false;
     do {
         int p1_next = (p1_cur + 1) % p1.points.size();
         int p2_next = (p2_cur + 1) % p2.points.size();
         Vector v1(p1.points[p1_cur], p1.points[p1_next]);
         Vector v2(p2.points[p2_cur], p2.points[p2_next]);
-        if (is_traversed2 || (!is_traversed1 && v1.isClockwiseRotation(v2))) {
+        if (!is_traversed1 && v1.isClockwiseRotation(v2)) {
             p1_cur = p1_next;
             sum.push_back(protract(sum.back(), v1));
             is_traversed1 = (p1_cur == left_point1);
         } else {
             p2_cur = p2_next;
             sum.push_back(protract(sum.back(), v2));
-            is_traversed2 = (p2_cur == left_point2);
         }
-    } while (!is_traversed1 || !is_traversed2);
+    } while (p1_cur != left_point1 || p2_cur != left_point2);
     sum.pop_back();
-    return ConvexPolygon(removeFlatAngles(sum));
+//  return convexHull(sum.begin(), sum.end());
+    return ConvexPolygon(sum);
 }
 
 bool intersects(const Line& line, const Circle& circle) {
@@ -326,4 +456,35 @@ std::vector<Line> getTangents(Circle c1, Circle c2) {
         }
     }
     return tangents;
+}
+
+ConvexPolygon readConvexPolygon(std::istream& fin) {
+    size_t poly_size;
+    fin >> poly_size;
+    std::vector<Point> poly_points;
+    poly_points.reserve(poly_size);
+    for (size_t i = 0; i < poly_size; ++i) {
+        Coord x, y;
+        fin >> x >> y;
+        poly_points.push_back(Point(x, y));
+    }
+    return ConvexPolygon(poly_points);
+}
+
+void printConvexPolygon(const ConvexPolygon& poly) {
+    for (size_t i = 0; i < poly.points.size(); ++i) {
+        std::cout << poly.points[i].x << " ; " << poly.points[i].y << "\n";
+    }
+}
+
+int main() {
+    ConvexPolygon p1 = readConvexPolygon(std::cin);
+    // ConvexPolygon p2 = readConvexPolygon(std::cin);
+    double x, y;
+    std::cin >> x >> y;
+    if (isIn(Point(x, y), p1)) {
+        std::cout << "YES\n";
+    } else {
+        std::cout << "NO\n";
+    }
 }
