@@ -80,17 +80,13 @@ teacherLinksAll :: Url -> IO [Url]
 teacherLinksAll "" = return []
 teacherLinksAll url = do
     cursor <- cursorFor url
-    putStrLn "entered linksAll"
     let thisPageTeachers = map (T.append urlPrefix) $ teacherLinksPage cursor
     nextPageTeachers <- teacherLinksAll $  nextPage cursor
-    putStrLn "return links"
     return $ thisPageTeachers ++ nextPageTeachers
 
 lab2 :: IO [T.Text]
 lab2 = do
-    putStrLn "entered lab2"
     cursors <- teacherLinksAll url0 >>= mapM (cursorFor)
-    print $ length cursors
     return $ map (T.pack . show . grabTeacher) cursors
 
 -- == for testing == --
