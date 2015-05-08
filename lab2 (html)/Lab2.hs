@@ -38,76 +38,83 @@ cursorFor url = do
         page <- withSocketsDo $ simpleHttp $ T.unpack $ url
         return $ fromDocument $ parseLBS page
 
-grabName :: Cursor -> IO T.Text
-grabName cursor = do
-    return $ T.concat $
-        cursor  $// element "h1"
-                >=> attributeIs "class" "firstHeading"
-                &// content
+grabName :: Cursor -> T.Text
+grabName cursor = T.concat $ cursor $// element "h1"
+                                    >=> attributeIs "class" "firstHeading"
+                                    &// content
 
-grabContact :: Cursor -> T.Text -> IO T.Text
-grabContact cursor str = do
-    return $ T.concat $
-        cursor  $// element "table" 
-                >=> attributeIs "class" "wikitable card"
-                &// element "a"
-                >=> check (\c -> T.isInfixOf str $ T.concat $ attribute "href" c)
-                >=> attribute "href"
+grabContact :: Cursor -> T.Text -> T.Text
+grabContact cursor str = T.concat $ cursor  $// element "table"
+                                            >=> attributeIs "class" "wikitable card"
+                                            &// element "a"
+                                            >=> check (\c -> T.isInfixOf str $ T.concat $ attribute "href" c)
+                                            >=> attribute "href"
 
-grabTeacher :: Url -> IO TeacherContact
-grabTeacher url = do
+grabTeacher :: Cursor -> TeacherContact
+grabTeacher cursor = TeacherContact name vkUrl fbUrl linkedUrl
+    where
+        name = T.unpack $ grabName cursor
+        [vkUrl, fbUrl, linkedUrl] = map (T.unpack . grabContact cursor) ["vk.com", "facebook.com", "linkedin.com"]
+
+nextPage :: Cursor -> Url
+nextPage cursor
+    | null next = ""
+    | otherwise = T.replace "&amp;" "&" $ T.append urlPrefix $ head next
+        where next = cursor $// element "div"
+                            >=> attributeIs "id" "mw-pages"
+                            &/ element "a"
+                            &/ check (\c -> content c == ["следующие 200"])
+                            >=> parent
+                            &| T.concat . attribute "href"
+
+teacherLinksPage :: Cursor -> [Url]
+teacherLinksPage cursor = cursor    $// element "div" 
+                                    >=> attributeIs "id" "mw-pages" 
+                                    &// element "div"
+                                    >=> attributeIs "class" "mw-content-ltr" 
+                                    &// element "a" 
+                                    &| T.concat . attribute "href"
+
+
+teacherLinksAll :: Url -> IO [Url]
+teacherLinksAll "" = return []
+teacherLinksAll url = do
     cursor <- cursorFor url
-    name <- grabName cursor >>= (return . T.unpack)
-    [vkUrl, fbUrl, linkedUrl] <- mapM (grabContact cursor) ["vk.com", "facebook.com", "linkedin.com"] >>= (return . (map T.unpack))
-    return $ TeacherContact name vkUrl fbUrl linkedUrl
-
-nextPage :: Url -> IO Url
-nextPage url = do
-    cursor <- cursorFor url
-    let next = cursor   $// element "div"
-                        >=> attributeIs "id" "mw-pages"
-                        &/ element "a"
-                        &/ check (\c -> content c == ["следующие 200"])
-                        >=> parent
-                        &| T.concat . attribute "href"
-    if (null next)  then return ""
-                    else return $ head next
-        
-teacherLinks :: Url -> IO [Url]
-teacherLinks "" = return []
-teacherLinks url = do
-    cursor <- cursorFor url
-    return $
-        cursor  $// element "div" 
-                >=> attributeIs "id" "mw-pages" 
-                &// element "div"
-                >=> attributeIs "class" "mw-content-ltr" 
-                &// element "a" 
-                &| T.concat . attribute "href"
-
-
--- == for testing == --
-printGrabTeacher url = do
-    contact <- grabTeacher url
-    print contact
-
-printNextPage url = do
-    link <- nextPage url
-    putStrLn $ T.unpack link
-
-printTeacherLinks = do
-    links <- teacherLinks url0
-    mapM_ (putStrLn . (T.unpack)) links
--- == ___________ == --
+    putStrLn "entered linksAll"
+    let thisPageTeachers = map (T.append urlPrefix) $ teacherLinksPage cursor
+    nextPageTeachers <- teacherLinksAll $  nextPage cursor
+    putStrLn "return links"
+    return $ thisPageTeachers ++ nextPageTeachers
 
 lab2 :: IO [T.Text]
 lab2 = do
-    return []
-    --teacherLinks url0 >>= grabTeacher
-    
+    putStrLn "entered lab2"
+    cursors <- teacherLinksAll url0 >>= mapM (cursorFor)
+    print $ length cursors
+    return $ map (T.pack . show . grabTeacher) cursors
+
+-- == for testing == --
+printGrabTeacher url = do
+    cursor <- cursorFor url
+    print $ grabTeacher cursor
+
+printNextPage url = do
+    cursor <- cursorFor url
+    putStrLn $ T.unpack $ nextPage cursor
+
+printTeacherLinks = do
+    links <- teacherLinksAll url0
+    mapM_ (putStrLn . (T.unpack)) links
+
+printAll = do
+    res <- lab2
+    putStrLn $ T.unpack $ T.intercalate "\n\n" res
+-- == ___________ == -- 
 
 main :: IO()
-main = withSocketsDo $ do
+main = do
+    putStrLn "start"
+    printAll{-withSocketsDo $ do
     nodes <- lab2
     dir <- getCurrentDirectory
     initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab2"
@@ -117,4 +124,4 @@ main = withSocketsDo $ do
     let req = urlEncodedBody [("email", email), ("result", encodeUtf8 $ T.concat $ nodes), ("content", encodeUtf8 $ T.pack content) ] $ initReq { method = "POST" }
     response <- withManager $ httpLbs req
     hClose handle
-    L.putStrLn $ responseBody response
+    L.putStrLn $ responseBody response-}
