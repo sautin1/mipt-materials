@@ -12,26 +12,26 @@ import Text.HTML.DOM (parseLBS)
 import Text.XML.Cursor (Cursor, attribute, attributeIs, content, element, fromDocument, parent, ($//), (&|), (&//), (&/), (>=>), check)
 import Network (withSocketsDo)
 
-type Url = T.Text
-type Contact = String
-
-data TeacherContact = TeacherContact {
-                        name    :: String,
-                        vk      :: Contact,
-                        fb      :: Contact,
-                        lin     :: Contact
-                    } deriving Eq
-
 -- почтовый адрес
 email = "sautin@phystech.edu"
 urlPrefix = "http://wikimipt.org"
 url0 = "/index.php?title=%D0%9A%D0%B0%D1%82%D0%B5%D0%B3%D0%BE%D1%80%D0%B8%D1%8F:%D0%9F%D1%80%D0%B5%D0%BF%D0%BE%D0%B4%D0%B0%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D0%B8_%D0%BF%D0%BE_%D0%B0%D0%BB%D1%84%D0%B0%D0%B2%D0%B8%D1%82%D1%83"
 
+type Url = T.Text
+type Contact = T.Text
+
+data TeacherContact = TeacherContact {
+                        name    :: T.Text,
+                        vk      :: Contact,
+                        fb      :: Contact,
+                        lin     :: Contact
+                    } deriving Eq
+
+showTeacherText :: TeacherContact -> T.Text
+showTeacherText tc = T.concat [T.append "name: " $ name tc, T.append "\nvkontakte: " $ vk tc, T.append "\nfacebook: " $ fb tc, T.append "\nlinkedIn: " $ lin tc]
+
 instance Show TeacherContact where
-    show tc = "name: " ++ name tc
-        ++ "\nvkontakte: " ++ vk tc
-        ++ "\nfacebook: " ++ fb tc
-        ++ "\nlinkedIn: " ++ lin tc
+    show = T.unpack . showTeacherText
 
 normalizeUrl :: Url -> Url
 normalizeUrl = (T.replace "&amp;" "&") . (T.append urlPrefix)
@@ -56,8 +56,8 @@ grabContact cursor str = T.concat $ cursor  $// element "table"
 grabTeacher :: Cursor -> TeacherContact
 grabTeacher cursor = TeacherContact name vkUrl fbUrl linkedUrl
     where
-        name = T.unpack $ grabName cursor
-        [vkUrl, fbUrl, linkedUrl] = map (T.unpack . grabContact cursor) ["vk.com", "facebook.com", "linkedin.com"]
+        name = grabName cursor
+        [vkUrl, fbUrl, linkedUrl] = map (grabContact cursor) ["vk.com", "facebook.com", "linkedin.com"]
 
 nextPage :: Cursor -> Url
 nextPage cursor
@@ -87,10 +87,14 @@ teacherLinksAll url = do
     nextPageTeachers <- teacherLinksAll $  nextPage cursor
     return $ thisPageTeachers ++ nextPageTeachers
 
+urlToShownTeacher :: Url -> IO T.Text
+urlToShownTeacher url = do
+    cursor <- cursorFor url
+    return $ showTeacherText $ grabTeacher cursor
+
 lab2 :: IO [T.Text]
 lab2 = do
-    cursors <- teacherLinksAll url0 >>= mapM (cursorFor)
-    return $ map (T.pack . show . grabTeacher) cursors
+    teacherLinksAll url0 >>= mapM (urlToShownTeacher)
 
 -- == for testing == --
 printGrabTeacher url = do
@@ -107,19 +111,18 @@ printTeacherLinks = do
 
 printAll = do
     res <- lab2
-    putStrLn $ T.unpack $ T.intercalate "\n\n" res
+    mapM_ (putStrLn . (T.unpack)) res
 -- == ___________ == -- 
 
 main :: IO()
-main = do
-    withSocketsDo $ do
-    nodes <- lab2
-    dir <- getCurrentDirectory
-    initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab2"
-    handle <- openFile (dir ++ "/Lab2.hs") ReadMode
-    hSetEncoding handle utf8_bom
-    content <- hGetContents handle
-    let req = urlEncodedBody [("email", email), ("result", encodeUtf8 $ T.concat $ nodes), ("content", encodeUtf8 $ T.pack content) ] $ initReq { method = "POST" }
-    response <- withManager $ httpLbs req
-    hClose handle
-    L.putStrLn $ responseBody response
+main = withSocketsDo $ do
+  nodes <- lab2
+  dir <- getCurrentDirectory
+  initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab2"
+  handle <- openFile (dir ++ "/Lab2.hs") ReadMode
+  hSetEncoding handle utf8_bom
+  content <- hGetContents handle
+  let req = urlEncodedBody [("email", email), ("result", encodeUtf8 $ T.concat $ nodes), ("content", encodeUtf8 $ T.pack content) ] $ initReq { method = "POST" }
+  response <- withManager $ httpLbs req
+  hClose handle
+  L.putStrLn $ responseBody response
