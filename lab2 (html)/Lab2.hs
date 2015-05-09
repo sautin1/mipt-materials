@@ -9,7 +9,7 @@ import Data.Text.Encoding
 import Network.HTTP.Conduit
 import qualified Data.Text as T
 import Text.HTML.DOM (parseLBS)
-import Text.XML.Cursor (Cursor, attribute, attributeIs, content, element, fromDocument, child, ($/), ($//), (&|), (&//), (&/), (>=>), node, check, parent) 
+import Text.XML.Cursor (Cursor, attribute, attributeIs, content, element, fromDocument, parent, ($//), (&|), (&//), (&/), (>=>), check)
 import Network (withSocketsDo)
 
 type Url = T.Text
@@ -23,9 +23,9 @@ data TeacherContact = TeacherContact {
                     } deriving Eq
 
 -- почтовый адрес
-email = ""
+email = "sautin@phystech.edu"
 urlPrefix = "http://wikimipt.org"
-url0 = T.append urlPrefix "/index.php?title=%D0%9A%D0%B0%D1%82%D0%B5%D0%B3%D0%BE%D1%80%D0%B8%D1%8F:%D0%9F%D1%80%D0%B5%D0%BF%D0%BE%D0%B4%D0%B0%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D0%B8_%D0%BF%D0%BE_%D0%B0%D0%BB%D1%84%D0%B0%D0%B2%D0%B8%D1%82%D1%83"
+url0 = "/index.php?title=%D0%9A%D0%B0%D1%82%D0%B5%D0%B3%D0%BE%D1%80%D0%B8%D1%8F:%D0%9F%D1%80%D0%B5%D0%BF%D0%BE%D0%B4%D0%B0%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D0%B8_%D0%BF%D0%BE_%D0%B0%D0%BB%D1%84%D0%B0%D0%B2%D0%B8%D1%82%D1%83"
 
 instance Show TeacherContact where
     show tc = "name: " ++ name tc
@@ -33,9 +33,12 @@ instance Show TeacherContact where
         ++ "\nfacebook: " ++ fb tc
         ++ "\nlinkedIn: " ++ lin tc
 
+normalizeUrl :: Url -> Url
+normalizeUrl = (T.replace "&amp;" "&") . (T.append urlPrefix)
+
 cursorFor :: Url -> IO Cursor
 cursorFor url = do
-        page <- withSocketsDo $ simpleHttp $ T.unpack $ url
+        page <- withSocketsDo $ simpleHttp $ T.unpack $ normalizeUrl url
         return $ fromDocument $ parseLBS page
 
 grabName :: Cursor -> T.Text
@@ -59,7 +62,7 @@ grabTeacher cursor = TeacherContact name vkUrl fbUrl linkedUrl
 nextPage :: Cursor -> Url
 nextPage cursor
     | null next = ""
-    | otherwise = T.replace "&amp;" "&" $ T.append urlPrefix $ head next
+    | otherwise = head next
         where next = cursor $// element "div"
                             >=> attributeIs "id" "mw-pages"
                             &/ element "a"
@@ -80,7 +83,7 @@ teacherLinksAll :: Url -> IO [Url]
 teacherLinksAll "" = return []
 teacherLinksAll url = do
     cursor <- cursorFor url
-    let thisPageTeachers = map (T.append urlPrefix) $ teacherLinksPage cursor
+    let thisPageTeachers = teacherLinksPage cursor
     nextPageTeachers <- teacherLinksAll $  nextPage cursor
     return $ thisPageTeachers ++ nextPageTeachers
 
@@ -109,8 +112,7 @@ printAll = do
 
 main :: IO()
 main = do
-    putStrLn "start"
-    printAll{-withSocketsDo $ do
+    withSocketsDo $ do
     nodes <- lab2
     dir <- getCurrentDirectory
     initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab2"
@@ -120,4 +122,4 @@ main = do
     let req = urlEncodedBody [("email", email), ("result", encodeUtf8 $ T.concat $ nodes), ("content", encodeUtf8 $ T.pack content) ] $ initReq { method = "POST" }
     response <- withManager $ httpLbs req
     hClose handle
-    L.putStrLn $ responseBody response-}
+    L.putStrLn $ responseBody response
