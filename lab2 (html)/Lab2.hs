@@ -116,13 +116,13 @@ printAll = do
 
 main :: IO()
 main = withSocketsDo $ do
-  nodes <- lab2
-  dir <- getCurrentDirectory
-  initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab2"
-  handle <- openFile (dir ++ "/Lab2.hs") ReadMode
-  hSetEncoding handle utf8_bom
-  content <- hGetContents handle
-  let req = urlEncodedBody [("email", email), ("result", encodeUtf8 $ T.concat $ nodes), ("content", encodeUtf8 $ T.pack content) ] $ initReq { method = "POST" }
-  response <- withManager $ httpLbs req
-  hClose handle
-  L.putStrLn $ responseBody response
+    nodes <- lab2
+    dir <- getCurrentDirectory
+    initReq <- parseUrl "http://mipt.eu01.aws.af.cm/lab2"
+    handle <- openFile (dir ++ "/Lab2.hs") ReadMode
+    hSetEncoding handle utf8_bom
+    content <- hGetContents handle
+    let req = urlEncodedBody [("email", email), ("result", encodeUtf8 $ T.concat $ nodes), ("content", encodeUtf8 $ T.pack content) ] $ initReq { method = "POST" }
+    response <- withManager $ httpLbs req
+    hClose handle
+    L.putStrLn $ responseBody response
