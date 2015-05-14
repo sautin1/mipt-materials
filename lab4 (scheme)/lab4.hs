@@ -4,11 +4,11 @@ import System.IO
 import Data.Graph
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import Network.URL
 import Network.HTTP.Conduit hiding (host)
 import Text.HTML.DOM (parseLBS)
-import Text.XML.Cursor (Cursor, hasAttribute, attribute, element, laxElement, fromDocument, ($//), (>=>), check)
+import Text.XML.Cursor (Cursor, hasAttribute, attribute, laxElement, fromDocument, ($//), (>=>), check)
 import Network (withSocketsDo)
-import Network.URL
 import Data.Maybe (fromJust)
 
 cursorFor :: URL -> IO Cursor
@@ -16,34 +16,30 @@ cursorFor url = do
         page <- withSocketsDo $ simpleHttp $ exportURL url
         return $ fromDocument $ parseLBS page
 
--- can throw errors
 createURL :: T.Text -> URL
 createURL = fromJust . importURL . T.unpack
 
 resolveURL :: URL -> URL -> URL
-resolveURL base rel = case url_type rel of
-    Absolute _ -> rel
-    otherwise -> case url_type base of
-        Absolute dom -> createURL $ T.pack $ domain dom ++ normalize (exportURL rel)
-            where
-                domain dom = "http://" ++ host dom
-                normalize [] = []
-                normalize ur = if (head ur == '/') 
-                    then ur
-                    else '/' : ur
-        otherwise -> rel
+resolveURL base url = case (url_type base, url_type url) of
+    (_, Absolute _) -> url
+    (Absolute h, HostRelative) -> URL {
+            url_type = url_type base,
+            url_path = url_path url,
+            url_params = url_params url
+        }--createURL $ T.pack $ exportHost h ++ exportURL url
+    (Absolute h, PathRelative) -> URL {
+            url_type = url_type base,
+            url_path = url_path url,
+            url_params = url_params url
+        }--createURL $ T.pack $ exportHost h ++ ('/' : exportURL url)
+    otherwise -> url
 
 hasSameDomain :: URL -> URL -> Bool
-hasSameDomain baseUrl url = case baseType of 
-    Absolute baseHost -> case urlType of 
-        Absolute urlHost -> baseHost == urlHost
-        PathRelative -> True
-        otherwise -> False
-    PathRelative -> False
+hasSameDomain base url = case (url_type base, url_type url) of 
+    (Absolute _, PathRelative) -> True
+    (Absolute _, HostRelative) -> True
+    (Absolute bh, Absolute uh) -> bh == uh
     otherwise -> False
-    where
-        baseType = url_type baseUrl
-        urlType  = url_type url
 
 relatedLinks :: URL -> IO (Set.Set URL)
 relatedLinks url = do
@@ -55,21 +51,22 @@ relatedLinks url = do
     return $ foldl (\set link -> Set.insert (createURL link) set) Set.empty textLinks
 
 referencesClosure :: URL -> IO [(URL, [URL])]
-referencesClosure url = referencesClosure' [url] (Set.singleton url)
+referencesClosure rootUrl = referencesClosure' [rootUrl] (Set.singleton rootUrl)
     where
         referencesClosure' [] _ = return []
-        referencesClosure' (u:q) set = do
-            linkSet <- relatedLinks $ resolveURL url u
+        referencesClosure' (url : queue) set = do
+            linkSet <- relatedLinks $ resolveURL rootUrl url
             let links = Set.elems linkSet
-            print u
+            print url
             putStrLn "Refs:"
             mapM_ print links
             putStrLn "___"
-            let newLinks = filter (\x -> Set.member x set) links
-            let newQueue = q ++ links
+            let newLinks = filter (flip Set.notMember set) links
+            let newQueue = queue ++ newLinks
+            --let newSet = Set.union set $ Set.fromList newLinks
             let newSet = foldl (flip Set.insert) set newLinks
-            son_fun <- referencesClosure' newQueue newSet
-            return $ (u, links) : son_fun
+            sonRes <- referencesClosure' newQueue newSet
+            return $ (url, links) : sonRes
 
 webGraph :: URL -> IO ()--IO Graph
 webGraph url = do
