@@ -22,17 +22,21 @@ createURL = fromJust . importURL . T.unpack
 resolveURL :: URL -> URL -> URL
 resolveURL base url = case (url_type base, url_type url) of
     (_, Absolute _) -> url
-    (Absolute h, HostRelative) -> URL {
+    (Absolute h, _) -> URL {
             url_type = url_type base,
             url_path = url_path url,
             url_params = url_params url
-        }--createURL $ T.pack $ exportHost h ++ exportURL url
-    (Absolute h, PathRelative) -> URL {
-            url_type = url_type base,
-            url_path = url_path url,
-            url_params = url_params url
-        }--createURL $ T.pack $ exportHost h ++ ('/' : exportURL url)
+        }
     otherwise -> url
+
+makeRelative :: URL -> URL
+makeRelative url = case url_type url of
+    HostRelative -> url
+    otherwise -> URL {
+            url_type = HostRelative,
+            url_path = url_path url,
+            url_params = url_params url
+        }
 
 hasSameDomain :: URL -> URL -> Bool
 hasSameDomain base url = case (url_type base, url_type url) of 
@@ -48,23 +52,26 @@ relatedLinks url = do
                             >=> hasAttribute "href"
                             >=> check ((hasSameDomain url) . createURL . (T.concat) . attribute "href")
                             >=> attribute "href"
-    return $ foldl (\set link -> Set.insert (createURL link) set) Set.empty textLinks
+    return $ foldl (\set link -> Set.insert (makeRelative $ createURL link) set) Set.empty textLinks
 
 referencesClosure :: URL -> IO [(URL, [URL])]
-referencesClosure rootUrl = referencesClosure' [rootUrl] (Set.singleton rootUrl)
+referencesClosure rootUrl = referencesClosure' [makeRelative rootUrl] (Set.singleton $ makeRelative rootUrl)
     where
         referencesClosure' [] _ = return []
         referencesClosure' (url : queue) set = do
             linkSet <- relatedLinks $ resolveURL rootUrl url
             let links = Set.elems linkSet
+            putStrLn "\n\tTEST"
             print url
-            putStrLn "Refs:"
+            putStrLn "\tRefs:"
             mapM_ print links
-            putStrLn "___"
-            let newLinks = filter (flip Set.notMember set) links
+            putStrLn "__"
+            let addSet = Set.difference linkSet set
+            let newSet = Set.union set addSet
+            let newLinks = Set.elems addSet
+            putStrLn "\tnew:"
+            mapM_ print newLinks
             let newQueue = queue ++ newLinks
-            --let newSet = Set.union set $ Set.fromList newLinks
-            let newSet = foldl (flip Set.insert) set newLinks
             sonRes <- referencesClosure' newQueue newSet
             return $ (url, links) : sonRes
 
@@ -77,7 +84,8 @@ webGraph url = do
 main :: IO()
 main = do
     --link <- getLine
-    let link = "http://progmeistars.lv/index.php?lang=ru"
+    --let link = "http://progmeistars.lv/index.php?lang=ru" -- some kind of error from server
+    let link = "http://www.alieparusa.ru/"
     graph <- webGraph $ createURL link
     return ()
     --let webGraph = graphFromEdges graphList
