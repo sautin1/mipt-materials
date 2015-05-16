@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import System.IO
+import Data.Array ((!))
 import Data.Graph
 import qualified Data.Set as Set
 import Data.List (isInfixOf, isSuffixOf, dropWhileEnd)
+import Data.List.Ordered (sortOn)
 import qualified Data.Text as T
 import Network.URL
 import Network.HTTP.Conduit hiding (host)
@@ -11,6 +13,10 @@ import Text.HTML.DOM (parseLBS)
 import Text.XML.Cursor (Cursor, hasAttribute, attribute, laxElement, fromDocument, ($//), (>=>), check)
 import Network (withSocketsDo)
 import Data.Maybe (fromJust)
+
+fst3 (x, _, _) = x
+snd3 (_, x, _) = x
+trd3 (_, _, x) = x
 
 cursorFor :: URL -> IO Cursor
 cursorFor url = do
@@ -86,26 +92,48 @@ referencesClosure rootUrl = referencesClosure' [relativeRootUrl] (Set.singleton 
             putStr $ "\tQueue: "
             print $ length newQueue
             sonRes <- referencesClosure' newQueue newSet
-            --print (url, links)
-            --putStrLn ""
             return $ (url, links) : sonRes
 
-pageRank :: (Graph, Vertex -> (node, key, [key]), key -> Maybe Vertex) -> (Graph, Int)
-pageRank (gr, unhash, hash) = (gr, 0)
---  | 
---      where (newGr, maxDiff) = pageRankIter gr
---          where 
---              pageRankIter 
---                  where
---                      dampFact = 0.85
---                      eps = 0.5
+pageRank :: (Graph, Vertex -> (Double, key, [key])) -> Vertex -> (Vertex -> (Double, key, [key]), Double)
+pageRank (graph, unhash) vertex = (newUnh, newPr - pr)
+    where
+        (pr, k, ks) = unhash vertex
+        newUnh v
+            | v == vertex = (newPr, k, ks)
+            | otherwise = unhash v
+        newPr = foldl accumulatePr 0 $ trGr ! vertex
+            where
+                trGr = transposeG graph
+                accumulatePr acc v = (1 - dumpFact) + dumpFact * (fst3 $ unhash v) / (outDeg v) + acc
+                outDeg v = fromIntegral $ (outdegree graph) ! v
+                dumpFact = 0.85
 
+pageRanks :: (Graph, Vertex -> (Double, key, [key])) -> IO (Vertex -> (Double, key, [key]), Int)
+pageRanks (graph, unhash) = pageRanks' unhash 1
+    where
+        pageRanks' unh n
+            | maxDiff < eps = return (newUnh, n)
+            | otherwise = do
+                    putStr "\tIteration "
+                    print n
+                    putStr "\t\twith maxDiff = "
+                    print maxDiff
+                    pageRanks' newUnh $ n + 1
+            where
+                eps = 0.01
+                (newUnh, maxDiff) = pageRanksIter unh
+                    where
+                        pageRanksIter un = foldl updatePrRes (un, 0.0) $ vertices graph
+                            where
+                                updatePrRes (accU, accD) v = (curU, max accD $ abs curD)
+                                    where
+                                        (curU, curD) = pageRank (graph, accU) v
 
 main :: IO()
 main = do
     putStrLn "Enter link: "
-    --link <- getLine
-    let link = "http://www.alieparusa.ru/"
+    link <- getLine
+    --let link = "http://www.alieparusa.ru/"
     --let link = "http://student.progmeistars.lv/2009_06Alexey%20'popoffka'%20Popov/"
     --let link = "http://www.drive2.ru/" -- works too long since the site is enormous. Looks spectacular.
     --let link = "http://lio.lv" -- fails because of "..\..\default.htm"
@@ -113,15 +141,25 @@ main = do
     
     putStrLn "Building web graph..."
     references <- referencesClosure $ createURL $ T.pack link
-    let forGraph = zipWith (\(l, ls) node -> (node, l, ls)) references [0,0..]
-    let grRes@(webGraph, unhash, hash) = graphFromEdges forGraph
+    let forGraph = zipWith (\(l, ls) node -> (node, l, ls)) references [0.0, 0.0..]
+    let (webGraph, unhash) = graphFromEdges' forGraph
     putStr "... web graph of "
     putStr $ show $ length $ vertices webGraph
     putStr " nodes and "
     putStr $ show $ length $ edges webGraph
-    putStrLn " edges is built!"
+    putStrLn " edges is built!\n_____"
 
     putStrLn "Counting PageRank..."
-    let prGraph = pageRank grRes
+    (prUnhash, iter) <- pageRanks (webGraph, unhash)
+    putStrLn $ "... finished with " ++ show iter ++ " iterations!\n_____"
+
+    putStrLn "Printing results..."
+    let pagesInfo = sortOn (negate.fst3) $ map prUnhash $ vertices webGraph
+
+    mapM_   (\(pr, key, keyL) -> do
+                putStrLn $ "URL: " ++ exportURL key
+                putStrLn $ "PR : " ++ show pr ++ "\n"
+            ) $ pagesInfo
     putStrLn "... finished!"
+
     return ()
