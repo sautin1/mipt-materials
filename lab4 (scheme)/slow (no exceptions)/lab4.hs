@@ -7,23 +7,33 @@ import qualified Data.Set as Set
 import Data.List (isInfixOf, isSuffixOf, dropWhileEnd)
 import Data.List.Ordered (sortOn)
 import qualified Data.Text as T
+import qualified Data.ByteString.Lazy as B
 import Network.URL
 import Network.HTTP.Conduit hiding (host)
 import Text.HTML.DOM (parseLBS)
 import Text.XML.Cursor (Cursor, hasAttribute, laxAttribute, laxElement, fromDocument, ($//), (>=>), check)
 import Network (withSocketsDo)
-import Data.Maybe (fromJust)
-
+import Data.Maybe (fromJust, isNothing)
+import Control.Monad (filterM)
 import Control.Monad.Par (parMap, runPar) -- for enabling parMap
+import Control.Exception (try)
+import Control.Exception.Base (evaluate)
 
 fst3 (x, _, _) = x
 snd3 (_, x, _) = x
 trd3 (_, _, x) = x
 
+isRight :: Either a b -> Bool
+isRight (Left  _) = False
+isRight (Right _) = True
+
+loadSource :: URL -> IO B.ByteString
+loadSource url = withSocketsDo $ simpleHttp $ exportURL url
+
 cursorFor :: URL -> IO Cursor
 cursorFor url = do
-	page <- withSocketsDo $ simpleHttp $ exportURL url
-	return $ fromDocument $ parseLBS page
+		page <- loadSource url
+		return $ fromDocument $ parseLBS page
 
 createURL :: T.Text -> Maybe URL
 createURL = importURL . T.unpack
@@ -61,24 +71,31 @@ hasSameDomain base url = case (url_type base, url_type url) of
 isMailto :: URL -> Bool
 isMailto = (isInfixOf "mailto:") . url_path
 
-isGoodUrl :: Maybe URL -> Bool
-isGoodUrl Nothing = False
-isGoodUrl (Just url) = not (isMailto url)
-	&& and (runPar $ parMap (\ext -> not $ ext `isSuffixOf` urlPath) 
-		[".png", ".jpg", ".gif", ".jpeg", ".pdf", 
-		 ".doc", ".rtf", ".xls", ".pptx", ".pps", 
-		 ".zip", ".rar", ".mp3", ".djvu"])
-		where urlPath = url_path url
+isGoodUrl :: URL -> IO Bool
+isGoodUrl url = do
+	let isNotMail = not (isMailto url)
+	let urlPath = url_path url
+	let isHtml = and (runPar $ parMap (\ext -> not $ ext `isSuffixOf` urlPath) 
+		[	".png", ".jpg", ".gif", ".jpeg", ".pdf", 
+			".doc", ".rtf", ".xls", ".pptx", ".pps", 
+			".zip", ".rar", ".mp3", ".djvu"]
+		)
+	source <- loadSource url
+	eithExc <- try (evaluate $ B.null source) :: IO (Either HttpException Bool)
+	let isAccess = isRight eithExc
+	return $ isNotMail && isHtml && isAccess
+
 
 relatedLinks :: URL -> IO (Set.Set URL)
 relatedLinks url = do
 	cursor <- cursorFor url
 	let textLinks = cursor 	$// laxElement "a"
 							>=> laxAttribute "href"
-	let mbLinks = map createURL textLinks
-	let goodMbLinks = filter isGoodUrl mbLinks
-	let goodLinks = filter (hasSameDomain url) $ map fromJust goodMbLinks
-	return $ foldl (\set link -> Set.insert (makeHostRelative url link) set) Set.empty goodLinks
+	let links = map fromJust $ filter (not.isNothing) $ map createURL textLinks
+	goodLinks <- filterM (isGoodUrl.(resolveURL url)) links
+	let goodHostLinks = filter (hasSameDomain url) goodLinks
+	return $ foldl (\set link -> Set.insert (makeHostRelative url link) set) Set.empty goodHostLinks
+	--return $ foldl (\set link -> Set.insert (makeHostRelative url $ createURL link) set) Set.empty textLinks
 
 referencesClosure :: URL -> IO [(URL, [URL])]
 referencesClosure rootUrl = referencesClosure' [relativeRootUrl] (Set.singleton $ relativeRootUrl)
@@ -167,9 +184,11 @@ main = do
 	--let link = "http://student.progmeistars.lv/2009_06Alexey%20'popoffka'%20Popov/"
 	--let link = "http://www.drive2.ru/" -- works too long since the site is enormous. Looks spectacular.
 	--let link = "http://lio.lv" -- fails because of "..\..\default.htm"
-	let mbLinkUrl = createURL $ T.pack link
-	if (isGoodUrl mbLinkUrl)
-		then
-			startWork $ fromJust mbLinkUrl
-		else 
-			putStrLn "Bad link"
+	--let link = "http://progmeistars.lv/index.php?lang=ru" -- fails because of "/../olimpics.html"
+	let mbUrl = createURL $ T.pack link
+	case mbUrl of
+		Nothing -> putStrLn "Cannot parse URL"
+		Just url -> do
+			isGood <- isGoodUrl url
+			if isGood 	then startWork url
+						else putStrLn "Cannot access URL"
