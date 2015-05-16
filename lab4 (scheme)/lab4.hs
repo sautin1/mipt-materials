@@ -10,7 +10,7 @@ import qualified Data.Text as T
 import Network.URL
 import Network.HTTP.Conduit hiding (host)
 import Text.HTML.DOM (parseLBS)
-import Text.XML.Cursor (Cursor, hasAttribute, attribute, laxElement, fromDocument, ($//), (>=>), check)
+import Text.XML.Cursor (Cursor, hasAttribute, laxAttribute, laxElement, fromDocument, ($//), (>=>), check)
 import Network (withSocketsDo)
 import Data.Maybe (fromJust)
 
@@ -72,9 +72,9 @@ relatedLinks :: URL -> IO (Set.Set URL)
 relatedLinks url = do
     cursor <- cursorFor url
     let textLinks = cursor  $// laxElement "a"
-                            >=> hasAttribute "href"
-                            >=> check ((isGoodUrl url) . createURL . (T.concat) . attribute "href")
-                            >=> attribute "href"
+                            -- >=> hasAttribute "href"
+                            >=> check ((isGoodUrl url) . createURL . (T.concat) . laxAttribute "href")
+                            >=> laxAttribute "href"
     return $ foldl (\set link -> Set.insert (makeHostRelative url $ createURL link) set) Set.empty textLinks
 
 referencesClosure :: URL -> IO [(URL, [URL])]
