@@ -14,6 +14,8 @@ import Text.XML.Cursor (Cursor, hasAttribute, attribute, laxElement, fromDocumen
 import Network (withSocketsDo)
 import Data.Maybe (fromJust)
 
+import Control.Monad.Par (parMap, runPar) -- for enabling parMap
+
 fst3 (x, _, _) = x
 snd3 (_, x, _) = x
 trd3 (_, _, x) = x
@@ -61,7 +63,7 @@ isMailto = (isInfixOf "mailto:") . url_path
 
 isGoodUrl :: URL -> URL -> Bool
 isGoodUrl base url = hasSameDomain base url && not (isMailto url)
-    && and (map (\ext -> not $ ext `isSuffixOf` urlPath) [  ".png", ".jpg", ".gif", ".jpeg", ".pdf", 
+    && and (runPar $ parMap (\ext -> not $ ext `isSuffixOf` urlPath) [  ".png", ".jpg", ".gif", ".jpeg", ".pdf", 
                                                             ".doc", ".rtf", ".xls", ".pptx", ".pps", 
                                                             ".zip", ".rar", ".mp3"])
         where urlPath = url_path url
