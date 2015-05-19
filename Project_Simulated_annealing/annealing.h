@@ -1,11 +1,15 @@
 #pragma once
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <utility>
+#include <vector>
 
-using Temperature = double;
-using State = double;
+using StateMarginal = double;
+using State = std::vector<StateMarginal>;   // point in R^n
+using TemperatureMarginal = double;
+using Temperature = std::vector<TemperatureMarginal>;
 
 template <typename Function>
 class GoalFunction {
@@ -22,6 +26,10 @@ public:
     std::pair<State, State> bounds() const {
         return bounds_;
     }
+
+    Function func() const {
+        return func_;
+    }
 private:
     Function func_;
     std::pair<State, State> bounds_;
@@ -31,53 +39,57 @@ template <typename Function>
 class Annealing {
 public:
     using StateBounds = std::pair<State, State>;
-    using Range = State;
+    using RangeMarginal = double;
+    using Range = std::vector<RangeMarginal>;
 
     Annealing(const GoalFunction<Function>& energy_f, Temperature t_min, Temperature t_max)
-        : energy_fun_(energy_f), t_min_(t_min), t_max_(t_max) {
-        std::srand(std::time(0));
-    }
+        : energy_fun_(energy_f), t_min_(t_min), t_max_(t_max) {}
 
-    State annealMin(const State& st_init) const {
+    State annealMin(State st_cur) const {
         Temperature temp_cur = t_max_;
-        State st_cur = st_init;
         State st_best = st_cur;
         double en_best = energy_fun_.apply(st_best);
-        for (int i = 1; temp_cur > t_min_; ++i) {
+        for (int iter = 1; !std::equal(temp_cur.begin(), temp_cur.end(), t_min_.begin(), std::less_equal<double>()); ++iter) {
             Range range_cur = shrinkRange(temp_cur);
             State st_next = neighbourState(st_cur, range_cur);
             double en_next = energy_fun_.apply(st_next);
             double en_delta = en_next - energy_fun_.apply(st_cur);
-            if (makeTransition(en_delta, temp_cur)) {
-                if (en_next < en_best) {
-                    en_best = en_next;
-                    st_best = st_next;
-                }
-                st_cur = st_next;
+            if (en_next < en_best) {
+                en_best = en_next;
+                st_best = st_next;
             }
-            temp_cur = coolSystem(i);
+            for (size_t i = 0; i < st_cur.size(); ++i) {
+                if (makeTransition(en_delta, temp_cur[i])) {
+                    st_cur[i] = st_next[i];
+                }
+            }
+            temp_cur = coolSystem(iter);
         }
         return st_best;
     }
 
 private:
-    // find state in st_bounds, close to the local minimum
-    State neighbourState(const State& st_prev, const Range& st_range) const {
-        Range subrange_length = st_range / kSubrangeQuantity;
-        State st_pos = st_prev + subrange_length;
-        State st_neg = st_prev - subrange_length;
-        double state_min  = st_pos;
-        double energy_min = energy_fun_.apply(state_min);
+    const int kSubrangeQuantity = 1000;
+
+    StateMarginal neighbourStateMarginal(State state, RangeMarginal st_range, int arg_n) const {
+        RangeMarginal subrange_length = st_range / kSubrangeQuantity;
+        StateMarginal st_pos = state[arg_n] + subrange_length;
+        StateMarginal st_neg = state[arg_n] - subrange_length;
+        StateMarginal state_min  = st_pos;
+        state[arg_n] = state_min;
+        double energy_min = energy_fun_.apply(state);
         for (int subrange_number = 0; subrange_number < kSubrangeQuantity; ++subrange_number) {
-            if (st_pos <= energy_fun_.bounds().second) {
-                double energy_st_pos = energy_fun_.apply(st_pos);
+            if (st_pos <= energy_fun_.bounds().second[arg_n]) {
+                state[arg_n] = st_pos;
+                double energy_st_pos = energy_fun_.apply(state);
                 if (energy_st_pos < energy_min) {
                     energy_min = energy_st_pos;
                     state_min = st_pos;
                 }
             }
-            if (st_neg >= energy_fun_.bounds().first) {
-                double energy_st_neg = energy_fun_.apply(st_neg);
+            if (st_neg >= energy_fun_.bounds().first[arg_n]) {
+                state[arg_n] = st_neg;
+                double energy_st_neg = energy_fun_.apply(state);
                 if (energy_st_neg < energy_min) {
                     energy_min = energy_st_neg;
                     state_min = st_neg;
@@ -89,19 +101,42 @@ private:
         return state_min;
     }
 
+    // find state in st_bounds, close to the local minimum
+    State neighbourState(State st_prev, const Range& st_range) const {
+        State st_new;
+        st_new.reserve(st_prev.size());
+        for (size_t i = 0; i < st_prev.size(); ++i) {
+            StateMarginal neighbour = neighbourStateMarginal(st_prev, st_range[i], i);
+            st_new.push_back(neighbour);
+            st_prev[i] = neighbour;
+        }
+        return st_new;
+    }
+
     // generates new range for states
-    Range shrinkRange(Temperature t) const {
-        double total_range = energy_fun_.bounds().second - energy_fun_.bounds().first;
-        return 0.5 * std::min(total_range, t * total_range);
+    Range shrinkRange(const Temperature& t) const {
+        Range new_range;
+        new_range.reserve(t.size());
+        for (size_t i = 0; i < t.size(); ++i) {
+            double total_range = energy_fun_.bounds().second[i] - energy_fun_.bounds().first[i];
+            new_range.push_back(total_range * std::min(1.0, t[i]));
+        }
+        return new_range;
     }
 
     Temperature coolSystem(int iter_n) const {
-        return t_max_ * std::exp(-iter_n);
+        Temperature temp;
+        temp.reserve(t_max_.size());
+        for (size_t i = 0; i < t_max_.size(); ++i) {
+            temp.push_back(t_max_[i] * std::exp(-iter_n));
+        }
+        return temp;
     }
 
-    bool makeTransition(double delta_en, double temp) const {
+    bool makeTransition(double delta_en, TemperatureMarginal temp) const {
         double rand_num = (double) rand() / RAND_MAX;
-        return rand_num < probabilityTransition(delta_en, temp);
+        double prob = probabilityTransition(delta_en, temp);
+        return rand_num < prob;
     }
 
     double probabilityTransition(double delta_en, double temp) const {
@@ -109,7 +144,6 @@ private:
     }
 
     const GoalFunction<Function>& energy_fun_;
-    const int kSubrangeQuantity = 1000;
     Temperature t_min_;
     Temperature t_max_;
 };
