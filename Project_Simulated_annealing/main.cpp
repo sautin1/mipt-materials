@@ -176,7 +176,7 @@ double sinRandRealAns(const GoalFunction<SinGoalFunction>& goal_func) {
 }
 
 double testSinRand() {
-    const int max_coef = 1000;
+    const int max_coef = 100;
     int a = rand() % (max_coef - 1) + 1;
     int b = rand() % max_coef;
     int c;
