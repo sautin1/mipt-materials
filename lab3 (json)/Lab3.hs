@@ -78,21 +78,27 @@ parse s = parse' $ tokenize s
         parse' (OpenBrace : ts)     = (JObject obj, t)
             where
                 (obj, t) = parseObject [] ts
-                parseObject acc (CloseBrace : tl)     = (reverse acc, tl)
-                parseObject acc (Comma : tl)          = parseObject acc tl
+                parseObject acc (CloseBrace : tl)       = (reverse acc, tl)
+                parseObject acc (Comma : tl)            = parseObject acc tl
                 parseObject acc (Str key : Colon : tl)  = parseObject ((key, value) : acc) rest
                     where
                         (value, rest) = parse' tl
         parse' (OpenBracket : ts)   = (JArray arr, t)
             where
                 (arr, t) = parseArray [] ts
-                parseArray acc (CloseBracket : tl) = (reverse acc, tl)
-                parseArray acc (Comma : tl) = parseArray acc tl
-                parseArray acc tl = parseArray (value : acc) rest
+                parseArray acc (CloseBracket : tl)  = (reverse acc, tl)
+                parseArray acc (Comma : tl)         = parseArray acc tl
+                parseArray acc tl                   = parseArray (value : acc) rest
                     where
                         (value, rest) = parse' tl
 
-lab3 (JObject list) = 0
+degreeJSON :: JSON -> Int
+degreeJSON js@(JArray l)    = max (length l) $ maximum $ map degreeJSON l
+degreeJSON js@(JObject l)   = max (length l) $ maximum $ map (degreeJSON . snd) l
+degreeJSON _                = 0
+
+lab3 :: JSON -> Int
+lab3  = degreeJSON
 
 stringify :: JSON -> String
 stringify JNull         = "null"
