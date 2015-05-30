@@ -114,31 +114,65 @@ stringify (JObject l)   = "{ " ++ objStr ++ " }"
         objStr = intercalate "," $ map (\(key, val) -> "\"" ++ key ++ "\": " ++ stringify val) l
 
 -- вариант с монадой IO
-generateIO :: IO JSON
-generateIO = do
-    num <- randomRIO (1, 2) :: IO Int
-    let json = case num of
-        1 -> JObject [];
-        2 -> JObject [("io", JObject [])]
-    return json
+generateLength :: IO Int
+generateLength = randomRIO (1, 5) :: IO Int
 
----- чистый вариант с генератором, заключённым в состояние
----- мы храним в состоянии генератор, каждый раз используя
----- его, возвращаем в состояние новый
+generateString :: IO String
+generateString = do
+    len <- generateLength
+    replicateM len $ randomRIO ('a', 'z')
+
+generateEntity :: Int -> IO JSON
+generateEntity 0 = return JNull
+generateEntity 1 = (randomIO :: IO Bool) >>= return . JBool
+generateEntity 2 = (randomIO :: IO Double) >>= return . JNumber
+generateEntity 3 = generateString >>= return . JString
+generateEntity 4 = generateArray
+generateEntity _ = generateObject
+
+generateArray :: IO JSON
+generateArray = do
+    len <- generateLength
+    types <- replicateM len $ randomRIO (0, 5)
+    mapM generateEntity types >>= (return . JArray)
+
+generateObject :: IO JSON
+generateObject = do
+    len     <- generateLength
+    types   <- replicateM len $ randomRIO (0, 5)
+    values  <- mapM generateEntity types
+    keys    <- replicateM len $ generateString
+    return $ JObject $ zip keys values
+    
+printRandomJSON :: IO ()
+printRandomJSON = do
+    json <- generateObject
+    print json
+
+
+ --чистый вариант с генератором, заключённым в состояние
+ --мы храним в состоянии генератор, каждый раз используя
+ --его, возвращаем в состояние новый
 
 --type GeneratorState = State StdGen
+
+--generateEntity :: Int -> GeneratorState JSON
+--generateEntity x = do
+--  case x of
+--      0 -> 
 
 --generate' :: GeneratorState JSON
 --generate' = do
 --  gen <- get
---  let (num, newGen) = randomR (1, 2) gen :: (Int, StdGen)
+--  let (num, newGen) = randomR (1, maxObjectLength) gen :: (Int, StdGen)
+--  let types = randomRs (0, 5) gen :: (Int, StdGen)
 --  let json = case num of
---                           1 -> Object [];
---                           2 -> Object [("pure", Object [])]
+--                           1 -> JObject [];
+--                           2 -> JObject [("pure", JObject [])]
 --  put newGen
 --  return json
 
---generate :: JSON
+--generate :: IO JSON
 --generate = evalState generate' (mkStdGen 0)
 
 main :: IO()
