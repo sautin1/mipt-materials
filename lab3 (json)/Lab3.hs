@@ -14,9 +14,10 @@ import qualified Data.Text as T
 import qualified Data.Char as Char
 import Network (withSocketsDo)
 
--- почтовый адрес
 email = "sautin@phystech.edu"
 
+
+-- Data structures
 data JSON = JNull
           | JBool Bool
           | JNumber Double
@@ -24,7 +25,6 @@ data JSON = JNull
           | JObject [(String, JSON)]
           | JArray [JSON]
 
--- добавим сответствующие классы типов для JSON
 instance Show JSON where
     show = stringify
 
@@ -37,6 +37,7 @@ data Token = OpenBrace | CloseBrace
            | Boolean Bool
         deriving (Show)
 
+-- Read JSON from string and write it to string
 tokenize :: String -> [Token]
 tokenize = tokenize' []
     where
@@ -92,14 +93,6 @@ parse s = parse' $ tokenize s
                     where
                         (value, rest) = parse' tl
 
-degreeJSON :: JSON -> Int
-degreeJSON js@(JArray l)    = max (length l) $ maximum $ map degreeJSON l
-degreeJSON js@(JObject l)   = max (length l) $ maximum $ map (degreeJSON . snd) l
-degreeJSON _                = 0
-
-lab3 :: JSON -> Int
-lab3  = degreeJSON
-
 stringify :: JSON -> String
 stringify JNull         = "null"
 stringify (JBool True)  = "true"
@@ -113,9 +106,23 @@ stringify (JObject l)   = "{ " ++ objStr ++ " }"
     where 
         objStr = intercalate "," $ map (\(key, val) -> "\"" ++ key ++ "\": " ++ stringify val) l
 
--- вариант с монадой IO
+-- Tree function
+degreeJSON :: JSON -> Int
+degreeJSON js@(JArray l)
+    | null l    = length l
+    | otherwise = max (length l) $ maximum $ map degreeJSON l
+degreeJSON js@(JObject l)
+    | null l    = length l
+    | otherwise = max (length l) $ maximum $ map (degreeJSON . snd) l
+degreeJSON _    = 0
+
+lab3 :: JSON -> Int
+lab3  = degreeJSON
+
+-- Random JSON Object
+-- IO monad option
 generateLength :: IO Int
-generateLength = randomRIO (1, 5) :: IO Int
+generateLength = randomRIO (0, 5) :: IO Int
 
 generateString :: IO String
 generateString = do
@@ -149,31 +156,48 @@ printRandomJSON = do
     json <- generateObject
     print json
 
+-- Tests
+type TestCase = (String, Int)
+tester :: TestCase -> IO ()
+tester (str, corRes) = do
+    let (json, tail) = parse str
+    let res = degreeJSON json
+    if ((null tail) && (res == corRes)) then putStrLn "Test passed!"
+                                        else putStrLn "Test failed!"
 
- --чистый вариант с генератором, заключённым в состояние
- --мы храним в состоянии генератор, каждый раз используя
- --его, возвращаем в состояние новый
+-- example from json.org/example
+test1 :: TestCase
+test1 = ("{\"glossary\": {\"title\": \"example glossary\", \"GlossDiv\": {\"title\": \"S\",\"GlossList\": {\"GlossEntry\": { \"ID\": \"SGML\", \"SortAs\": \"SGML\",\"GlossTerm\": \"Standard Generalized Markup Language\", \"Acronym\": \"SGML\", \"Abbrev\": \"ISO 8879:1986\", \"GlossDef\": { \"para\": \"A meta-markup language, used to create markup languages such as DocBook.\", \"GlossSeeAlso\": [\"GML\", \"XML\"] }, \"GlossSee\": \"markup\"}}}}}"
+        , 7)
 
---type GeneratorState = State StdGen
+-- example from json.org/example
+test2 :: TestCase
+test2 = ("{\"menu\": {\"header\": \"SVG Viewer\",\"items\": [{\"id\": \"Open\"},{\"id\": \"OpenNew\", \"label\": \"Open New\"},null,{\"id\": \"ZoomIn\", \"label\": \"Zoom In\"},{\"id\": \"ZoomOut\", \"label\": \"Zoom Out\"},{\"id\": \"OriginalView\", \"label\": \"Original View\"},null,{\"id\": \"Quality\"},{\"id\": \"Pause\"},{\"id\": \"Mute\"},null,{\"id\": \"Find\", \"label\": \"Find...\"},{\"id\": \"FindAgain\", \"label\": \"Find Again\"},{\"id\": \"Copy\"},{\"id\": \"CopyAgain\", \"label\": \"Copy Again\"},{\"id\": \"CopySVG\", \"label\": \"Copy SVG\"},{\"id\": \"ViewSVG\", \"label\": \"View SVG\"},{\"id\": \"ViewSource\", \"label\": \"View Source\"},{\"id\": \"SaveAs\", \"label\": \"Save As\"},null,{\"id\": \"Help\"},{\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}]}}"
+        , 22)
 
---generateEntity :: Int -> GeneratorState JSON
---generateEntity x = do
---  case x of
---      0 -> 
+-- example from json-schema.org/examples.html
+test3 :: TestCase
+test3 = ("{\"$schema\": \"http://json-schema.org/draft-04/schema#\",\"type\": \"object\",\"properties\": {\"/\": {}},\"patternProperties\": {\"^(/[^/]+)+$\": {}},\"additionalProperties\": false,\"required\": [ \"/\" ]}"
+        , 6)
 
---generate' :: GeneratorState JSON
---generate' = do
---  gen <- get
---  let (num, newGen) = randomR (1, maxObjectLength) gen :: (Int, StdGen)
---  let types = randomRs (0, 5) gen :: (Int, StdGen)
---  let json = case num of
---                           1 -> JObject [];
---                           2 -> JObject [("pure", JObject [])]
---  put newGen
---  return json
+-- example from json-schema.org/example2.html
+test4 :: TestCase
+test4 = ("{\"id\": \"http://some.site.somewhere/entry-schema#\",\"$schema\": \"http://json-schema.org/draft-04/schema#\",\"description\": \"schema for an fstab entry\",\"type\": \"object\",\"required\": [ \"storage\" ],\"properties\": {\"storage\": {\"type\": \"object\",\"oneOf\": [{ \"$ref\": \"#/definitions/diskDevice\" },{ \"$ref\": \"#/definitions/diskUUID\" },{ \"$ref\": \"#/definitions/nfs\" },{ \"$ref\": \"#/definitions/tmpfs\" }]},\"fstype\": {\"enum\": [ \"ext3\", \"ext4\", \"btrfs\" ]},\"options\": {\"type\": \"array\",\"minItems\": 1,\"items\": { \"type\": \"string\" },\"uniqueItems\": true},\"readonly\": { \"type\": \"boolean\" }},\"definitions\": {\"diskDevice\": {},\"diskUUID\": {},\"nfs\": {},\"tmpfs\": {}}}"
+        , 7)
 
---generate :: IO JSON
---generate = evalState generate' (mkStdGen 0)
+-- example from sitepoint.com/facebook-json-example/
+test5 :: TestCase
+test5 = ("{\"data\": [{\"id\": \"X999_Y999\",\"from\": {\"name\": \"Tom Brady\", \"id\": \"X12\"},\"message\": \"Looking forward to 2010!\",\"actions\": [{\"name\": \"Comment\",\"link\": \"http://www.facebook.com/X999/posts/Y999\"},{\"name\": \"Like\",\"link\": \"http://www.facebook.com/X999/posts/Y999\"}],\"type\": \"status\",\"created_time\": \"2010-08-02T21:27:44+0000\",\"updated_time\": \"2010-08-02T21:27:44+0000\"},{\"id\": \"X998_Y998\",\"from\": {\"name\": \"Peyton Manning\", \"id\": \"X18\"},\"message\": \"Where's my contract?\",\"actions\": [{\"name\": \"Comment\",\"link\": \"http://www.facebook.com/X998/posts/Y998\"},{\"name\": \"Like\",\"link\": \"http://www.facebook.com/X998/posts/Y998\"}],\"type\": \"status\",\"created_time\": \"2010-08-02T21:27:44+0000\",\"updated_time\": \"2010-08-02T21:27:44+0000\"}]}"
+        , 7)
+
+testAll :: IO ()
+testAll = mapM_ tester [test1, test2, test3, test4, test5]
+
+testRandom :: IO ()
+testRandom = do
+    json <- generateObject
+    print json
+    print $ degreeJSON json
 
 main :: IO()
 main = withSocketsDo $ do
