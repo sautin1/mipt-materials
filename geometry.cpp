@@ -1,5 +1,56 @@
 #include "geometry.h"
 
+namespace {
+    enum class EventType {
+        EventStart,
+        EventFinish
+    };
+
+    struct Event {
+        EventType type;
+        int seg_id;
+        double x;
+        Event(int id, EventType t, double _x)
+            : type(t), seg_id(id), x(_x) {}
+        bool operator < (Event other) const {
+            return x < other.x || (x == other.x && type < other.type);
+        }
+    };
+
+    struct SegmentInd : Segment {
+        int id;
+        SegmentInd(const Segment& seg, int _id)
+            : Segment(seg), id(_id) {}
+    };
+
+    struct SegmentIndYComp {
+        bool operator() (const SegmentInd& s1, const SegmentInd& s2) {
+            double x_common = std::max(std::min(s1.st.x, s1.en().x), std::min(s2.st.x, s2.en().x));
+            double s1_y = (s1.st.x == s1.en().x) ? s1.st.y : s1.st.y + s1.y * (x_common - s1.st.x) / s1.x;
+            double s2_y = (s2.st.x == s2.en().x) ? s2.st.y : s2.st.y + s2.y * (x_common - s2.st.x) / s2.x;
+            return s1_y < s2_y || (s1_y == s2_y && s1.id < s2.id);
+        }
+    };
+
+    bool intersectsInterval(Coord a, Coord b, Coord c, Coord d) {
+        if (a > b) {
+            std::swap(a, b);
+        }
+        if (c > d) {
+            std::swap(c, d);
+        }
+        return std::max(a, c) <= std::min(b, d);
+    }
+
+    bool intersects1dX(Segment s1, Segment s2) {
+        return intersectsInterval(s1.st.x, s1.en().x, s2.st.x, s2.en().x);
+    }
+
+    bool intersects1dY(Segment s1, Segment s2) {
+        return intersectsInterval(s1.st.y, s1.en().y, s2.st.y, s2.en().y);
+    }
+}
+
 bool equals(double x, double y) {
     return std::abs(x - y) < kEpsilon;
 }
@@ -64,6 +115,10 @@ Segment::Segment(const Point& from, const Point& to)
 
 Segment::Segment(const Point& p, const Vector& v)
     : Vector(v), st(p) {}
+
+Point Segment::en() const {
+    return protract(st, *this);
+}
 
 Line::Line(const Point& _p0, const Vector& _v)
     : p0(_p0), v(_v) {
@@ -192,6 +247,7 @@ Point protract(const Point& p, const Vector& v) {
     return Point(p.x + v.x, p.y + v.y);
 }
 
+// tested at mccme
 bool isOn(const Point& p, const Segment& seg) {
     Segment seg_p(seg.st, p);
     return (p == seg.st) || (seg.isParallel(seg_p) && seg.isCodirect(seg_p)
@@ -217,7 +273,7 @@ bool isOn(const Point& point, const Polygon& poly) {
     return is_on;
 }
 
-// tested on mccme
+// tested at mccme
 bool isIn(const Point& point, const ConvexPolygon& poly) {
     if (poly.points.size() == 1) {
         return (point == poly.points.front());
@@ -292,6 +348,23 @@ ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2) {
     return ConvexPolygon(removeFlatAngles(sum));
 }
 
+// tested at mccme
+bool intersects(const Segment& seg1, const Segment& seg2) {
+    return  intersects1dX(seg1, seg2) &&
+            intersects1dY(seg1, seg2) &&
+            intersects(seg1, Line(seg2.st, seg2)) &&
+            intersects(seg2, Line(seg1.st, seg1));
+}
+
+bool intersects(const Segment& seg, const Line& line) {
+    Segment line_seg(line.p0, line.v);
+    Segment line_to_st(line.p0, seg.st);
+    Segment line_to_en(line.p0, seg.en());
+    return line_seg.isClockwiseRotation(line_to_st) != line_seg.isClockwiseRotation(line_to_en) ||
+            line_seg.isParallel(line_to_st) ||
+            line_seg.isParallel(line_to_en);
+}
+
 bool intersects(const Line& line, const Circle& circle) {
     double dist = distance(circle.c, line);
     return equals(dist, circle.rad) || dist < circle.rad;
@@ -304,6 +377,48 @@ bool intersects(ConvexPolygon p1, const ConvexPolygon& p2) {
     ConvexPolygon sum = minkowskiSum(p1, p2);
     Point origin(0, 0);
     return isIn(origin, sum) || isOn(origin, sum);
+}
+
+// should be rewritten
+std::pair<int, int> intersection(const std::vector<Segment>& segs) {
+    std::vector<Event> events;
+    events.reserve(segs.size() * 2);
+    for (size_t i = 0; i < segs.size(); ++i) {
+        events.push_back(Event(i, EventType::EventStart , std::min(segs[i].st.x, segs[i].en().x)));
+        events.push_back(Event(i, EventType::EventFinish, std::max(segs[i].st.x, segs[i].en().x)));
+    }
+    std::sort(events.begin(), events.end(), std::less<Event>());
+    std::set<SegmentInd, SegmentIndYComp> set;
+    std::vector<std::set<SegmentInd, SegmentIndYComp>::iterator> seg_position(segs.size());
+    std::pair<int, int> res(-1, -1);
+    for (size_t i = 0; i < events.size(); ++i) {
+        if (events[i].type == EventType::EventStart) {
+            auto succ = set.lower_bound(SegmentInd(segs[events[i].seg_id], events[i].seg_id));
+            auto pred = (succ == set.begin()) ? set.end() : std::prev(succ);
+            if (succ != set.end() && intersects(*succ, segs[events[i].seg_id])) {
+                res.first  = std::min(succ->id, events[i].seg_id);
+                res.second = std::max(succ->id, events[i].seg_id);
+                break;
+            }
+            if (pred != set.end() && intersects(*pred, segs[events[i].seg_id])) {
+                res.first  = std::min(pred->id, events[i].seg_id);
+                res.second = std::max(pred->id, events[i].seg_id);
+                break;
+            }
+            seg_position[events[i].seg_id] = set.insert(succ, SegmentInd(segs[events[i].seg_id], events[i].seg_id));
+        } else {
+            const auto it = seg_position[events[i].seg_id];
+            auto succ = std::next(it, 1);
+            auto pred = (it == set.begin()) ? set.end() : std::prev(it);
+            if (succ != set.end() && pred != set.end() && intersects(*pred, *succ)) {
+                res.first  = std::min(succ->id, pred->id);
+                res.second = std::max(succ->id, pred->id);
+                break;
+            }
+            set.erase(it);
+        }
+    }
+    return res;
 }
 
 std::vector<Line> getTangents(Circle c1, Circle c2) {

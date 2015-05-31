@@ -1,13 +1,12 @@
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
-
+#pragma once
 #include <algorithm>
 #include <cmath>
 #include <ctgmath>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
-typedef double Coord;
+typedef long long Coord;
 
 const double kEpsilon = 1e-9;
 const double kPi = 3.1415926535897932384626433;
@@ -52,6 +51,7 @@ struct Segment: public Vector {
     Point st;
     Segment(const Point& from, const Point& to);
     Segment(const Point& p, const Vector& v);
+    Point en() const;
 };
 
 struct Line {
@@ -113,8 +113,12 @@ std::vector<Point> removeFlatAngles(const std::vector<Point>& points);
 
 ConvexPolygon minkowskiSum(ConvexPolygon p1, ConvexPolygon p2);
 
+bool intersects(const Segment& seg1, const Segment& seg2);
+bool intersects(const Segment& seg, const Line& line);
 bool intersects(const Line& line, const Circle& circle);
 bool intersects(ConvexPolygon p1, const ConvexPolygon& p2);
-std::vector<Line> getTangents(Circle c1, Circle c2);
 
-#endif // GEOMETRY_H
+// returns a pair of intersecting segments or (-1, -1) if there are no any intersections
+std::pair<int, int> intersection(const std::vector<Segment>& segs);
+
+std::vector<Line> getTangents(Circle c1, Circle c2);
