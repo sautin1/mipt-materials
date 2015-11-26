@@ -12,7 +12,7 @@ typedef struct {
 
 const int GRID_MAX_DIMENSION = 10;
 const int GRID_MIN_DIMENSION = 2;
-const double CELL_ALIVE_PROBABILITY = 0.4;
+const double CELL_ALIVE_PROBABILITY = 0.6;
 const char CELL_ALIVE_CHAR = '+';
 const char CELL_DEAD_CHAR  = '.';
 const char CELL_DELIMITER  = ',';
@@ -21,27 +21,24 @@ const int LINE_MAX_LENGTH = 256;
 const char* ERROR_MESSAGE_WRONG_HEIGHT = "Wrong grid height";
 const char* ERROR_MESSAGE_WRONG_WIDTH  = "Wrong grid width";
 
+int is_alive_neighbor(const Grid grid, const int row, const int column) {
+    if (row < 0 || column < 0 || row >= grid.height || column >= grid.width) {
+        return 0;
+    }
+    return (grid.states[row][column] == CellAlive) ? 1 : 0;
+}
 
 CellState update_cell(const Grid grid, const int row, const int column) {
     int neighbors_quantity = 0;
-    neighbors_quantity += (row > 0                  && column > 0 && 
-                           grid.states[row-1][column-1] == CellAlive) ? 1 : 0;
-    neighbors_quantity += (row > 0                                              &&              
-                           grid.states[row-1][column  ] == CellAlive) ? 1 : 0;
-    neighbors_quantity += (row > 0                  && column < grid.width - 1  && 
-                           grid.states[row-1][column+1] == CellAlive) ? 1 : 0;
 
-    neighbors_quantity += (                            column > 0               && 
-                           grid.states[row  ][column-1] == CellAlive) ? 1 : 0;
-    neighbors_quantity += (                            column < grid.width - 1  && 
-                           grid.states[row  ][column+1] == CellAlive) ? 1 : 0;
-
-    neighbors_quantity += (row < grid.height - 1    && column > 0               && 
-                           grid.states[row+1][column-1] == CellAlive) ? 1 : 0;
-    neighbors_quantity += (row < grid.height - 1                                && 
-                           grid.states[row+1][column  ] == CellAlive) ? 1 : 0;
-    neighbors_quantity += (row < grid.height - 1    && column < grid.width - 1  && 
-                           grid.states[row+1][column+1] == CellAlive) ? 1 : 0;
+    for (int delta_row = -1; delta_row <= 1; ++delta_row) {
+        for (int delta_column = -1; delta_column <= 1; ++delta_column) {
+            if (delta_row == 0 && delta_column == 0) {
+                continue;
+            }
+            neighbors_quantity += is_alive_neighbor(grid, row + delta_row, column + delta_column);
+        }
+    }
     
     CellState result;
     if (neighbors_quantity < 2 || neighbors_quantity > 3) {

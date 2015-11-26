@@ -10,6 +10,7 @@
 
 const char* COMMAND_POSSIBLE_DELIMITERS     = " ";
 const char* ERROR_MESSAGE_NOT_STARTED       = "Wrong command: not started yet";
+const char* ERROR_MESSAGE_NOT_STOPPED       = "Wrong command: not stopped yet";
 const char* ERROR_MESSAGE_ALREADY_STARTED   = "Wrong command: already started";
 const char* FILENAME_RESULTS                = "result.txt";
 

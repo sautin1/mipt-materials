@@ -75,8 +75,9 @@ void* wait_for_workers(void* arg) {
         nanosleep(&sleep_time, NULL);
     }
     int iter_done = (*worker_duties)[0].iter_quantity - thread_iterations_left / worker_quantity;
-    fprintf(stderr, "workers finished %d iterations\n", iter_done);
+    fprintf(stderr, "workers completed %d iterations\n", iter_done);
     finalize_workers(workers, worker_duties);
+    thread_iterations_left = 0;
     return NULL;
 }
 
@@ -85,6 +86,7 @@ int launch_master() {
     pthread_t manager;
     WorkerDuty* worker_duties = NULL;
     int is_started = 0;
+    int is_stopped = 0;
 
     char* command = (char*)malloc(COMMAND_MAX_LENGTH * sizeof(char));
     while (1) {
@@ -111,12 +113,16 @@ int launch_master() {
                 fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STARTED);
                 continue;
             }
-            /**///FILE* res_file = fopen(FILENAME_RESULTS, "w");
-            FILE* res_file = stdout;
+            if (thread_iterations_left != 0) {
+                fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STOPPED);
+                continue;
+            }
+            //FILE* res_file = fopen(FILENAME_RESULTS, "w");
+            /**/FILE* res_file = stdout;
             if (print_grid(res_file, grid)) {
                 continue;
             }
-            /**///fclose(res_file);
+            //fclose(res_file);
         } else if (strncmp("run", command, 3) == 0) {
             if (!is_started) {
                 fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STARTED);
@@ -149,7 +155,12 @@ int launch_master() {
                 continue;
             }
             flag_stop = 1;
+            is_stopped = 1;
         } else if (strcmp("quit", command) == 0) {
+            if (is_started && !is_stopped) {
+                fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STOPPED);
+                continue;
+            }
             delete_grid(grid);
             delete_grid(grid_next);
             pthread_cond_destroy(&cond_var);
