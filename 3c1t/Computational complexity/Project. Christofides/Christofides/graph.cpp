@@ -11,17 +11,22 @@ bool NeighborInfo::operator< (const NeighborInfo other) const {
 Graph::Graph(int node_quantity, const std::vector<Edge>& edges)
     : nodes_(node_quantity, std::vector<NeighborInfo>()) {
     for (size_t i = 0; i < edges.size(); ++i) {
-        nodes_[edges[i].from].push_back(NeighborInfo(edges[i].to  , edges[i].cost));
-        nodes_[edges[i].to  ].push_back(NeighborInfo(edges[i].from, edges[i].cost));
+        nodes_[edges[i].from].emplace_back(edges[i].to  , edges[i].cost,
+                                           nodes_[edges[i].to].size());
+        nodes_[edges[i].to  ].emplace_back(edges[i].from, edges[i].cost,
+                                           nodes_[edges[i].from].size() - 1);
     }
 }
 
 Graph::Graph(const AdjacencyMatrix& matrix)
     : nodes_(matrix.size(), std::vector<NeighborInfo>()) {
-    for (size_t from = 0; from < matrix.size(); ++from) {
-        for (size_t to = 0; to < matrix[from].size(); ++to) {
-            if (matrix[from][to] < kInfinity && from != to) {
-                nodes_[from].push_back(NeighborInfo(to, matrix[from][to]));
+    for (size_t from = 0; from < matrix.size() - 1; ++from) {
+        for (size_t to = from + 1; to < matrix.size(); ++to) {
+            if (matrix[from][to] < kInfinity) {
+                nodes_[from].emplace_back(to  , matrix[from][to],
+                                          nodes_[to].size());
+                nodes_[to  ].emplace_back(from, matrix[from][to],
+                                          nodes_[from].size() - 1);
             }
         }
     }
@@ -44,7 +49,7 @@ std::vector<Edge> Graph::getEdges() const {
     for (int node = 0; node < (int)nodes_.size(); ++node) {
         for (size_t i = 0; i < nodes_[node].size(); ++i) {
             if (node < nodes_[node][i].node) {
-                edges.push_back(Edge(node, nodes_[node][i].node, nodes_[node][i].cost));
+                edges.emplace_back(node, nodes_[node][i].node, nodes_[node][i].cost);
             }
         }
     }
@@ -71,7 +76,7 @@ Graph minimalSpanningTree(const Graph& graph) {
     }
     std::vector<CostT> distances(graph.size(), kInfinity);
     distances[0] = 0;
-    std::vector<NeighborInfo> parents(graph.size(), NeighborInfo(0, -1));
+    std::vector<NeighborInfo> parents(graph.size(), NeighborInfo(0, -1, -1));
 
     while (!node_queue.empty()) {
         auto min_it = std::min_element(node_queue.begin(), node_queue.end(),
@@ -83,13 +88,13 @@ Graph minimalSpanningTree(const Graph& graph) {
             throw std::logic_error("Graph is not connected");
         }
         if (parents[min_node].cost != -1) {
-            tree_edges.push_back(Edge(min_node, parents[min_node]));
+            tree_edges.emplace_back(min_node, parents[min_node]);
         }
         for (size_t j = 0; j < graph.getNeighbors(min_node).size(); ++j) {
             NeighborInfo neighbor = graph.nodes()[min_node][j];
             if (neighbor.cost < distances[neighbor.node]) {
                 distances[neighbor.node] = neighbor.cost;
-                parents  [neighbor.node] = NeighborInfo(min_node, neighbor.cost);
+                parents  [neighbor.node] = NeighborInfo(min_node, neighbor.cost, -1);
             }
         }
         *min_it = node_queue.back();
@@ -122,25 +127,40 @@ std::vector<int> dfsTimeIn(const Graph& graph) {
     return time_in;
 }
 
+Graph createCycleOnNodes(const CompleteGraph& graph, const std::vector<int>& node_sequence) {
+    std::vector<Edge> edges;
+    int is_already_linked = (node_sequence.front() == node_sequence.back()) ? 1 : 0;
+    for (size_t i = 0; i < node_sequence.size() - is_already_linked; ++i) {
+        int from = node_sequence[i];
+        int to = node_sequence[(i + 1) % node_sequence.size()];
+        edges.emplace_back(from, to, graph.getCost(from, to));
+    }
+    return Graph(node_sequence.size(), edges);
+}
+
 Graph createCycleOnSubgraph(const CompleteGraph& graph, const Graph& subgraph) {
     std::vector<int> time_in = dfsTimeIn(subgraph);
     std::vector<int> node_sequence(subgraph.size(), -1);
     for (size_t node = 0; node < subgraph.size(); ++node) {
         node_sequence[time_in[node]] = node;
     }
-    std::vector<Edge> edges;
-    int from, to;
-    for (size_t time = 0; time < node_sequence.size(); ++time) {
-        from = node_sequence[time];
-        to   = node_sequence[(time + 1) % node_sequence.size()];
-        edges.push_back(Edge(from, to, graph.getCost(from, to)));
-    }
-    return Graph(subgraph.size(), edges);
+    return createCycleOnNodes(graph, node_sequence);
 }
 
 Graph induce(const Graph& graph, const std::vector<int>& induced_nodes) {
-    // todo
-    return graph;
+    std::vector<bool> is_induced_node(graph.size(), false);
+    for (int node : induced_nodes) {
+        is_induced_node[node] = true;
+    }
+    std::vector<Edge> edges = graph.getEdges();
+    std::vector<Edge> edges_induced;
+    for (Edge edge : edges) {
+        if (is_induced_node[edge.from] && is_induced_node[edge.to]) {
+            edges_induced.push_back(edge);
+        }
+    }
+    return Graph(induced_nodes.size(), edges); // надо как-то настроить отображение номеров вершин индуцированного графа
+    //в вершины нового, независимого
 }
 
 Matching perfectMinWeightMatching(const Graph& graph) {
@@ -148,8 +168,37 @@ Matching perfectMinWeightMatching(const Graph& graph) {
     return Matching();
 }
 
-Graph eulerianCycle(const Graph& graph) {
-    // todo
-    return graph;
+std::vector<int> eulerianCycle(const Graph& graph) {
+    std::vector<std::vector<bool>> is_used_edge;
+    is_used_edge.reserve(graph.nodes().size());
+    std::vector<int> neighbor_indices(graph.size(), -1);
+    for (size_t i = 0; i < graph.size(); ++i) {
+        is_used_edge.emplace_back(graph.nodes()[i].size(), false);
+        neighbor_indices[i] = graph.getNeighbors(i).size() - 1;
+    }
+    std::vector<int> cycle_nodes;
+    cycle_nodes.reserve(graph.size());
+    std::stack<int> dfs_stack;
+    dfs_stack.push(0);
+    while (!dfs_stack.empty()) {
+        int node = dfs_stack.top();
+        while (neighbor_indices[node] >= 0
+               && is_used_edge[node][neighbor_indices[node]]) {
+            --neighbor_indices[node];
+        }
+        if (neighbor_indices[node] < 0) {
+            // no more edges going from this node
+            cycle_nodes.push_back(node);
+            dfs_stack.pop();
+        } else {
+            NeighborInfo info = graph.getNeighbors(node)[neighbor_indices[node]];
+            int neighbor = info.node;
+            is_used_edge[node][neighbor_indices[node]] = true;
+            is_used_edge[neighbor][info.link] = true;
+            --neighbor_indices[node];
+            dfs_stack.push(neighbor);
+        }
+    }
+    return cycle_nodes;
 }
 

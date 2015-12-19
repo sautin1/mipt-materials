@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
+#include <stack>
 #include <stdexcept>
 #include <vector>
 
@@ -19,8 +20,9 @@ const CostT kInfinity = std::numeric_limits<CostT>::max();
 struct NeighborInfo {
     int node;
     CostT cost;
+    int link; // reverse edge link
     NeighborInfo() = default;
-    NeighborInfo(int _node, CostT _cost) : node(_node), cost(_cost) {}
+    NeighborInfo(int _node, CostT _cost, int _link) : node(_node), cost(_cost), link(_link) {}
     bool operator < (const NeighborInfo other) const;
 };
 
@@ -45,11 +47,9 @@ public:
     const std::vector<NeighborInfo>& getNeighbors(int node) const;
     const AdjacencyList& nodes() const;
     std::vector<Edge> getEdges() const;
-
 protected:
     AdjacencyList nodes_;
 };
-
 
 class CompleteGraph : public Graph {
 public:
@@ -63,7 +63,9 @@ std::vector<int> dfsTimeIn(const Graph& graph);
 int dfsTimeInNode(const Graph& graph,
                   int timer, int node,
                   std::vector<int>& time_in);
+Graph createCycleOnNodes(const CompleteGraph& graph, const std::vector<int>& node_sequence);
 Graph createCycleOnSubgraph(const CompleteGraph& graph, const Graph& subgraph);
 Graph induce(const Graph& graph, const std::vector<int>& induced_nodes);
 Matching perfectMinWeightMatching(const Graph& graph);
-Graph eulerianCycle(const Graph& graph);
+
+std::vector<int> eulerianCycle(const Graph& graph);

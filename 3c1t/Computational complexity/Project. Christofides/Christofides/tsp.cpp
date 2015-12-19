@@ -21,7 +21,8 @@ Graph tspApproximationChristofides(const CompleteGraph& graph) {
     auto it = std::copy(mst_edges.begin(), mst_edges.end(), edges.begin());
     std::copy(match.begin(), match.end(), it);
 
-    Graph eulerian_cycle = eulerianCycle(graph);
-    Graph cycle = createCycleOnSubgraph(graph, eulerian_cycle);
-    return cycle;
+    std::vector<int> eulerian_cycle = eulerianCycle(graph);
+//  Graph cycle = createCycleOnSubgraph(graph, eulerian_cycle);
+//  return cycle;
+    return Graph();
 }
