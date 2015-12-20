@@ -24,6 +24,7 @@ struct Test {
 
 const std::vector<Test> kTestSet {
     Test("nonplanar1", false),
+    Test("nonplanar2", false),
     Test("pentagon"  , true),
     Test("djibouti"  , true),
     Test("luxembourg", true),
@@ -31,8 +32,8 @@ const std::vector<Test> kTestSet {
     Test("nicaragua" , true),
     Test("qatar"     , true),
     Test("rwanda"    , true),
-    Test("canada"    , true),
     Test("zimbabwe"  , true),
+    Test("canada"    , true),
     Test("uruguay"   , true),
     Test("sahara"    , true),
     Test("tanzania"  , true),

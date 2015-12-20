@@ -9,7 +9,7 @@
  * Based on MST construction.
  * TSP is metric if graph is complete and edge costs satisfy the triangle inequality.
  */
-Graph tspApproximationMST(const CompleteGraph& graph);
+Tour tspApproximationMST(const CompleteGraph& graph);
 
 
 
@@ -18,4 +18,4 @@ Graph tspApproximationMST(const CompleteGraph& graph);
  * with approximation ratio = 3/2.
  * TSP is metric if graph is complete and edge costs satisfy the triangle inequality.
  */
-Graph tspApproximationChristofides(const CompleteGraph& graph);
+Tour tspApproximationChristofides(const CompleteGraph& graph);

@@ -67,6 +67,23 @@ int nodeDegree(const Graph& graph, int node) {
     return graph.getNeighbors(node).size();
 }
 
+std::vector<Edge> tourEdges(const CompleteGraph& graph, const Tour& tour) {
+    std::vector<Edge> edges;
+    for (int i = 0; i < (int)tour.size() - 1; ++i) {
+        edges.emplace_back(tour[i], tour[i+1], graph.getCost(tour[i], tour[i+1]));
+    }
+    return edges;
+}
+
+CostT tourCost(const CompleteGraph& graph, const Tour& tour) {
+    std::vector<Edge> tour_edges = tourEdges(graph, tour);
+    CostT result = 0;
+    for (Edge edge : tour_edges) {
+        result += edge.cost;
+    }
+    return result;
+}
+
 // Prim's algorithm without heap: O(v^2 + e)
 Graph minimalSpanningTree(const Graph& graph) {
     std::vector<Edge> tree_edges;
@@ -103,6 +120,21 @@ Graph minimalSpanningTree(const Graph& graph) {
     return Graph(graph.size(), tree_edges);
 }
 
+Tour createCycleOnTour(int node_quantity, const Tour& node_sequence) {
+    Tour cycle;
+    cycle.reserve(node_sequence.size());
+    std::vector<bool> is_used(node_quantity, false);
+    for (size_t i = 0; i < node_sequence.size(); ++i) {
+        if (is_used[node_sequence[i]]) {
+            continue;
+        }
+        is_used[node_sequence[i]] = true;
+        cycle.push_back(node_sequence[i]);
+    }
+    cycle.push_back(node_sequence.front());
+    return cycle;
+}
+
 int dfsTimeInNode(const Graph& graph,
               int timer, int node,
               std::vector<int>& time_in) {
@@ -127,48 +159,58 @@ std::vector<int> dfsTimeIn(const Graph& graph) {
     return time_in;
 }
 
-Graph createCycleOnNodes(const CompleteGraph& graph, const std::vector<int>& node_sequence) {
-    std::vector<Edge> edges;
-    int is_already_linked = (node_sequence.front() == node_sequence.back()) ? 1 : 0;
-    for (size_t i = 0; i < node_sequence.size() - is_already_linked; ++i) {
-        int from = node_sequence[i];
-        int to = node_sequence[(i + 1) % node_sequence.size()];
-        edges.emplace_back(from, to, graph.getCost(from, to));
-    }
-    return Graph(node_sequence.size(), edges);
-}
-
-Graph createCycleOnSubgraph(const CompleteGraph& graph, const Graph& subgraph) {
-    std::vector<int> time_in = dfsTimeIn(subgraph);
-    std::vector<int> node_sequence(subgraph.size(), -1);
-    for (size_t node = 0; node < subgraph.size(); ++node) {
+Tour createHamiltonianCycle(const Graph& graph) {
+    std::vector<int> time_in = dfsTimeIn(graph);
+    Tour node_sequence(graph.size(), -1);
+    for (size_t node = 0; node < graph.size(); ++node) {
         node_sequence[time_in[node]] = node;
     }
-    return createCycleOnNodes(graph, node_sequence);
+    return createCycleOnTour(graph.size(), node_sequence);
 }
 
-Graph induce(const Graph& graph, const std::vector<int>& induced_nodes) {
-    std::vector<bool> is_induced_node(graph.size(), false);
-    for (int node : induced_nodes) {
-        is_induced_node[node] = true;
+InduceResult induce(const Graph& graph, const std::vector<int>& induced_nodes) {
+    InduceResult result(graph, induced_nodes);
+    for (size_t i = 0; i < induced_nodes.size(); ++i) {
+        int node = induced_nodes[i];
+        result.init_to_ind[node] = i;
+        result.ind_to_init[i] = node;
     }
     std::vector<Edge> edges = graph.getEdges();
     std::vector<Edge> edges_induced;
     for (Edge edge : edges) {
-        if (is_induced_node[edge.from] && is_induced_node[edge.to]) {
-            edges_induced.push_back(edge);
+        if (result.init_to_ind[edge.from] != -1 && result.init_to_ind[edge.to] != -1) {
+            Edge new_edge(result.init_to_ind[edge.from], result.init_to_ind[edge.to], edge.cost);
+            edges_induced.push_back(new_edge);
         }
     }
-    return Graph(induced_nodes.size(), edges); // надо как-то настроить отображение номеров вершин индуцированного графа
-    //в вершины нового, независимого
+    result.graph = Graph(induced_nodes.size(), edges_induced);
+    return result;
 }
 
 Matching perfectMinWeightMatching(const Graph& graph) {
-    // todo
-    return Matching();
+    std::vector<bool> is_matched(graph.size(), false);
+    Matching matching;
+    for (size_t node = 0; node < graph.size(); ++node) {
+        if (is_matched[node]) {
+            continue;
+        }
+        NeighborInfo best_neighbor(-1, kInfinity, -1);
+        for (NeighborInfo neighbor : graph.getNeighbors(node)) {
+            if (!is_matched[neighbor.node] && neighbor.cost < best_neighbor.cost) {
+                best_neighbor = neighbor;
+            }
+        }
+        if (best_neighbor.node == -1) {
+            throw std::logic_error("Cannot build perfect matching");
+        }
+        matching.emplace_back(node, best_neighbor);
+        is_matched[node] = true;
+        is_matched[best_neighbor.node] = true;
+    }
+    return matching;
 }
 
-std::vector<int> eulerianCycle(const Graph& graph) {
+Tour eulerianCycle(const Graph& graph) {
     std::vector<std::vector<bool>> is_used_edge;
     is_used_edge.reserve(graph.nodes().size());
     std::vector<int> neighbor_indices(graph.size(), -1);
@@ -176,8 +218,8 @@ std::vector<int> eulerianCycle(const Graph& graph) {
         is_used_edge.emplace_back(graph.nodes()[i].size(), false);
         neighbor_indices[i] = graph.getNeighbors(i).size() - 1;
     }
-    std::vector<int> cycle_nodes;
-    cycle_nodes.reserve(graph.size());
+    Tour cycle;
+    cycle.reserve(graph.size());
     std::stack<int> dfs_stack;
     dfs_stack.push(0);
     while (!dfs_stack.empty()) {
@@ -188,7 +230,7 @@ std::vector<int> eulerianCycle(const Graph& graph) {
         }
         if (neighbor_indices[node] < 0) {
             // no more edges going from this node
-            cycle_nodes.push_back(node);
+            cycle.push_back(node);
             dfs_stack.pop();
         } else {
             NeighborInfo info = graph.getNeighbors(node)[neighbor_indices[node]];
@@ -199,6 +241,6 @@ std::vector<int> eulerianCycle(const Graph& graph) {
             dfs_stack.push(neighbor);
         }
     }
-    return cycle_nodes;
+    return cycle;
 }
 

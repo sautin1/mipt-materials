@@ -65,20 +65,26 @@ bool test(const Test& test_case) {
                                               : readNonPlanarCompleteGraph(filename);
     std::cout << std::setw(kColumnWidth) << std::left
               << "Node quantity: " << graph.size()  << std::endl;
-    Graph cycle = tspApproximationMST(graph);
-    CostT result_approx = 0;
-    for (Edge edge : cycle.getEdges()) {
-        result_approx += edge.cost;
-    }
 
     CostT result_exact = readResult(generateFilename(test_case.name, false));
     std::cout << std::setw(kColumnWidth) << std::left
-              << "Exact result: "       << result_exact  << std::endl;
+              << "Exact result: " << result_exact  << std::endl;
+
+    Tour cycle_mst = tspApproximationMST(graph);
+    CostT result_approx_mst = tourCost(graph, cycle_mst);
     std::cout << std::setw(kColumnWidth) << std::left
-              << "Approximate result: " << result_approx << std::endl;
+              << "Approximate result (MST): " << result_approx_mst << std::endl;
+
+    Tour cycle_chr = tspApproximationChristofides(graph);
+    CostT result_approx_chr = tourCost(graph, cycle_chr);
     std::cout << std::setw(kColumnWidth) << std::left
-              << "Approx. ratio: " << (1.0 * result_approx) / result_exact << std::endl;
-    return (result_approx <= 2 * result_exact);
+              << "Approximate result (Chr): " << result_approx_chr << std::endl;
+
+    std::cout << std::setw(kColumnWidth) << std::left
+              << "Approx. ratio (MST): " << (1.0 * result_approx_mst) / result_exact << std::endl;
+    std::cout << std::setw(kColumnWidth) << std::left
+              << "Approx. ratio (Chr): " << (1.0 * result_approx_chr) / result_exact << std::endl;
+    return (result_approx_mst <= 2 * result_exact && result_approx_chr <= 3.0/2 * result_exact);
 }
 
 void testAll() {

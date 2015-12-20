@@ -13,6 +13,7 @@ using CostT = double;
 using AdjacencyMatrix = std::vector<std::vector<CostT>>;
 using AdjacencyList   = std::vector<std::vector<NeighborInfo>>;
 using Matching        = std::vector<Edge>;
+using Tour            = std::vector<int>;
 
 const CostT kDefaultEdgeCost = 1;
 const CostT kInfinity = std::numeric_limits<CostT>::max();
@@ -57,15 +58,26 @@ public:
     CostT getCost(int from, int to) const;
 };
 
+struct InduceResult {
+    Graph graph;                  // induced graph
+    std::vector<int> init_to_ind; // maps nodes in initial graph to nodes in induced graph
+    std::vector<int> ind_to_init; // maps nodes in induces graph to nodes in initial graph
+    InduceResult(const Graph& graph, const std::vector<int>& induced_nodes)
+        : init_to_ind(graph.size(), -1), ind_to_init(induced_nodes.size(), -1) {}
+};
+
 int nodeDegree(const Graph& graph, int node);
+std::vector<Edge> tourEdges(const CompleteGraph& graph, const Tour& tour);
+CostT tourCost(const CompleteGraph& graph, const Tour& tour);
+
 Graph minimalSpanningTree(const Graph& graph);
 std::vector<int> dfsTimeIn(const Graph& graph);
 int dfsTimeInNode(const Graph& graph,
                   int timer, int node,
                   std::vector<int>& time_in);
-Graph createCycleOnNodes(const CompleteGraph& graph, const std::vector<int>& node_sequence);
-Graph createCycleOnSubgraph(const CompleteGraph& graph, const Graph& subgraph);
-Graph induce(const Graph& graph, const std::vector<int>& induced_nodes);
+Tour createCycleOnTour(int node_quantity, const Tour& node_sequence);
+Tour createHamiltonianCycle(const Graph& graph);
+InduceResult induce(const Graph& graph, const std::vector<int>& induced_nodes);
 Matching perfectMinWeightMatching(const Graph& graph);
 
-std::vector<int> eulerianCycle(const Graph& graph);
+Tour eulerianCycle(const Graph& graph);
