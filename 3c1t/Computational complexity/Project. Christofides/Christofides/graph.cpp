@@ -187,25 +187,17 @@ InduceResult induce(const Graph& graph, const std::vector<int>& induced_nodes) {
     return result;
 }
 
-Matching perfectMinWeightMatching(const Graph& graph) {
+Matching perfectMinWeightMatching(const Graph &graph) {
+    std::vector<Edge> edges = graph.getEdges();
+    std::sort(edges.begin(), edges.end());
     std::vector<bool> is_matched(graph.size(), false);
     Matching matching;
-    for (size_t node = 0; node < graph.size(); ++node) {
-        if (is_matched[node]) {
-            continue;
+    for (Edge edge : edges) {
+        if (!is_matched[edge.from] && !is_matched[edge.to]) {
+            matching.push_back(edge);
+            is_matched[edge.from] = true;
+            is_matched[edge.to  ] = true;
         }
-        NeighborInfo best_neighbor(-1, kInfinity, -1);
-        for (NeighborInfo neighbor : graph.getNeighbors(node)) {
-            if (!is_matched[neighbor.node] && neighbor.cost < best_neighbor.cost) {
-                best_neighbor = neighbor;
-            }
-        }
-        if (best_neighbor.node == -1) {
-            throw std::logic_error("Cannot build perfect matching");
-        }
-        matching.emplace_back(node, best_neighbor);
-        is_matched[node] = true;
-        is_matched[best_neighbor.node] = true;
     }
     return matching;
 }

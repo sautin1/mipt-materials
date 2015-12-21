@@ -36,7 +36,6 @@ const std::vector<Test> kTestSet {
     Test("canada"    , true),
     Test("uruguay"   , true),
     Test("sahara"    , true),
-    Test("tanzania"  , true),
 };
 
 struct Point {
