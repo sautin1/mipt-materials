@@ -29,11 +29,6 @@ typedef struct {
     int end_row;
 } WorkerDuty;
 
-typedef struct {
-    pthread_t** workers;
-    WorkerDuty** duties;
-} ManagerInfo;
-
 void normalize_command(char* command);
 void distribute_duties(const Grid grid, const int worker_quantity, const int iter_quantity, 
                        WorkerDuty** worker_duties);
