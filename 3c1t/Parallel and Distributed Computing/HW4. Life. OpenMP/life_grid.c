@@ -65,7 +65,6 @@ ssize_t print_grid(FILE* stream, const Grid grid) {
         }
         fprintf(stream, "\n");
     }
-    fflush(stream);
     return 0;
 }
 
