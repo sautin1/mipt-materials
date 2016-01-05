@@ -1,10 +1,13 @@
 #include "commands.h"
 
-const char* COMMAND_POSSIBLE_DELIMITERS     = " ";
-const char* ERROR_MESSAGE_NOT_STARTED       = "Wrong command: not started yet";
-const char* ERROR_MESSAGE_NOT_STOPPED       = "Wrong command: not stopped yet";
-const char* ERROR_MESSAGE_ALREADY_STARTED   = "Wrong command: already started";
-const char* FILENAME_RESULTS                = "result.txt";
+const size_t COMMAND_MAX_LENGTH             = 255;
+const char*  COMMAND_POSSIBLE_DELIMITERS    = " ";
+const char*  ERROR_MESSAGE_NOT_STARTED      = "Wrong command: not started yet";
+const char*  ERROR_MESSAGE_NOT_STOPPED      = "Wrong command: not stopped yet";
+const char*  ERROR_MESSAGE_ALREADY_STARTED  = "Wrong command: already started";
+const char*  ERROR_MESSAGE_WRONG_COMMAND    = "Wrong command\nType \'help\' to get the list of possible commands\n";
+const char*  FILENAME_RESULTS               = "result.txt";
+const char*  PATH_GRID_FOLDER               = "../grids/";
 
 void normalize_command(char* command) {
     command = trim(command);
@@ -15,11 +18,15 @@ void distribute_duties(const Grid grid, const int worker_quantity, const int ite
                        WorkerDuty** worker_duties) {
     *worker_duties = (WorkerDuty*)malloc(worker_quantity * sizeof(WorkerDuty));
     int worker_part = grid.height / worker_quantity;
-    worker_part += (grid.height % worker_quantity == 0) ? 0 : 1;
+    int remain = grid.height % worker_quantity;
     for (int i = 0; i < worker_quantity; ++i) {
         (*worker_duties)[i].iter_quantity = iter_quantity;
         (*worker_duties)[i].start_row = (i == 0) ? 0 : (*worker_duties)[i-1].end_row;
         (*worker_duties)[i].end_row = (*worker_duties)[i].start_row + worker_part;
+        if (remain > 0) {
+            ++(*worker_duties)[i].end_row;
+            --remain;
+        }
     }
     (*worker_duties)[worker_quantity-1].end_row = grid.height;
 }
@@ -27,8 +34,19 @@ void distribute_duties(const Grid grid, const int worker_quantity, const int ite
 ssize_t create_grid(CommandStartInfo info, Grid* grid) {
     if (info.filename) {
         int error = read_grid(info.filename, grid);
-        if (error) {
-            return -1;
+        if (error == EXITCODE_FILE_NOT_FOUND) {
+            char* path = (char*)malloc(COMMAND_MAX_LENGTH * sizeof(char));
+            strcpy(path, PATH_GRID_FOLDER);
+            strcpy(path + strlen(path), info.filename);
+            error = read_grid(path, grid);
+            if (error == EXITCODE_FILE_NOT_FOUND) {
+                perror("create_grid: read_grid: ");
+                return EXITCODE_FILE_NOT_FOUND;
+            }
+        }
+        if (error == EXITCODE_WRONG_WIDTH) {
+            fprintf(stderr, "%s: %s\n", info.filename, ERROR_MESSAGE_WRONG_WIDTH);
+            return EXITCODE_WRONG_WIDTH;
         }
     } else {
         if (info.height <= 0) {

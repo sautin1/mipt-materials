@@ -1,8 +1,11 @@
 #include "utilities.h"
 
+const ssize_t EXITCODE_FILE_NOT_FOUND = -1;
+const ssize_t EXITCODE_NULL_ARGUMENT  = -2;
+
 ssize_t count_char_occur(const char* haystack, const char needle) {
     if (!haystack) {
-        return -1;
+        return EXITCODE_NULL_ARGUMENT;
     }
     size_t result = 0;
     char* occurence = strchr(haystack, needle);
@@ -16,7 +19,6 @@ ssize_t count_char_occur(const char* haystack, const char needle) {
 char* read_file(const char* filename) {
     FILE* stream = fopen(filename, "rb");
     if (!stream) {
-        perror("read_file");
         return NULL;
     }
     fseek(stream, 0, SEEK_END);
@@ -34,7 +36,7 @@ char* read_file(const char* filename) {
 ssize_t count_file_lines(const char* filename) {
     char* contents = read_file(filename);
     if (!contents) {
-        return -1;
+        return EXITCODE_FILE_NOT_FOUND;
     }
     int result = count_char_occur(contents, '\n');
     size_t file_length = strlen(contents);

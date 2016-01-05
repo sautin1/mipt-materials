@@ -3,17 +3,19 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>     // strtok
+#include <string.h>     // strtok, strcpy
 #include <sys/types.h>  // ssize_t
 
 #include "utilities.h"
 #include "life_grid.h"
 
-extern const char* COMMAND_POSSIBLE_DELIMITERS;
-extern const char* ERROR_MESSAGE_NOT_STARTED;
-extern const char* ERROR_MESSAGE_NOT_STOPPED;
-extern const char* ERROR_MESSAGE_ALREADY_STARTED;
-extern const char* FILENAME_RESULTS;
+extern const size_t COMMAND_MAX_LENGTH;
+extern const char*  COMMAND_POSSIBLE_DELIMITERS;
+extern const char*  ERROR_MESSAGE_NOT_STARTED;
+extern const char*  ERROR_MESSAGE_NOT_STOPPED;
+extern const char*  ERROR_MESSAGE_ALREADY_STARTED;
+extern const char*  ERROR_MESSAGE_WRONG_COMMAND;
+extern const char*  FILENAME_RESULTS;
 
 typedef struct {
     int worker_quantity;
@@ -29,8 +31,8 @@ typedef struct {
 } WorkerDuty;
 
 typedef struct {
-    pthread_t** workers;
-    WorkerDuty** duties;
+    pthread_t* workers;
+    WorkerDuty* duties;
 } ManagerInfo;
 
 void normalize_command(char* command);

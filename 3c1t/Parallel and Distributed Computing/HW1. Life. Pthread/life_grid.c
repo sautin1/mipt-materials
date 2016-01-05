@@ -10,6 +10,8 @@ const int LINE_MAX_LENGTH = 256;
 
 const char* ERROR_MESSAGE_WRONG_HEIGHT = "Wrong grid height";
 const char* ERROR_MESSAGE_WRONG_WIDTH  = "Wrong grid width";
+const ssize_t EXITCODE_WRONG_WIDTH  = -11;
+const ssize_t EXITCODE_WRONG_HEIGHT = -12;
 
 int is_alive_neighbor(const Grid grid, const int row, const int column) {
     if (row < 0 || column < 0 || row >= grid.height || column >= grid.width) {
@@ -54,7 +56,7 @@ void delete_grid(Grid grid) {
 ssize_t print_grid(FILE* stream, const Grid grid) {
     if (!stream) {
         perror("print_grid");
-        return -1;
+        return EXITCODE_FILE_NOT_FOUND;
     }
     for (int i = 0; i < grid.height; ++i) {
         for (int j = 0; j < grid.width; ++j) {
@@ -90,7 +92,7 @@ ssize_t empty_grid(const int height, const int width, Grid* grid) {
     if (height <= 0 || width <= 0) {
         fprintf(stderr, "empty_grid: %s\n", (height <= 0)? ERROR_MESSAGE_WRONG_HEIGHT : 
                                                            ERROR_MESSAGE_WRONG_WIDTH);
-        return -1;
+        return (height <= 0)? EXITCODE_WRONG_HEIGHT : EXITCODE_WRONG_WIDTH;
     }
     grid->height = height;
     grid->width  = width;
@@ -121,18 +123,16 @@ CellState* parse_grid_line(char* line, const char delim, int* width) {
     return grid_line;
 }
 
-int read_grid(const char* filename, Grid* grid) {
+ssize_t read_grid(const char* filename, Grid* grid) {
     grid->height = count_file_lines(filename);
     if (grid->height <= 0) {
-        fprintf(stderr, "read_grid: %s\n", ERROR_MESSAGE_WRONG_HEIGHT);
-        return -1;
+        return EXITCODE_FILE_NOT_FOUND;
     }
     grid->states = (CellState**)calloc(grid->height, sizeof(CellState*));
     
     FILE* stream = fopen(filename, "r");
     if (!stream) {
-        perror("read_grid");
-        return -1;
+        return EXITCODE_FILE_NOT_FOUND;
     }
 
     char* line = (char*)malloc(LINE_MAX_LENGTH * sizeof(char));
@@ -145,8 +145,7 @@ int read_grid(const char* filename, Grid* grid) {
         if (i == 0) {
             grid->width = width;
         } else if (grid->width != width) {
-            fprintf(stderr, "read_grid: %s\n", ERROR_MESSAGE_WRONG_WIDTH);
-            exit_code = -1;
+            exit_code = EXITCODE_WRONG_WIDTH;
             break;
         }
     }
