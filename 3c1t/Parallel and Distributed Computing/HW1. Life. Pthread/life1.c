@@ -66,9 +66,10 @@ void finalize_workers(pthread_t* workers, WorkerDuty* worker_duties) {
 
 // manager function
 void* wait_for_workers(void* arg) {
-    ManagerInfo info = *(ManagerInfo*)arg;
-    pthread_t* workers = info.workers;
-    WorkerDuty* worker_duties = info.duties;
+    ManagerInfo* info = (ManagerInfo*)arg;
+    pthread_t* workers = info->workers;
+    WorkerDuty* worker_duties = info->duties;
+    free(info);
 
     struct timespec sleep_time;
     sleep_time.tv_sec  = 0;

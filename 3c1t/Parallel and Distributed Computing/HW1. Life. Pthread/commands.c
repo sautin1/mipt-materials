@@ -39,6 +39,7 @@ ssize_t create_grid(CommandStartInfo info, Grid* grid) {
             strcpy(path, PATH_GRID_FOLDER);
             strcpy(path + strlen(path), info.filename);
             error = read_grid(path, grid);
+            free(path);
             if (error == EXITCODE_FILE_NOT_FOUND) {
                 perror("create_grid: read_grid: ");
                 return EXITCODE_FILE_NOT_FOUND;
