@@ -86,7 +86,7 @@ void send_worker_duty(WorkerDuty duty, int worker) {
     }
 }
 
-void execute_start(char* command, WorkerDuty** worker_duties) {
+void execute_start(char* command, WorkerDuty** worker_duties, int* is_started) {
     CommandStartInfo info;
     if (!parse_start_command(command, &info) && !create_grid(info, &grid)) {
         int new_worker_quantity = (info.worker_quantity < worker_quantity) ? 
@@ -108,6 +108,7 @@ void execute_start(char* command, WorkerDuty** worker_duties) {
             send_worker_duty(duty, i+1);
             send_grid_layer(grid, duty.start_row, duty.end_row, MASTER_ID, i+1, GRID);
         }
+        *is_started = 1;
     }
 }
 
@@ -161,8 +162,7 @@ int launch_master(int arg) {
         normalize_command(command);
         if (strncmp("start", command, 5) == 0) {
             if (!check_before_start(is_started)) {
-                execute_start(command, &worker_duties);
-                is_started = 1;
+                execute_start(command, &worker_duties, &is_started);
             }
         } else if (strncmp("run", command, 3) == 0) {
             if (!check_before_run(is_started) && !parse_run_command(command, &iter_quantity)) {

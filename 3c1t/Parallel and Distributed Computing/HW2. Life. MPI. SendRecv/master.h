@@ -15,7 +15,7 @@ ssize_t check_before_status(int is_started);
 
 void send_worker_duty(WorkerDuty duty, int worker);
 
-void execute_start(char* command, WorkerDuty** worker_duties);
+void execute_start(char* command, WorkerDuty** worker_duties, int* is_started);
 void execute_status(WorkerDuty* duties);
 void execute_run(int iter_quantity);
 void execute_stop();
