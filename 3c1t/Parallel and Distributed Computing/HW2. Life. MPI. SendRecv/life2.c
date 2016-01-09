@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     } else if (rank == 0) {
         launch_master(size-1);
     } else {
-        launch_worker(rank, size);
+        launch_worker(rank);
     }
 
     MPI_Finalize();

@@ -57,15 +57,32 @@ void send_state(WorkerState state, int to, MessageTag tag) {
     }
 }
 
-void stop_others(int iter_quantity) {
+void stop_others(int max_iteration, int* iter_quantity) {
     for (int worker = 1; worker < proc_quantity; ++worker) {
-        if (rank == worker) {
-            continue;
+        if (rank != worker) {
+            int status = MPI_Send(iter_quantity, 0, MPI_INT, worker, STOP, MPI_COMM_WORLD);
+            if (status != MPI_SUCCESS) {
+                fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, worker);
+                MPI_Abort(MPI_COMM_WORLD, -1);
+            }
         }
-        int status = MPI_Send(&iter_quantity, 1, MPI_INT, worker, STOP, MPI_COMM_WORLD);
-        if (status != MPI_SUCCESS) {
-            fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, worker);
-            MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+    for (int worker = 1; worker < proc_quantity; ++worker) {
+        if (rank != worker) {
+            MPI_Status status;
+            int worker_iter;
+            MPI_Recv(&worker_iter, 1, MPI_INT, worker, STOP, MPI_COMM_WORLD, &status);
+            max_iteration = (max_iteration < worker_iter) ? worker_iter : max_iteration;
+        }
+    }
+    *iter_quantity = max_iteration + 1;
+    for (int worker = 1; worker < proc_quantity; ++worker) {
+        if (rank != worker) {
+            int status = MPI_Send(iter_quantity, 1, MPI_INT, worker, STOP, MPI_COMM_WORLD);
+            if (status != MPI_SUCCESS) {
+                fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, worker);
+                MPI_Abort(MPI_COMM_WORLD, -1);
+            }
         }
     }
 }
@@ -83,10 +100,16 @@ void try_exchange_rows(int neighbor, int is_up, int iter, int* iter_quantity) {
                  MPI_COMM_WORLD, &status);
     if (status.MPI_TAG != EXCHANGE) {
         if (status.MPI_TAG == STOP_ALL) {
-            *iter_quantity = iter + ITER_DIFF;
-            stop_others(*iter_quantity);
+            stop_others(iter, iter_quantity);
+            fprintf(stderr, "%d: cur = %d; new = %d\n", rank, iter, *iter_quantity);
         } else if (status.MPI_TAG == STOP) {
-            *iter_quantity = recv_row_arr[0];
+            int send_status = MPI_Send(&iter, 1, MPI_INT, APPRENTICE_ID, STOP, MPI_COMM_WORLD);
+            if (send_status != MPI_SUCCESS) {
+                fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, APPRENTICE_ID);
+                MPI_Abort(MPI_COMM_WORLD, -1);
+            }
+            MPI_Recv(iter_quantity, 1, MPI_INT, APPRENTICE_ID, STOP, MPI_COMM_WORLD, &status);
+            fprintf(stderr, "%d: cur = %d; new = %d\n", rank, iter, *iter_quantity);
         } else if (status.MPI_TAG == TEST) {
             send_state(WORKER_BUSY, MASTER_ID, TEST);
         } else if (status.MPI_TAG == FINISH) {
@@ -155,10 +178,8 @@ void launch_worker(int arg1) {
                 break;
             }
             ++proc_quantity;
-            fprintf(stderr, "%d: proc_quantity = %d\n", rank, proc_quantity);
             neighbor_down = (rank < proc_quantity - 1) ? (rank + 1) : 1;
             neighbor_up   = (rank > 1)                 ? (rank - 1) : proc_quantity - 1;
-            fprintf(stderr, "%d: up = %d; down = %d.\n", rank, neighbor_up, neighbor_down);
             receive_grid();
             empty_grid(grid.height, grid.width, &grid_next);
         } else if (status.MPI_TAG == STATUS) {

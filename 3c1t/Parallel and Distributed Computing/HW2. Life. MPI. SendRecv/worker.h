@@ -13,7 +13,7 @@ void finalize_run(int iter_quantity);
 
 void notify_end_work();
 void send_state(WorkerState state, int to, MessageTag tag);
-void stop_others(int iter_quantity);
+void stop_others(int current_iteration, int* iter_quantity);
 void try_exchange_rows(int neighbor, int is_up, int iter, int* iter_quantity);
 void worker_run(int iter_quantity);
 void receive_grid();
