@@ -113,7 +113,6 @@ void execute_start(char* command, WorkerDuty** worker_duties) {
 
 void execute_status(WorkerDuty* duties) {
     broadcast_tag(worker_quantity + 1, MASTER_ID, STATUS);
-    MPI_Status status;
     for (int i = 0; i < worker_quantity; ++i) {
         receive_grid_layer(&grid, duties[i].start_row, duties[i].end_row, i+1, STATUS);
     }

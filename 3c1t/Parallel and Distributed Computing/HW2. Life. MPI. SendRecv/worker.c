@@ -101,7 +101,6 @@ void try_exchange_rows(int neighbor, int is_up, int iter, int* iter_quantity) {
     if (status.MPI_TAG != EXCHANGE) {
         if (status.MPI_TAG == STOP_ALL) {
             stop_others(iter, iter_quantity);
-            fprintf(stderr, "%d: cur = %d; new = %d\n", rank, iter, *iter_quantity);
         } else if (status.MPI_TAG == STOP) {
             int send_status = MPI_Send(&iter, 1, MPI_INT, APPRENTICE_ID, STOP, MPI_COMM_WORLD);
             if (send_status != MPI_SUCCESS) {
@@ -109,7 +108,6 @@ void try_exchange_rows(int neighbor, int is_up, int iter, int* iter_quantity) {
                 MPI_Abort(MPI_COMM_WORLD, -1);
             }
             MPI_Recv(iter_quantity, 1, MPI_INT, APPRENTICE_ID, STOP, MPI_COMM_WORLD, &status);
-            fprintf(stderr, "%d: cur = %d; new = %d\n", rank, iter, *iter_quantity);
         } else if (status.MPI_TAG == TEST) {
             send_state(WORKER_BUSY, MASTER_ID, TEST);
         } else if (status.MPI_TAG == FINISH) {
@@ -120,8 +118,8 @@ void try_exchange_rows(int neighbor, int is_up, int iter, int* iter_quantity) {
             MPI_COMM_WORLD, &status);
     }
     int row = 0;
-    if (neighbor_down == neighbor_up && is_up || neighbor_down != neighbor_up 
-        && status.MPI_SOURCE == neighbor_down) {
+    if ((neighbor_down == neighbor_up && is_up) || (neighbor_down != neighbor_up 
+        && status.MPI_SOURCE == neighbor_down)) {
         // these conditions are needed to deal with cases when there are 
         // only 2 workers (neighbor_up == neighbor_down)
         row = grid.height - 1;

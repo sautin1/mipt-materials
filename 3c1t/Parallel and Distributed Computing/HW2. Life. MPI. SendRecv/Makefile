@@ -10,13 +10,13 @@ life2: $(OBJS)
     $(LINK) $(OBJS) -o life2
 
 life2.o: life2.c
-    $(MPICC) -c life2.c
+    $(MPICC) $(FLAGS) -c life2.c
 
 master.o: master.c master.h
-    $(MPICC) -c master.c 
+    $(MPICC) $(FLAGS) -c master.c 
 
 worker.o: worker.c worker.h
-    $(MPICC) -c worker.c
+    $(MPICC) $(FLAGS) -c worker.c
 
 commands.o: commands.c commands.h
     $(MPICC) $(FLAGS) -c commands.c
