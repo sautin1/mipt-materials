@@ -23,10 +23,10 @@ extern const char*  ERROR_MESSAGE_CANNOT_SEND;
 extern const char*  FILENAME_RESULTS;
 
 typedef enum {
-    DUTY, GRID, START, 
-    STATUS, RUN, ITER, 
-    EXCHANGE, STOP, STOP_ALL, 
-    TEST, FINISH, QUIT
+    TAG_DUTY, TAG_GRID, TAG_START, 
+    TAG_STATUS, TAG_RUN, TAG_ITER, 
+    TAG_EXCHANGE, TAG_STOP_ALL, 
+    TAG_TEST, TAG_FINISH, TAG_QUIT
 } MessageTag;
 
 typedef enum {WORKER_READY, WORKER_BUSY} WorkerState;

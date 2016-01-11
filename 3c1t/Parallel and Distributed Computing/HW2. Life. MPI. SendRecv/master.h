@@ -1,10 +1,11 @@
+#pragma once
+
 #include <mpi.h>
 #include <stdio.h>
 
 #include "commands.h"
 #include "life_grid.h"
 
-WorkerState check_worker_state(int worker);
 ssize_t is_workers_busy();
 
 ssize_t check_before_start(int is_started);

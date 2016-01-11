@@ -3,29 +3,15 @@
 Grid grid;
 int worker_quantity;
 
-WorkerState check_worker_state(int worker) {
+ssize_t is_workers_busy() {
     int status;
-    status = MPI_Send(&status, 0, MPI_INT, worker, TEST, MPI_COMM_WORLD);
+    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_TEST, MPI_COMM_WORLD);
     if (status != MPI_SUCCESS) {
-        fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, worker);
+        fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, APPRENTICE_ID);
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
-    MPI_Status mpi_status;
-    MPI_Recv(&status, 1, MPI_INT, worker, TEST, MPI_COMM_WORLD, &mpi_status);
-    // fprintf(stderr, "MASTER: %d is %s\n", worker, (status == 0) ? "ready" : "busy");
+    MPI_Recv(&status, 1, MPI_INT, APPRENTICE_ID, TAG_TEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     return status;
-}
-
-ssize_t is_workers_busy() {
-    ssize_t is_busy = 0;
-    for (int i = 0; i < worker_quantity; ++i) {
-        WorkerState worker_state = check_worker_state(i + 1);
-        is_busy += (worker_state == WORKER_BUSY) ? 1 : 0;
-        if (is_busy) {
-            break;
-        }
-    }
-    return is_busy;
 }
 
 ssize_t check_before_start(int is_started) {
@@ -79,7 +65,7 @@ ssize_t check_before_status(int is_started) {
 
 void send_worker_duty(WorkerDuty duty, int worker) {
     int duty_arr[3] = {duty.start_row, duty.end_row, grid.width};
-    int status = MPI_Send(duty_arr, 3, MPI_INT, worker, DUTY, MPI_COMM_WORLD);
+    int status = MPI_Send(duty_arr, 3, MPI_INT, worker, TAG_DUTY, MPI_COMM_WORLD);
     if (status != MPI_SUCCESS) {
         fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, worker);
         MPI_Abort(MPI_COMM_WORLD, -1);
@@ -94,9 +80,9 @@ void execute_start(char* command, WorkerDuty** worker_duties, int* is_started) {
         new_worker_quantity = (grid.height < new_worker_quantity) ? 
             grid.height : new_worker_quantity;
         distribute_duties(grid, new_worker_quantity, worker_duties);
-        broadcast_tag(worker_quantity + 1, MASTER_ID, START);
+        broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_START);
         for (int i = 0; i < worker_quantity; ++i) {
-            int status = MPI_Send(&new_worker_quantity, 1, MPI_INT, i+1, DUTY, MPI_COMM_WORLD);
+            int status = MPI_Send(&new_worker_quantity, 1, MPI_INT, i+1, TAG_DUTY, MPI_COMM_WORLD);
             if (status != MPI_SUCCESS) {
                 fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, i+1);
                 MPI_Abort(MPI_COMM_WORLD, -1);
@@ -106,16 +92,16 @@ void execute_start(char* command, WorkerDuty** worker_duties, int* is_started) {
         for (int i = 0; i < worker_quantity; ++i) {
             WorkerDuty duty = (*worker_duties)[i];
             send_worker_duty(duty, i+1);
-            send_grid_layer(grid, duty.start_row, duty.end_row, MASTER_ID, i+1, GRID);
+            send_grid_layer(grid, duty.start_row, duty.end_row, MASTER_ID, i+1, TAG_GRID);
         }
         *is_started = 1;
     }
 }
 
 void execute_status(WorkerDuty* duties) {
-    broadcast_tag(worker_quantity + 1, MASTER_ID, STATUS);
+    broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_STATUS);
     for (int i = 0; i < worker_quantity; ++i) {
-        receive_grid_layer(&grid, duties[i].start_row, duties[i].end_row, i+1, STATUS);
+        receive_grid_layer(&grid, duties[i].start_row, duties[i].end_row, i+1, TAG_STATUS);
     }
     // FILE* res_file = fopen(FILENAME_RESULTS, "w");
     /**/FILE* res_file = stdout;
@@ -125,9 +111,9 @@ void execute_status(WorkerDuty* duties) {
 }
 
 void execute_run(int iter_quantity) {
-    broadcast_tag(worker_quantity + 1, MASTER_ID, RUN);
+    broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_RUN);
     for (int i = 0; i < worker_quantity; ++i) {
-        int status = MPI_Send(&iter_quantity, 1, MPI_INT, i+1, ITER, MPI_COMM_WORLD);
+        int status = MPI_Send(&iter_quantity, 1, MPI_INT, i+1, TAG_ITER, MPI_COMM_WORLD);
         if (status != MPI_SUCCESS) {
             fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, i+1);
             MPI_Abort(MPI_COMM_WORLD, -1);
@@ -137,7 +123,7 @@ void execute_run(int iter_quantity) {
 
 void execute_stop() {
     int status;
-    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, STOP_ALL, MPI_COMM_WORLD);
+    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_STOP_ALL, MPI_COMM_WORLD);
     if (status != MPI_SUCCESS) {
         fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, 1);
         MPI_Abort(MPI_COMM_WORLD, -1);
@@ -145,7 +131,7 @@ void execute_stop() {
 }
 
 void execute_quit() {
-    broadcast_tag(worker_quantity + 1, MASTER_ID, QUIT);
+    broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_QUIT);
     delete_grid(grid);
 }
 

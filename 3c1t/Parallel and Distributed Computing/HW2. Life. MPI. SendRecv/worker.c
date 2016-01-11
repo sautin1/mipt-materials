@@ -1,7 +1,5 @@
 #include "worker.h"
 
-const int ITER_DIFF = 5;
-
 WorkerDuty duty;
 Grid grid;
 Grid grid_next;
@@ -20,14 +18,10 @@ void update_grid_rows() {
     }
 }
 
-// function for apprentice
 void finalize_run(int iter_quantity) {
-    MPI_Status status;
     int tmp;
     for (int i = 2; i < proc_quantity; ++i) {
-        MPI_Recv(&tmp, 0, MPI_INT, MPI_ANY_SOURCE, FINISH, MPI_COMM_WORLD, &status);
-        // fprintf(stderr, "%d: got FINISH from %d\n", rank, status.MPI_SOURCE);
-        send_state(WORKER_READY, status.MPI_SOURCE, FINISH);
+        MPI_Recv(&tmp, 0, MPI_INT, MPI_ANY_SOURCE, TAG_FINISH, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
     end_time = MPI_Wtime();
     double work_time = end_time - start_time;
@@ -36,16 +30,10 @@ void finalize_run(int iter_quantity) {
 
 void notify_end_work() {
     int status;
-    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, FINISH, MPI_COMM_WORLD);
+    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_FINISH, MPI_COMM_WORLD);
     if (status != MPI_SUCCESS) {
         fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, APPRENTICE_ID);
         MPI_Abort(MPI_COMM_WORLD, -1);
-    }
-    // fprintf(stderr, "%d: sent FINISH to apprentice\n", rank);
-    MPI_Status mpi_status;
-    MPI_Recv(&status, 1, MPI_INT, APPRENTICE_ID, FINISH, MPI_COMM_WORLD, &mpi_status);
-    if (status == WORKER_BUSY) {
-        notify_end_work();
     }
 }
 
@@ -57,122 +45,81 @@ void send_state(WorkerState state, int to, MessageTag tag) {
     }
 }
 
-void stop_others(int max_iteration, int* iter_quantity) {
-    for (int worker = 1; worker < proc_quantity; ++worker) {
-        if (rank != worker) {
-            int status = MPI_Send(iter_quantity, 0, MPI_INT, worker, STOP, MPI_COMM_WORLD);
-            if (status != MPI_SUCCESS) {
-                fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, worker);
-                MPI_Abort(MPI_COMM_WORLD, -1);
-            }
-        }
-    }
-    // fprintf(stderr, "%d: sent stop to everyone\n", rank);
-    for (int worker = 1; worker < proc_quantity; ++worker) {
-        if (rank != worker) {
-            MPI_Status status;
-            int worker_iter;
-            // fprintf(stderr, "%d: received iter from %d\n", rank, worker);
-            MPI_Recv(&worker_iter, 1, MPI_INT, worker, STOP, MPI_COMM_WORLD, &status);
-            max_iteration = (max_iteration < worker_iter) ? worker_iter : max_iteration;
-        }
-    }
-    *iter_quantity = max_iteration + 1;
-    // fprintf(stderr, "%d: order to STOP at %d\n", rank, *iter_quantity);
-    for (int worker = 1; worker < proc_quantity; ++worker) {
-        if (rank != worker) {
-            int status = MPI_Send(iter_quantity, 1, MPI_INT, worker, STOP, MPI_COMM_WORLD);
-            if (status != MPI_SUCCESS) {
-                fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, worker);
-                MPI_Abort(MPI_COMM_WORLD, -1);
-            }
-        }
-    }
-}
-
-void send_rows() {
+int exchange_rows(int is_up, int iter_quantity) {
     int layer_size;
-    int* send_row_arr = serialize_grid_layer(grid, 1, 2, &layer_size);
-    MPI_Send(send_row_arr, layer_size, MPI_INT, neighbor_up, EXCHANGE, MPI_COMM_WORLD);
-    free(send_row_arr);
-    // fprintf(stderr, "%d: sent EXCHANGE to %d\n", rank, neighbor_up);
+    int row = (is_up) ? 1 : grid.height - 2;
+    int* tmp_buffer = serialize_grid_layer(grid, row, row + 1, &layer_size);
+    int* send_row_arr = (int*)malloc((1 + layer_size) * sizeof(int));
+    send_row_arr[0] = iter_quantity;
+    ++send_row_arr;
+    memcpy(send_row_arr, tmp_buffer, layer_size * sizeof(int));
+    --send_row_arr;
+    free(tmp_buffer);
 
-    send_row_arr = serialize_grid_layer(grid, grid.height - 2, grid.height - 1, &layer_size);
-    MPI_Send(send_row_arr, layer_size, MPI_INT, neighbor_down, EXCHANGE, MPI_COMM_WORLD);
-    free(send_row_arr);
-    // fprintf(stderr, "%d: sent EXCHANGE to %d\n", rank, neighbor_down);
-}
+    int* recv_row_arr = (int*)malloc((1 + layer_size) * sizeof(int));
 
-void try_recv_rows(int iter, int* iter_quantity) {
-    int layer_size = grid.width;
-    int* recv_row_arr = (int*)malloc(layer_size * sizeof(int));
-    MPI_Status status;
-    MPI_Recv(recv_row_arr, layer_size, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
-        MPI_COMM_WORLD, &status);
-    if (status.MPI_TAG != EXCHANGE) {
-        if (status.MPI_TAG == STOP_ALL) {
-            // fprintf(stderr, "%d: try to stop everybody\n", rank);
-            stop_others(iter, iter_quantity);
-        } else if (status.MPI_TAG == STOP) {
-            // fprintf(stderr, "%d: got STOP\n", rank);
-            int send_status = MPI_Send(&iter, 1, MPI_INT, APPRENTICE_ID, STOP, MPI_COMM_WORLD);
-            if (send_status != MPI_SUCCESS) {
-                fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, APPRENTICE_ID);
-                MPI_Abort(MPI_COMM_WORLD, -1);
-            }
-            // fprintf(stderr, "%d: sent iter\n", rank);
-            MPI_Status stop_status;
-            MPI_Recv(iter_quantity, 1, MPI_INT, APPRENTICE_ID, STOP, MPI_COMM_WORLD, &stop_status);
-            // fprintf(stderr, "%d: got max iter = %d\n", rank, *iter_quantity);
-        } else if (status.MPI_TAG == TEST) {
-            send_state(WORKER_BUSY, MASTER_ID, TEST);
-        } else if (status.MPI_TAG == FINISH) {
-            send_state(WORKER_BUSY, status.MPI_SOURCE, FINISH);
-            // fprintf(stderr, "%d: rejected FINISH from %d\n", rank, status.MPI_SOURCE);
-        }
-        MPI_Recv(recv_row_arr, layer_size, MPI_INT, MPI_ANY_SOURCE, EXCHANGE, 
-            MPI_COMM_WORLD, &status);
-    }
-    // fprintf(stderr, "%d: got exchange from %d\n", rank, status.MPI_SOURCE);
-    int exchange_source = (status.MPI_SOURCE == neighbor_down) ? neighbor_up : neighbor_down;
+    int send_neighbor_rank = (is_up) ? neighbor_up : neighbor_down;
+    int recv_neighbor_rank = (is_up) ? neighbor_down : neighbor_up;
+    MPI_Sendrecv(send_row_arr, layer_size + 1, MPI_INT, send_neighbor_rank, TAG_EXCHANGE,
+                 recv_row_arr, layer_size + 1, MPI_INT, recv_neighbor_rank, TAG_EXCHANGE,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     
-    int row = 0;
-    if (neighbor_down != neighbor_up && status.MPI_SOURCE == neighbor_down) {
-        // these conditions are needed to deal with cases when there are 
-        // only 2 workers (neighbor_up == neighbor_down)
-        row = grid.height - 1;
-    }
+    int new_iter_quantity = recv_row_arr[0];
+    row = (is_up) ? (grid.height - 1) : 0;
+    ++recv_row_arr;
     deserialize_grid_layer(&grid, row, recv_row_arr, layer_size);
-
-    MPI_Recv(recv_row_arr, layer_size, MPI_INT, exchange_source, EXCHANGE, 
-            MPI_COMM_WORLD, &status);
-    // fprintf(stderr, "%d: got exchange from %d\n", rank, status.MPI_SOURCE);
-    row = (row == 0) ? (grid.height - 1) : 0;
-    deserialize_grid_layer(&grid, row, recv_row_arr, layer_size);
-
+    --recv_row_arr;
+    free(send_row_arr);
     free(recv_row_arr);
+    return new_iter_quantity;
 }
 
 void worker_run(int iter_quantity) {
     if (rank == 1) {
         start_time = MPI_Wtime();
     }
+    MPI_Request master_request;
+    int tmp;
+    if (rank == APPRENTICE_ID) {
+        MPI_Irecv(&tmp, 0, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &master_request);
+    }
+    int is_stopped = 0;
     for (int iter = 0; iter < iter_quantity; ++iter) {
-        send_rows();
-        try_recv_rows(iter, &iter_quantity);
-        // try_exchange_rows(neighbor_up, 1, iter, &iter_quantity);
-        // fprintf(stderr, "%d: %d.%d - %d\n", rank, iter, 1, iter_quantity);
-        // try_exchange_rows(neighbor_down, 0, iter, &iter_quantity);
-        // fprintf(stderr, "%d: %d.%d - %d\n", rank, iter, 2, iter_quantity);
+        if (rank == APPRENTICE_ID && !is_stopped) {
+            // ignore master if already trying to stop
+            int is_message = 0;
+            MPI_Status status;
+            MPI_Test(&master_request, &is_message, &status);
+            if (is_message) {
+                if (status.MPI_TAG == TAG_STOP_ALL) {
+                    is_stopped = 1;
+                    iter_quantity = iter + (proc_quantity - 1) / 2 + 1;
+                } else {
+                    if (status.MPI_TAG == TAG_TEST) {
+                        send_state(WORKER_BUSY, MASTER_ID, TAG_TEST);
+                    }
+                    MPI_Irecv(&tmp, 0, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &master_request);
+                }
+            }
+        }
+
+        for (int is_direction_up = 0; is_direction_up <= 1; ++is_direction_up) {
+            int new_iter_quantity = exchange_rows(is_direction_up, iter_quantity);
+            if (new_iter_quantity < iter_quantity) {
+                is_stopped = 1;
+                iter_quantity = new_iter_quantity;
+            }
+        }
 
         update_grid_rows();
         Grid grid_tmp = grid;
         grid = grid_next;
         grid_next = grid_tmp;
-        // fprintf(stderr, "%d: ended iter %d\n", rank, iter);
     }
-    // fprintf(stderr, "%d: finished\n", rank);
     if (rank == APPRENTICE_ID) {
+        if (!is_stopped) {
+            MPI_Cancel(&master_request);
+        }
         finalize_run(iter_quantity);
     } else {
         notify_end_work();
@@ -181,12 +128,11 @@ void worker_run(int iter_quantity) {
 
 void receive_grid() {
     int duty_array[3];
-    MPI_Status status;
-    MPI_Recv(duty_array, 3, MPI_INT, MASTER_ID, DUTY, MPI_COMM_WORLD, &status);
+    MPI_Recv(duty_array, 3, MPI_INT, MASTER_ID, TAG_DUTY, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     duty.start_row = duty_array[0];
     duty.end_row   = duty_array[1];
     empty_grid(duty.end_row - duty.start_row + 2, duty_array[2], &grid);
-    receive_grid_layer(&grid, 1, grid.height - 1, MASTER_ID, GRID);
+    receive_grid_layer(&grid, 1, grid.height - 1, MASTER_ID, TAG_GRID);
 }
 
 void launch_worker(int arg1) {
@@ -197,8 +143,8 @@ void launch_worker(int arg1) {
         int tmp;
         MPI_Status status;
         MPI_Recv(&tmp, 0, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        if (status.MPI_TAG == START) {
-            MPI_Recv(&proc_quantity, 1, MPI_INT, MASTER_ID, DUTY, MPI_COMM_WORLD, &status);
+        if (status.MPI_TAG == TAG_START) {
+            MPI_Recv(&proc_quantity, 1, MPI_INT, MASTER_ID, TAG_DUTY, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if (rank > proc_quantity) {
                 break;
             }
@@ -207,18 +153,18 @@ void launch_worker(int arg1) {
             neighbor_up   = (rank > 1)                 ? (rank - 1) : proc_quantity - 1;
             receive_grid();
             empty_grid(grid.height, grid.width, &grid_next);
-        } else if (status.MPI_TAG == STATUS) {
-            send_grid_layer(grid, 1, grid.height-1, rank, MASTER_ID, STATUS);
-        } else if (status.MPI_TAG == RUN) {
-            MPI_Recv(&iter_quantity, 1, MPI_INT, MASTER_ID, ITER, MPI_COMM_WORLD, &status);
+        } else if (status.MPI_TAG == TAG_STATUS) {
+            send_grid_layer(grid, 1, grid.height-1, rank, MASTER_ID, TAG_STATUS);
+        } else if (status.MPI_TAG == TAG_RUN) {
+            MPI_Recv(&iter_quantity, 1, MPI_INT, MASTER_ID, TAG_ITER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             worker_run(iter_quantity);
-        } else if (status.MPI_TAG == QUIT) {
+        } else if (status.MPI_TAG == TAG_QUIT) {
             delete_grid(grid);
             delete_grid(grid_next); 
             break;
-        } else if (status.MPI_TAG == TEST) {
-            send_state(WORKER_READY, MASTER_ID, TEST);
-        } else if (status.MPI_TAG != STOP_ALL) {
+        } else if (status.MPI_TAG == TAG_TEST) {
+            send_state(WORKER_READY, MASTER_ID, TAG_TEST);
+        } else if (status.MPI_TAG != TAG_STOP_ALL) {
             fprintf(stderr, "%d: %s\n", rank, ERROR_MESSAGE_WRONG_TAG);
         }
     }
