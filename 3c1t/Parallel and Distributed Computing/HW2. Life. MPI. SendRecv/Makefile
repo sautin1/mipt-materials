@@ -1,7 +1,7 @@
 CC      = gcc
 MPICC   = mpicc
 LINK    = mpicc
-FLAGS   = -Wall -std=c99
+FLAGS   = -Wall -std=c99 -g
 OBJS    = life2.o commands.o life_grid.o utilities.o worker.o master.o
 
 all: life2
