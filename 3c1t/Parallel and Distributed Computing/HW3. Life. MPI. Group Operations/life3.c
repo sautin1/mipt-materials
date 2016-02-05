@@ -10,10 +10,10 @@
 //  int excl_ranks = 0;
 //  MPI_Group world_group;
 //  MPI_Group worker_group;
-
+    
 //  MPI_Comm_group(MPI_COMM_WORLD, &world_group);
 //  MPI_Group_excl(world_group, 1, &excl_ranks, &worker_group);
-
+    
 //  MPI_Comm world_comm;
 
 //  MPI_Comm_dup(MPI_COMM_WORLD, &world_comm);

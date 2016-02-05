@@ -148,8 +148,8 @@ void execute_status(WorkerDuty* duties) {
 }
 
 void execute_run(int iter_quantity) {
-    // broadcast_tag(MASTER_ID, TAG_RUN, MPI_COMM_WORLD);
-    broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_RUN);
+    broadcast_tag(MASTER_ID, TAG_RUN, MPI_COMM_WORLD);
+    // broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_RUN);
     int send_status = MPI_Bcast(&iter_quantity, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
     if (send_status != MPI_SUCCESS) {
         fprintf(stderr, "%d: %s\n", MASTER_ID, ERROR_MESSAGE_CANNOT_SEND);
