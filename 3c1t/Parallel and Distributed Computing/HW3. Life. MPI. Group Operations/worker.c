@@ -125,9 +125,10 @@ void worker_run(int iter_quantity, MPI_Request* head_request, int* head_tag) {
         grid_next = grid_tmp;
     }
     if (rank == APPRENTICE_ID) {
-        // if (!is_stopped) {
-        //  MPI_Cancel(&head_request);
-        // }
+        if (is_stopped) {
+            // should be here, since we ignore master messages if already trying to stop
+            MPI_Ibcast(head_tag, 1, MPI_INT, master_head_rank, head_comm, head_request);
+        }
         finalize_run(iter_quantity);
     } else {
         notify_end_work();
