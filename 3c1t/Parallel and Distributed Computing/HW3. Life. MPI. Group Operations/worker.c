@@ -5,7 +5,7 @@ const int APPRENTICE_WORK_ID = 0;
 WorkerDuty duty;
 Grid grid;
 Grid grid_next;
-int rank;
+int rank, head_rank;
 int proc_quantity;
 int neighbor_up;
 int neighbor_down;
@@ -13,6 +13,8 @@ double start_time;
 double end_time;
 MPI_Comm worker_comm;
 MPI_Comm head_comm;
+MPI_Comm neighbor_down_comm;
+MPI_Comm neighbor_up_comm;
 
 void update_grid_rows() {
     for (int row = 1; row < grid.height-1; ++row) {
@@ -41,10 +43,11 @@ void notify_end_work() {
     }
 }
 
-void send_state(WorkerState state, int to, MessageTag tag) {
-    int status = MPI_Send(&state, 1, MPI_INT, to, tag, MPI_COMM_WORLD);
+void send_state(WorkerState state) {
+    //fprintf(stderr, "%d: sending state through %d\n", head_rank, head_comm);
+    int status = MPI_Bcast(&state, 1, MPI_INT, head_rank, head_comm);
     if (status != MPI_SUCCESS) {
-        fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, to);
+        fprintf(stderr, "%d: %s to %d\n", rank, ERROR_MESSAGE_CANNOT_SEND, MASTER_ID);
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 }
@@ -79,13 +82,14 @@ int exchange_rows(int is_up, int iter_quantity) {
 }
 
 void worker_run(int iter_quantity) {
+    int master_head_rank = 1 - head_rank;
     if (rank == 1) {
         start_time = MPI_Wtime();
     }
     MPI_Request master_request;
-    int tmp;
+    int master_msg;
     if (rank == APPRENTICE_ID) {
-        MPI_Irecv(&tmp, 0, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &master_request);
+        MPI_Ibcast(&master_msg, 1, MPI_INT, master_head_rank, head_comm, &master_request);
     }
     int is_stopped = 0;
     for (int iter = 0; iter < iter_quantity; ++iter) {
@@ -95,14 +99,14 @@ void worker_run(int iter_quantity) {
             MPI_Status status;
             MPI_Test(&master_request, &is_message, &status);
             if (is_message) {
-                if (status.MPI_TAG == TAG_STOP_ALL) {
+                if (master_msg == TAG_STOP_ALL) {
                     is_stopped = 1;
                     iter_quantity = iter + (proc_quantity - 1) / 2 + 1;
                 } else {
-                    if (status.MPI_TAG == TAG_TEST) {
-                        send_state(WORKER_BUSY, MASTER_ID, TAG_TEST);
+                    if (master_msg == TAG_TEST) {
+                        send_state(WORKER_BUSY);
                     }
-                    MPI_Irecv(&tmp, 0, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &master_request);
+                    MPI_Ibcast(&master_msg, 1, MPI_INT, master_head_rank, head_comm, &master_request);
                 }
             }
         }
@@ -153,19 +157,41 @@ void gather_worker_grids_send() {
     free(grid_layer_arr);
 }
 
-void launch_worker(int arg1, int arg2, MPI_Comm arg3, MPI_Comm arg4) {
+void launch_worker(int arg1, int arg2, MPI_Comm arg3, MPI_Comm arg4, 
+                   MPI_Comm arg5, MPI_Comm arg6) {
     rank = arg1;
     proc_quantity = arg2;
     worker_comm = arg3;
     head_comm = arg4;
+    neighbor_down_comm = arg5;
+    neighbor_up_comm   = arg6;
     int iter_quantity;
+    int master_head_rank = -1;
+    if (rank == APPRENTICE_ID) {
+        MPI_Comm_rank(head_comm, &head_rank);
+        master_head_rank = 1 - head_rank;
+    }
 
+    int request_index = -1;
+    MPI_Request requests[2];
+    int request_quantity = (rank == APPRENTICE_ID) ? 2 : 1;
+    int tags_incoming[2];
     while (1) {
-        int tag, tmp;
-        // MPI_Bcast(&tag, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
-        MPI_Status status;
-        MPI_Recv(&tmp, 0, MPI_INT, MASTER_ID, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        tag = status.MPI_TAG;
+        if (request_index <= 0) {
+            MPI_Ibcast(tags_incoming    , 1, MPI_INT, MASTER_ID       , MPI_COMM_WORLD, requests    );
+            // fprintf(stderr, "%d: init request %d to WORKERS through comm %d\n", rank, requests[0], MPI_COMM_WORLD);
+        }
+
+        if (rank == APPRENTICE_ID && request_index != 0) {
+            MPI_Ibcast(tags_incoming + 1, 1, MPI_INT, master_head_rank, head_comm     , requests + 1);
+            // fprintf(stderr, "%d: init request %d to HEAD through comm %d\n", rank, requests[1], head_comm);
+        }
+
+        MPI_Waitany(request_quantity, requests, &request_index, MPI_STATUS_IGNORE);
+        // fprintf(stderr, "%d: request %d to %s completed\n", rank, request_index, 
+            // request_index == 0 ? "WORKERS" : "HEAD");
+        int tag = tags_incoming[request_index];
+
         if (tag == TAG_START) {
             neighbor_down = (rank < proc_quantity - 1) ? (rank + 1) : 1;
             neighbor_up   = (rank > 1)                 ? (rank - 1) : proc_quantity - 1;
@@ -181,9 +207,10 @@ void launch_worker(int arg1, int arg2, MPI_Comm arg3, MPI_Comm arg4) {
             delete_grid(grid_next); 
             break;
         } else if (tag == TAG_TEST) {
-            send_state(WORKER_READY, MASTER_ID, TAG_TEST);
+            send_state(WORKER_READY);
         } else if (tag != TAG_STOP_ALL) {
             fprintf(stderr, "%d: %s\n", rank, ERROR_MESSAGE_WRONG_TAG);
         }
+        //fprintf(stderr, "%d: finished command\n", rank);
     }
 }

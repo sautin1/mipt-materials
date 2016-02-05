@@ -6,7 +6,7 @@
 #include "commands.h"
 #include "life_grid.h"
 
-ssize_t is_workers_busy();
+WorkerState is_workers_busy();
 
 ssize_t check_before_start(int is_started);
 ssize_t check_before_run(int is_started);
@@ -24,4 +24,5 @@ void execute_run(int iter_quantity);
 void execute_stop();
 void execute_quit();
 
-int launch_master(int arg, MPI_Comm arg2);
+// void launch_master(int arg, MPI_Comm arg2);
+void launch_master(int arg, MPI_Comm arg2);

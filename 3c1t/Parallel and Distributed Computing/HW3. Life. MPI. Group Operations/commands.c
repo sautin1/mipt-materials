@@ -150,24 +150,26 @@ void receive_grid_layer(Grid* grid, int start_row, int end_row, int from, Messag
     free(layer_arr);
 }
 
-// void broadcast_tag(int from, MessageTag tag, MPI_Comm comm) {
-//  int send_status = MPI_Bcast(&tag, 1, MPI_INT, from, comm);
-//  if (send_status != MPI_SUCCESS) {
-//      fprintf(stderr, "%d: %s\n", from, ERROR_MESSAGE_CANNOT_SEND);
-//      MPI_Abort(MPI_COMM_WORLD, -1);
+void broadcast_tag(int from, MessageTag tag, MPI_Comm comm) {
+    MPI_Request request;
+    int send_status = MPI_Ibcast(&tag, 1, MPI_INT, from, comm, &request);
+    if (send_status != MPI_SUCCESS) {
+        fprintf(stderr, "%d: %s\n", from, ERROR_MESSAGE_CANNOT_SEND);
+        MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+    MPI_Wait(&request, MPI_STATUS_IGNORE);
+}
+
+// void broadcast_tag(int proc_quantity, int from, MessageTag tag) {
+//  int send_status;
+//  for (int i = 0; i < proc_quantity; ++i) {
+//      if (i == from) {
+//          continue;
+//      }
+//      send_status = MPI_Send(&i, 0, MPI_INT, i, tag, MPI_COMM_WORLD);
+//      if (send_status != MPI_SUCCESS) {
+//          fprintf(stderr, "%d: %s to %d\n", from, ERROR_MESSAGE_CANNOT_SEND, i);
+//          MPI_Abort(MPI_COMM_WORLD, -1);
+//      }
 //  }
 // }
-
-void broadcast_tag(int proc_quantity, int from, MessageTag tag) {
-    int send_status;
-    for (int i = 0; i < proc_quantity; ++i) {
-        if (i == from) {
-            continue;
-        }
-        send_status = MPI_Send(&i, 0, MPI_INT, i, tag, MPI_COMM_WORLD);
-        if (send_status != MPI_SUCCESS) {
-            fprintf(stderr, "%d: %s to %d\n", from, ERROR_MESSAGE_CANNOT_SEND, i);
-            MPI_Abort(MPI_COMM_WORLD, -1);
-        }
-    }
-}

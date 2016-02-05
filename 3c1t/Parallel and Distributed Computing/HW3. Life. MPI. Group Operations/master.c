@@ -3,16 +3,16 @@
 Grid grid;
 int worker_quantity;
 MPI_Comm head_comm;
+int head_rank;
 
-ssize_t is_workers_busy() {
-    int status;
-    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_TEST, MPI_COMM_WORLD);
-    if (status != MPI_SUCCESS) {
-        fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, APPRENTICE_ID);
-        MPI_Abort(MPI_COMM_WORLD, -1);
-    }
-    MPI_Recv(&status, 1, MPI_INT, APPRENTICE_ID, TAG_TEST, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    return status;
+WorkerState is_workers_busy() {
+    broadcast_tag(head_rank, TAG_TEST, head_comm);
+    
+    WorkerState state;
+    int apprentice_head_rank = 1 - head_rank;
+    MPI_Bcast(&state, 1, MPI_INT, apprentice_head_rank, head_comm);
+    //fprintf(stderr, "%d: got state %s from %d\n", 0, state == 0 ? "READY" : "BUSY", apprentice_head_rank);
+    return state;
 }
 
 ssize_t check_before_start(int is_started) {
@@ -128,8 +128,7 @@ void execute_start(char* command, WorkerDuty** worker_duties, int* is_started) {
         }
 
         distribute_duties(grid, worker_quantity, worker_duties);
-        // broadcast_tag(MASTER_ID, TAG_START, MPI_COMM_WORLD);
-        broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_START);
+        broadcast_tag(MASTER_ID, TAG_START, MPI_COMM_WORLD);
 
         scatter_worker_duties(*worker_duties);
         scatter_worker_grids(*worker_duties);
@@ -138,8 +137,7 @@ void execute_start(char* command, WorkerDuty** worker_duties, int* is_started) {
 }
 
 void execute_status(WorkerDuty* duties) {
-    // broadcast_tag(MASTER_ID, TAG_STATUS, MPI_COMM_WORLD);
-    broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_STATUS);
+    broadcast_tag(MASTER_ID, TAG_STATUS, MPI_COMM_WORLD);
     gather_worker_grids_recv(duties);
 
     // FILE* res_file = fopen(FILENAME_RESULTS, "w");
@@ -160,8 +158,12 @@ void execute_run(int iter_quantity) {
 }
 
 void execute_stop() {
-    int status;
-    status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_STOP_ALL, MPI_COMM_WORLD);
+    int status = TAG_STOP_ALL; 
+    int root;
+    MPI_Request request;
+    MPI_Comm_rank(head_comm, &root);
+    // status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_STOP_ALL, MPI_COMM_WORLD);
+    status = MPI_Ibcast(&status, 1, MPI_INT, root, head_comm, &request);
     if (status != MPI_SUCCESS) {
         fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, 1);
         MPI_Abort(MPI_COMM_WORLD, -1);
@@ -169,28 +171,31 @@ void execute_stop() {
 }
 
 void execute_quit() {
-    // broadcast_tag(MASTER_ID, TAG_QUIT, MPI_COMM_WORLD);
-    broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_QUIT);
+    broadcast_tag(MASTER_ID, TAG_QUIT, MPI_COMM_WORLD);
+    // broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_QUIT);
 
     delete_grid(grid);
 }
 
-int launch_master(int arg, MPI_Comm arg2) {
+void launch_master(int arg, MPI_Comm arg2) {
     worker_quantity = arg;
+    head_comm = arg2;
     WorkerDuty* worker_duties = NULL;
     int is_started      = 0;
     int iter_quantity   = 0;
-    head_comm = arg2;
+    MPI_Comm_rank(head_comm, &head_rank);
 
     char* command = (char*)malloc(COMMAND_MAX_LENGTH * sizeof(char));
     while (1) {
         printf("> ");
+
         command = fgets(command, COMMAND_MAX_LENGTH, stdin);
         normalize_command(command);
         if (strncmp("start", command, 5) == 0) {
             if (!check_before_start(is_started)) {
                 execute_start(command, &worker_duties, &is_started);
             }
+            //fprintf(stderr, "%d: finished START\n", 0);
         } else if (strncmp("run", command, 3) == 0) {
             if (!check_before_run(is_started) && !parse_run_command(command, &iter_quantity)) {
                 execute_run(iter_quantity);
@@ -220,5 +225,5 @@ int launch_master(int arg, MPI_Comm arg2) {
     if (command) {
         free(command);
     }
-    return 0;
+    return;
 }

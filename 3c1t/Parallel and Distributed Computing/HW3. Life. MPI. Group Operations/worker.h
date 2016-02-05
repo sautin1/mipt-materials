@@ -14,11 +14,14 @@ void update_grid_rows();
 void finalize_run(int iter_quantity);
 
 void notify_end_work();
-void send_state(WorkerState state, int to, MessageTag tag);
+void send_state(WorkerState state);
 int  exchange_rows(int is_up, int iter_quantity);
 void worker_run(int iter_quantity);
 void receive_grid();
 
 void gather_worker_grids_send();
 
-void launch_worker(int arg1, int arg2, MPI_Comm arg3, MPI_Comm arg4);
+// void launch_worker(int arg1, int arg2, MPI_Comm arg3, MPI_Comm arg4, 
+//                 MPI_Comm arg5, MPI_Comm arg6);
+void launch_worker(int arg1, int arg2, MPI_Comm arg3, MPI_Comm arg4, 
+                   MPI_Comm arg5, MPI_Comm arg6);
