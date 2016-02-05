@@ -7,7 +7,8 @@ const char*  COMMAND_POSSIBLE_DELIMITERS    = " ";
 const char*  ERROR_MESSAGE_NOT_STARTED      = "Wrong command: not started yet";
 const char*  ERROR_MESSAGE_NOT_STOPPED      = "Wrong command: not stopped yet";
 const char*  ERROR_MESSAGE_ALREADY_STARTED  = "Wrong command: already started";
-const char*  ERROR_MESSAGE_WRONG_COMMAND    = "Wrong command\nType \'help\' to get the list of possible commands";
+const char*  ERROR_MESSAGE_WRONG_COMMAND    = "Wrong command\nType \'help\' to get "
+                                              "the list of possible commands";
 const char*  ERROR_MESSAGE_WRONG_TAG        = "Wrong message tag";
 const char*  ERROR_MESSAGE_CANNOT_RECEIVE   = "Cannot receive the message";
 const char*  ERROR_MESSAGE_CANNOT_SEND      = "Cannot send the message";
@@ -159,17 +160,3 @@ void broadcast_tag(int from, MessageTag tag, MPI_Comm comm) {
     }
     MPI_Wait(&request, MPI_STATUS_IGNORE);
 }
-
-// void broadcast_tag(int proc_quantity, int from, MessageTag tag) {
-//  int send_status;
-//  for (int i = 0; i < proc_quantity; ++i) {
-//      if (i == from) {
-//          continue;
-//      }
-//      send_status = MPI_Send(&i, 0, MPI_INT, i, tag, MPI_COMM_WORLD);
-//      if (send_status != MPI_SUCCESS) {
-//          fprintf(stderr, "%d: %s to %d\n", from, ERROR_MESSAGE_CANNOT_SEND, i);
-//          MPI_Abort(MPI_COMM_WORLD, -1);
-//      }
-//  }
-// }

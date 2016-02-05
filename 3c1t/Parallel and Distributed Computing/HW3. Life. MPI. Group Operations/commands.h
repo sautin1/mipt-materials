@@ -56,4 +56,3 @@ void send_grid_layer(Grid grid, int start_row, int end_row, int from, int to, Me
 void receive_grid_layer(Grid* grid, int start_row, int end_row, int from, MessageTag tag);
 
 void broadcast_tag(int from, MessageTag tag, MPI_Comm comm);
-// void broadcast_tag(int proc_quantity, int from, MessageTag tag);

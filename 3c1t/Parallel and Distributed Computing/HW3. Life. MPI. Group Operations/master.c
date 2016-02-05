@@ -7,61 +7,34 @@ int head_rank;
 
 WorkerState is_workers_busy() {
     broadcast_tag(head_rank, TAG_TEST, head_comm);
-    
     WorkerState state;
     int apprentice_head_rank = 1 - head_rank;
     MPI_Bcast(&state, 1, MPI_INT, apprentice_head_rank, head_comm);
-    //fprintf(stderr, "%d: got state %s from %d\n", 0, state == 0 ? "READY" : "BUSY", apprentice_head_rank);
     return state;
 }
 
-ssize_t check_before_start(int is_started) {
+int check_not_started(int is_started) {
     if (is_started) {
         fprintf(stderr, "%s\n", ERROR_MESSAGE_ALREADY_STARTED);
-        return -1;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
-ssize_t check_before_run(int is_started) {
+int check_started(int is_started) {
     if (!is_started) {
         fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STARTED);
-        return -1;
+        return 0;
     }
-
-    if (is_workers_busy()) {
-        fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STOPPED);
-        return -1;  
-    }
-    return 0;
+    return 1;
 }
 
-ssize_t check_before_stop(int is_started) {
-    if (!is_started) {
-        fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STARTED);
-        return -1;
-    }
-    return 0;
-}
-
-ssize_t check_before_quit() {
+int check_workers_ready() {
     if (is_workers_busy()) {
         fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STOPPED);
-        return -1;
+        return 0;
     }
-    return 0;
-}
-
-ssize_t check_before_status(int is_started) {
-    if (!is_started) {
-        fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STARTED);
-        return -1;
-    }
-    if (is_workers_busy()) {
-        fprintf(stderr, "%s\n", ERROR_MESSAGE_NOT_STOPPED);
-        return -1;
-    }
-    return 0;
+    return 1;
 }
 
 void scatter_worker_duties(WorkerDuty* worker_duties) {
@@ -92,7 +65,8 @@ void scatter_worker_grids(WorkerDuty* worker_duties) {
     }
     int grid_recv;
 
-    MPI_Scatterv(grid_arr, sizes, disps, MPI_INT, &grid_recv, 0, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
+    MPI_Scatterv(grid_arr, sizes, disps, MPI_INT, &grid_recv, 0, MPI_INT, 
+                 MASTER_ID, MPI_COMM_WORLD);
     free(grid_arr);
     free(sizes);
     free(disps);
@@ -149,7 +123,6 @@ void execute_status(WorkerDuty* duties) {
 
 void execute_run(int iter_quantity) {
     broadcast_tag(MASTER_ID, TAG_RUN, MPI_COMM_WORLD);
-    // broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_RUN);
     int send_status = MPI_Bcast(&iter_quantity, 1, MPI_INT, MASTER_ID, MPI_COMM_WORLD);
     if (send_status != MPI_SUCCESS) {
         fprintf(stderr, "%d: %s\n", MASTER_ID, ERROR_MESSAGE_CANNOT_SEND);
@@ -162,7 +135,6 @@ void execute_stop() {
     int root;
     MPI_Request request;
     MPI_Comm_rank(head_comm, &root);
-    // status = MPI_Send(&status, 0, MPI_INT, APPRENTICE_ID, TAG_STOP_ALL, MPI_COMM_WORLD);
     status = MPI_Ibcast(&status, 1, MPI_INT, root, head_comm, &request);
     if (status != MPI_SUCCESS) {
         fprintf(stderr, "MASTER: %s to %d\n", ERROR_MESSAGE_CANNOT_SEND, 1);
@@ -172,8 +144,6 @@ void execute_stop() {
 
 void execute_quit() {
     broadcast_tag(MASTER_ID, TAG_QUIT, MPI_COMM_WORLD);
-    // broadcast_tag(worker_quantity + 1, MASTER_ID, TAG_QUIT);
-
     delete_grid(grid);
 }
 
@@ -188,38 +158,36 @@ void launch_master(int arg, MPI_Comm arg2) {
     char* command = (char*)malloc(COMMAND_MAX_LENGTH * sizeof(char));
     while (1) {
         printf("> ");
-
         command = fgets(command, COMMAND_MAX_LENGTH, stdin);
         normalize_command(command);
+
         if (strncmp("start", command, 5) == 0) {
-            if (!check_before_start(is_started)) {
+            if (check_not_started(is_started)) {
                 execute_start(command, &worker_duties, &is_started);
             }
-            //fprintf(stderr, "%d: finished START\n", 0);
-        } else if (strncmp("run", command, 3) == 0) {
-            if (!check_before_run(is_started) && !parse_run_command(command, &iter_quantity)) {
-                execute_run(iter_quantity);
-            }
         } else if (strcmp("status", command) == 0) {
-            if (!check_before_status(is_started)) {
+            if (check_started(is_started) && check_workers_ready()) {
                 execute_status(worker_duties);
             }
+        } else if (strncmp("run", command, 3) == 0) {
+            if (check_started(is_started) && check_workers_ready() 
+                && !parse_run_command(command, &iter_quantity)) {
+                execute_run(iter_quantity);
+            }
         } else if (strcmp("stop", command) == 0) {
-            if (!check_before_stop(is_started)) {
+            if (check_started(is_started)) {
                 execute_stop();
             }
         } else if (strcmp("help", command) == 0) {
             print_help();
         } else if (strcmp("quit", command) == 0) {
-            if (!check_before_quit()) {
+            if (check_workers_ready()) {
                 execute_quit();
                 free(worker_duties);
                 break;
             }
-        } else {
-            if (command[0] != 0) {
-                fprintf(stderr, "%s\n", ERROR_MESSAGE_WRONG_COMMAND);
-            }
+        } else if (command[0] != 0) {
+            fprintf(stderr, "%s\n", ERROR_MESSAGE_WRONG_COMMAND);
         }
     }
     if (command) {
