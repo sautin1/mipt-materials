@@ -1,0 +1,89 @@
+body {                                                                          /*1. селектор тегов*/
+    font-family: "arial";
+    color: #000044;
+}
+#css-head-div {                                                                 /*1. селектор идентификаторов*/
+    text-align: center;
+    font-weight: bold;
+    font-size: 2em;
+    padding: 5px 0px 15px;                                                      /*8. Внутренние отступы*/
+}
+
+table, td, th {
+    border: 1px solid #E1E1E1;
+}
+table {
+    border-collapse: collapse;                                                  /*9. Схлопывание границ*/
+    width: 80%;
+    margin: auto;                                                               /*7. Внешние отступы*/
+    counter-reset: rowcounter;
+    background-color: #F2F2F2;
+    border-radius: 20px;
+}
+tr {
+    background-color: white;
+}
+tr:nth-child(even) {                                                            /*2. псевдокласс nth-child*/
+    background-color: inherit;                                                  /*5. Наследование свойств*/
+}
+tr:hover {                                                                      /*2. псевдокласс hover*/
+    background-color: #DFDFDF;
+}
+tr span::before {                                                               /*4. селектор потомков*/
+    counter-increment: rowcounter;
+    content: counter(rowcounter) ".";
+}
+th {
+    font-weight: bold;
+    font-size: 14;
+    color: white;
+    background-color: lightblue;
+    height: 40px;
+}
+td {
+    height: 20px;
+    padding: 10px;
+}
+td.topic-col {                                                                  /*1. комбинирование селекторов*/
+    width: 45%;
+}
+
+.link-col {                                                                     /*1. селектор классов*/
+    width: 35%;
+    text-align: center;
+}
+
+table a[href*="w3schools"]:link, table a[href*="w3schools"]:visited {           /*3. селектор атрибутов*/
+    padding: 10px;
+    background-color: #CF99CF;
+    display: block;                                                             /*6. блочная структура*/
+    margin: auto;
+    text-decoration: none;
+    text-align: center;
+    color: black;
+    width: 75%;
+    border-radius: 5px;
+}
+
+table a[href*="w3schools"]:hover, table a[href*="w3schools"]:active {
+    background-color: #BC99BC;
+    cursor: pointer;
+}
+
+img {
+    width: 100%;
+}
+
+div.img {
+    position: fixed;
+    width: 20px;
+    left: 10px;
+    top: 10px;
+    opacity: 0.4;
+}
+
+div.img:hover {
+    width: 25px;
+    opacity: 1;
+    cursor: pointer;
+}
