@@ -1,0 +1,85 @@
+body {
+    font-family: "arial";
+    color: #000044;
+}
+#css-head-div {
+    text-align: center;
+    font-weight: bold;
+    font-size: 2em;
+    padding: 5px 0px 15px;
+}
+
+#window {
+    position: relative;
+    background-color: #DDDDFF;
+    border-radius: 10px;
+    height: 500px;
+    width: 40%;
+    margin: auto;
+}
+
+#user-name, #user-surname, #user-year, #greeting {
+    display: block;
+    position: absolute;
+    background-color: #EEDDFF;
+    border-radius: 5px;
+    font-size: 20px;
+}
+
+#user-name, #user-surname, #user-year {
+    height: 40px;
+    width: 50%;
+    left: 50%;
+    margin-top: 25px;
+    margin-left: -25%;
+    padding: 0px 10px;
+}
+
+#user-name {
+    top: 2%;
+}
+
+#user-surname {
+    top: 16%;
+}
+
+#user-year {
+    top: 30%;
+}
+
+input[type="button"], #checkbox-div {
+    display: block;
+    position: absolute;
+    left: 50%;
+    height: 50px;
+    margin-left: -100px;
+    border-radius: 10px;
+    font-size: 20px;
+    color: inherit;
+}
+
+#checkbox-div {
+    background-color: inherit;
+    top: 50%;
+}
+
+input[type="button"] {
+    width: 200px;
+    background-color: #CF99CF;
+    top: 60%;
+}
+
+input[type="button"]:hover {
+    background-color: #BC99BC;
+    border: 2px solid #CF22CF;
+    cursor: pointer;
+}
+
+#greeting {
+    margin-left: -40%;
+    left: 50%;
+    top: 80%;
+    width: 80%;
+    height: 50px;
+    border: 2px solid #999999;
+}
