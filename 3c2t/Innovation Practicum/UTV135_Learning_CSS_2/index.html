@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <script type="text/javascript" src="script.js"></script>
+</head>
+<body onload="printHelp()">
+<div id="css-head-div">Обучение 2. CSS</div>
+
+<div id="window">
+    <div class="single-item-container">
+        <input type="text"   class="input-field" id="user-name"    placeholder="Имя">
+    </div>
+    <div class="single-item-container">
+        <input type="text"   class="input-field" id="user-surname" placeholder="Фамилия">
+    </div>
+    <div class="single-item-container">
+        <input type="number" class="input-field" id="user-year"    placeholder="Год рождения">
+    </div>
+    <div class="checkbox-container">
+        <input type="checkbox" id="user-respected">
+        <label>Он чего-то добился</label>
+    </div>
+    <div class="two-item-container">
+        <input type="button" id="apply-button" value="Готово" onclick="greet()">
+    </div>
+    <div class="two-item-container">
+        <input type="button" id="clear-button" value="Очистить" onclick="clearFields()">
+    </div>
+    <div id="greeting" class="single-item-container"></div>
+</div>
+
+<div class="img">
+    <a href="http://www.w3schools.com/css/default.asp" target="_blank">
+        <img src="http://www.kirbyjsimmons.com/wp-content/uploads/2015/12/CSSlogo.png">
+    </a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,135 @@
+* {
+    box-sizing: border-box;                         /*свойство box-sizing*/
+}
+
+body {
+    font-family: "arial";
+    color: #000044;
+}
+
+#css-head-div {
+    text-align: center;
+    font-weight: bold;
+    font-size: 2em;
+    padding: 5px 0px 15px;
+}
+
+#window {
+    background-color: #DDDDFF;
+    border-radius: 10px;
+    height: 500px;
+    width: 40%;
+    margin: auto;
+
+    display: flex;                                  /*модуль FlexBox*/
+    flex-flow: row wrap;
+    justify-content: space-between;
+    align-items: stretch;
+    align-content: space-around;
+}
+
+.single-item-container {
+    min-height: 7%;
+    max-height: 9%;
+    height: 8%;
+    width: 100%;
+}
+
+.two-item-container {
+    min-height: 9%;
+    max-height: 11%;
+    height: 10%;
+    width: 50%;
+}
+
+.checkbox-container {
+    background-color: inherit;
+    text-align: center;
+    height: 5%;
+    width: 100%;
+}
+
+.input-field, #greeting {
+    background-color: #EEDDFF;
+    border-radius: 5px;
+    font-size: 20px;
+    height: 100%;
+    display: block;
+    margin: auto;
+}
+
+.input-field {
+    width: 40%;
+    padding: 0px 10px;
+    transition: width 1s;
+    transition-timing-function: ease-in-out;
+}
+
+.input-field:focus {
+    width: 60%;
+}
+
+input[type="button"], .checkbox-container {
+    border-radius: 10px;
+    font-size: 20px;
+    color: inherit;
+}
+
+input[type="button"] {
+    height: 95%;
+    width: 73%;
+    background-color: #CF99CF;                      /*приоритеты стилей*/
+    display: block;
+    margin: auto;
+    transition: width 0.3s,
+                height 0.3s,
+                background-color 0.3s, 
+                font-weight 0.3s, 
+                border 0.3s;                        /*переходы*/
+    transition-delay: 0.2s;
+}
+
+
+input[type="button"]:hover {
+    background-color: #BC99BC;
+    font-weight: bold;
+    border: 2px solid #CF22CF;
+    cursor: pointer;
+    width: 80%;
+    height: 100%;
+}
+
+#user-respected {
+    transition: transform 0.5s;                     /*переходы*/
+}
+
+#user-respected:hover {
+    transform: scale(1.5, 1.5);                     /*трансформация*/
+}
+
+#greeting {
+    width: 80%;
+    height: 10%;
+    border: 2px solid #999999;
+    overflow: auto;
+}
+
+img {
+    width: 100%;
+}
+
+div.img {
+    position: fixed;
+    width: 50px;
+    left: 20px;
+    top: 20px;
+    opacity: 0.2;
+    transition: opacity 1s, width 1s, transform 1s; /*переходы*/
+}
+
+div.img:hover {
+    width: 70px;
+    opacity: 1;
+    cursor: pointer;
+    transform: rotateZ(360deg);                     /*трансформация*/
+}
