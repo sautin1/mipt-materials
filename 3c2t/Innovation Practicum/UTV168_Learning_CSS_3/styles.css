@@ -1,0 +1,67 @@
+body {
+    background-color: lightgrey;
+}
+#img-logo {
+    width: 30px;
+}
+#img-column {
+    position: static;
+    height: 400px;
+}
+.panel {
+    position: absolute;
+    width: 30%;
+    background-color: grey;
+    z-index: 0;
+}
+.panel:hover {
+    z-index: 1;
+    border-color: #880088;
+    border-width: 5px;
+}
+#dep1-panel {
+    left: 5%;
+}
+#dep2-panel {
+    left: 25%;
+}
+#dep3-panel {
+    left: 45%;
+}
+#dep4-panel {
+    left: 65%;
+}
+.img-rounded {
+    width: 100%;
+}
+.upper-panel {
+    top: 100px;
+}
+.lower-panel {
+    top: 200px;
+}
+
+#hat-row {
+    background-color: white;
+}
+#img-hat {
+    width: 200px;
+    padding: 10px;
+    margin: 0px 15px 0px 0px;
+    float: left;
+    clear: left;
+}
+#hat-quote-container {
+    width: 80%;
+    margin: auto;
+}
+blockquote {
+    font-size: 24px;
+    margin-bottom: -5px;
+    font-style: italic;
+}
+#your-choice-text {
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+}
