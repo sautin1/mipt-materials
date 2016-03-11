@@ -7,7 +7,7 @@ var textInfo;
 var info;
 
 function printHelp() {
-    window.alert("Use arrows to choose the Houses, space - to see the patron ghost, escape - to remove selection.");
+    window.alert("Use arrows to choose the Houses, space - to see the patron ghost, escape - to remove selection. Try to find the way to magnify the hat.");
 }
 
 window.onload = function() {
@@ -18,7 +18,8 @@ window.onload = function() {
     info.push("Grey Lady");
     info[3] = "Nearly Headless Nick";
     info[2] = "Fat Friar";
-    textInfo = document.getElementById("your-choice-text").innerHTML = defaultText;
+    textInfo = document.getElementById("your-choice-text");
+    textInfo.innerHTML = defaultText;
     document.addEventListener("keydown", onKeyPressed);
     printHelp();
 }
@@ -45,7 +46,9 @@ function onKeyPressed(event) {
     }
     switch (event.keyCode) {
         case 32: // space
-            printInfo();
+        	if (selectedPanelNumber != -1) {
+            	printInfo();
+        	}
             break;
         case 27: // escape
             clearPanelSelection();
