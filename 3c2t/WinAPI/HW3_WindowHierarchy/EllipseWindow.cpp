@@ -167,6 +167,7 @@ LRESULT CEllipseWindow::windowProc(HWND handle, UINT message, WPARAM wParam, LPA
     {
         CEllipseWindow* window = reinterpret_cast<CEllipseWindow*>(GetWindowLongPtr(handle, GWLP_USERDATA));
         window->OnClick();
+        return 0;
     }
     default:
         return DefWindowProc(handle, message, wParam, lParam);

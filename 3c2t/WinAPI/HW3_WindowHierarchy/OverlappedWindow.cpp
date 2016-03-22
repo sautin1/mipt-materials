@@ -130,6 +130,7 @@ LRESULT COverlappedWindow::windowProc(HWND handle, UINT message, WPARAM wParam, 
     {
         COverlappedWindow* window = reinterpret_cast<COverlappedWindow*>(GetWindowLongPtr(handle, GWLP_USERDATA));
         window->OnResize();
+        return 0;
     }
     default:
         return DefWindowProc(handle, message, wParam, lParam);
