@@ -2,7 +2,7 @@
 
 #include "EditControl.h"
 
-const LPCTSTR CEditControl::className = TEXT("EDIT");
+const LPCTSTR CEditControl::className = L"EDIT";
 
 CEditControl::CEditControl()
 {

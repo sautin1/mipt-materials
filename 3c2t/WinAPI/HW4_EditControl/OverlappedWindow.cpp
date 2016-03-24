@@ -2,8 +2,8 @@
 
 #include "OverlappedWindow.h"
 
-const LPCTSTR COverlappedWindow::className = TEXT("OverlappedWindow");
-const LPCTSTR COverlappedWindow::windowName = TEXT("MyNotepad");
+const LPCTSTR COverlappedWindow::className = L"OverlappedWindow";
+const LPCTSTR COverlappedWindow::windowName = L"MyNotepad";
 const int COverlappedWindow::maxFilenameSize = 1024;
 const size_t COverlappedWindow::windowWidth = 500;
 const size_t COverlappedWindow::windowHeight = 300;
@@ -41,7 +41,6 @@ void COverlappedWindow::Show(int cmdShow)
 {
     ShowWindow(handle, cmdShow);
     UpdateWindow(handle);
-    editWindow.Show(cmdShow);
 }
 
 void COverlappedWindow::OnDestroy()
@@ -73,32 +72,33 @@ BOOL COverlappedWindow::OnSave()
     DWORD bufferSize = SendMessage(editWindow.Handle(), WM_GETTEXTLENGTH, 0, 0);
     BOOL isSaved = false;
     if( bufferSize > 0 ) {
-        LPTSTR buffer = new TCHAR[bufferSize + 1];
-        memset(buffer, 0, (bufferSize + 1) * sizeof(TCHAR));
-        TCHAR filename[maxFilenameSize];
+        LPTSTR buffer = new WCHAR[bufferSize + 1];
+        memset(buffer, 0, (bufferSize + 1) * sizeof(WCHAR));
+        WCHAR filename[maxFilenameSize];
         OPENFILENAME saveInfo;
-        memset(filename, 0, maxFilenameSize * sizeof(TCHAR));
+        memset(filename, 0, maxFilenameSize * sizeof(WCHAR));
         memset(&saveInfo, 0, sizeof(saveInfo));
 
         SendMessage(editWindow.Handle(), WM_GETTEXT, (WPARAM)(bufferSize + 1), LPARAM(buffer));
         saveInfo.lStructSize = sizeof(OPENFILENAME);
         saveInfo.hwndOwner = handle;
-        saveInfo.lpstrFilter = TEXT("All Files\0*.*\0\0");
-        saveInfo.lpstrTitle = TEXT("Save As");
-        saveInfo.lpstrInitialDir = TEXT("C:\\");
+        saveInfo.lpstrFilter = L"All Files\0*.*\0\0";
+        saveInfo.lpstrTitle = L"Save As";
+        saveInfo.lpstrInitialDir = L"C:\\";
         saveInfo.lpstrFile = (LPTSTR)filename;
         saveInfo.nMaxFile = maxFilenameSize;
         saveInfo.Flags = OFN_PATHMUSTEXIST | OFN_EXPLORER;
         if( GetSaveFileName(&saveInfo) ) {
             HANDLE outFile = CreateFile(saveInfo.lpstrFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-            DWORD writtenCount;
-            isSaved = WriteFile(outFile, buffer, bufferSize * sizeof(TCHAR), &writtenCount, NULL);
+            DWORD writtenCount = 0;
+            WORD bom = 0xFEFF;
+            WriteFile(outFile, &bom, 2, &writtenCount, NULL);
+            isSaved = WriteFile(outFile, buffer, bufferSize * sizeof(wchar_t), &writtenCount, NULL);
             CloseHandle(outFile);
             if( !isSaved ) {
-                MessageBox(handle, TEXT("File cannot be saved"), TEXT("IO Error"), MB_OK);
-            }
-            else {
-                MessageBox(handle, TEXT("File is saved!"), TEXT("Success"), MB_OK);
+                MessageBox(handle, L"File cannot be saved", L"IO Error", MB_OK);
+            } else {
+                MessageBox(handle, L"File is saved!", L"Success", MB_OK);
             }
         }
         delete[] buffer;
@@ -111,7 +111,7 @@ void COverlappedWindow::OnClose()
 {
     BOOL canExit = !isChanged;
     if( isChanged ) {
-        int answer = MessageBox(handle, TEXT("Do you want to save changes?"), TEXT("Save on exit"), MB_YESNOCANCEL);
+        int answer = MessageBox(handle, L"Do you want to save changes?", L"Save on exit", MB_YESNOCANCEL);
         if( answer == IDYES ) {
             canExit = OnSave();
         } else if( answer == IDNO ) {

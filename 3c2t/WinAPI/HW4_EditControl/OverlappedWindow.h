@@ -12,6 +12,7 @@ public:
     static bool RegisterClass();        // Windows class registration
     bool Create();                      // Creating window object
     void Show(int cmdShow);             // Showing window on the screen
+
 protected:
     // Event handlers
     void OnDestroy();                   // Destroy window event handler (WM_DESTROY)
@@ -21,6 +22,7 @@ protected:
     BOOL OnSave();
     void OnClose();
     void OnChange();
+
 private:
     static const LPCTSTR className;     // Class registration name
     static const LPCTSTR windowName;    // Window name
