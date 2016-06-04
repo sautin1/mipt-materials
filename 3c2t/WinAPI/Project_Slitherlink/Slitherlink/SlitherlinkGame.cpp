@@ -18,12 +18,13 @@ CSlitherlinkGame::CSlitherlinkGame(const Matrix& matr, const std::unordered_map<
 	initNumberBorderCount();
 	initUnsatisfiedNumbersCount();
 	initEdgesCountWrong();
+	initIsCrossed();
 }
 
 CSlitherlinkGame::CSlitherlinkGame(const CSlitherlinkGame& game)
 	: rowCount(game.GetRowCount()), colCount(game.GetColCount()), numbersInitial(game.numbersInitial), 
 	numbersBorderCount(game.numbersBorderCount), edgeStates(game.edgeStates), edgesCountWrong(edgesCountWrong),
-	graph(game.graph), numbersCountUnsatisfied(game.numbersCountUnsatisfied)
+	graph(game.graph), numbersCountUnsatisfied(game.numbersCountUnsatisfied), isCrossed(game.isCrossed)
 {
 }
 
@@ -85,6 +86,17 @@ void CSlitherlinkGame::initEdgesCountWrong()
 	}
 }
 
+void CSlitherlinkGame::initIsCrossed()
+{
+	for( auto itSet = graph.begin(); itSet != graph.end(); ++itSet ) {
+		for( auto itEdge = itSet->second.begin(); itEdge != itSet->second.end(); ++itEdge ) {
+			if( itEdge->from < itEdge->to ) {
+				isCrossed[*itEdge] = false;
+			}
+		}
+	}
+}
+
 void CSlitherlinkGame::initNumberBorderCount()
 {
 	for( auto itSet = graph.begin(); itSet != graph.end(); ++itSet ) {
@@ -122,6 +134,11 @@ void CSlitherlinkGame::initMembers()
 bool CSlitherlinkGame::IsShown(int row, int col) const
 {
 	return numbersInitial.at(row).at(col) < INF;
+}
+
+bool CSlitherlinkGame::IsCrossed(Edge edge) const
+{
+	return isCrossed.at(edge);
 }
 
 bool CSlitherlinkGame::IsSatisfiedCell(int row, int col) const
@@ -265,6 +282,12 @@ void CSlitherlinkGame::updateEdgeState(EdgeState stateOld, Edge edge)
 bool CSlitherlinkGame::ToggleEdgeStatus(Edge edge)
 {
 	auto it = edgeStates.find(edge.ordered());
+	auto isCrossedIt = isCrossed.find(edge);
+	if( isCrossedIt->second ) {
+		isCrossedIt->second = false;
+		return false;
+	}
+	
 	bool isEnd = false;
 	if( it->second == EDGE_STATE_ERR || it->second == EDGE_STATE_ON ) {
 		if( it->second == EDGE_STATE_ERR ) {
@@ -286,6 +309,20 @@ bool CSlitherlinkGame::ToggleEdgeStatus(Edge edge)
 	return isEnd;
 }
 
+bool CSlitherlinkGame::ToggleEdgeCross(Edge edge)
+{
+	EdgeState state = edgeStates.at(edge);
+	auto it = isCrossed.find(edge);
+	bool isEnd = false;
+	if( !it->second && state != EDGE_STATE_OFF ) {
+		isEnd = ToggleEdgeStatus(edge);
+	}
+	if( !isEnd ) {
+		it->second = !it->second;
+	}
+	return isEnd;
+}
+
 void CSlitherlinkGame::EraseBorders()
 {
 	numbersBorderCount = Matrix(numbersInitial.size(), std::vector<int>(numbersInitial.front().size(), 0));
@@ -296,13 +333,29 @@ void CSlitherlinkGame::EraseBorders()
 	edgesCountWrong = 0;
 }
 
+void CSlitherlinkGame::EraseCrosses()
+{
+	for( auto it = isCrossed.begin(); it != isCrossed.end(); ++it ) {
+		it->second = false;
+	}
+}
+
 std::vector<Edge> CSlitherlinkGame::GetEdgesByState(EdgeState state) const
+{
+	std::vector<Edge> edgesAll = GetEdges();
+	std::vector<Edge> edgesRes(edgesAll.size());
+	auto it = std::copy_if(edgesAll.begin(), edgesAll.end(), edgesRes.begin(), [state, this](Edge edge) { return state == edgeStates.at(edge); });
+	edgesRes.resize(std::distance(edgesRes.begin(), it));
+	return edgesRes;
+}
+
+std::vector<Edge> CSlitherlinkGame::GetEdges() const
 {
 	std::vector<Edge> edges;
 	edges.reserve((rowCount + 1) * (colCount + 1));
 	for( auto itMap = graph.begin(); itMap != graph.end(); ++itMap ) {
 		for( auto itSet = itMap->second.begin(); itSet != itMap->second.end(); ++itSet ) {
-			if( itSet->from < itSet->to && edgeStates.at(*itSet) == state ) {
+			if( itSet->from < itSet->to ) {
 				edges.push_back(*itSet);
 			}
 		}

@@ -45,6 +45,8 @@ private:
 	void drawBorders(HDC hdc, const CSlitherlinkGame& game) const;
 	void drawBorders(HDC hdc, const std::vector<Edge>& edges) const;
 	void drawNumbers(HDC hdc, const CSlitherlinkGame& game);
+	void drawCrosses(HDC hdc, const CSlitherlinkGame& game) const;
+	void drawCross(HDC hdc, const Edge edge) const;
 
 	int rowHeight;
 	int colWidth;

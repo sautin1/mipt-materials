@@ -28,23 +28,29 @@ void CGameDesign::initSettings()
 	COLORREF colorBorderInactive = RGB(180, 180, 180);
 	COLORREF colorBorderActive = RGB(100, 100, 255);
 	COLORREF colorBorderWrong = RGB(255, 100, 100);
+	COLORREF colorBorderCross = RGB(100, 100, 100);
 	COLORREF colorNumbersUnsatisfied = RGB(180, 100, 100);
 	COLORREF colorNumbersSatisfied = RGB(80, 80, 80);
 
 	colors["colorBorderInactive"] = colorBorderInactive;
 	colors["colorBorderActive"] = colorBorderActive;
 	colors["colorBorderWrong"] = colorBorderWrong;
+	colors["colorBorderCross"] = colorBorderCross;
 	colors["colorNumbersUnsatisfied"] = colorNumbersUnsatisfied;
 	colors["colorNumbersSatisfied"] = colorNumbersSatisfied;
 	colors["colorBackground"] = RGB(255, 255, 255);
 
 	int lineWidthActive = 5;
 	int lineWidthInactive = 1;
+	int lineWidthCross = 2;
 	int fontSizePercent = 50;
 	sizes["fontSizePercent"] = fontSizePercent;
 	sizes["lineWidthActive"] = lineWidthActive;
 	sizes["lineWidthInactive"] = lineWidthInactive;
+	sizes["lineWidthCross"] = lineWidthCross;
 	sizes["opacity"] = 255;
+	sizes["crossWidthPercent"] = 8;
+	sizes["crossHeightPercent"] = 8;
 
 	fontChanged = false;
 	HFONT sysFont = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
@@ -54,6 +60,7 @@ void CGameDesign::initSettings()
 	objects["penBorderInactive"] = CreatePen(PS_DOT, lineWidthInactive, colorBorderInactive);
 	objects["penBorderActive"] = CreatePen(PS_SOLID, lineWidthActive, colorBorderActive);
 	objects["penBorderWrong"] = CreatePen(PS_SOLID, lineWidthActive, colorBorderWrong);
+	objects["penBorderCross"] = CreatePen(PS_SOLID, lineWidthCross, colorBorderCross);
 
 	HBRUSH brush = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	LOGBRUSH logBrush;
@@ -325,9 +332,49 @@ void CGameDesign::drawNumbers(HDC hdc, const CSlitherlinkGame& game)
 	::SelectObject(hdc, fontDefault);
 }
 
+void CGameDesign::drawCross(HDC hdc, const Edge edge) const
+{
+	POINT pointFrom = countCoord(edge.from);
+	POINT pointTo = countCoord(edge.to);
+	int crossWidth = sizes.at("crossWidthPercent") * colWidth / 100;
+	int crossHeight = sizes.at("crossHeightPercent") * rowHeight / 100;
+
+	POINT crossBoxLeftUp;
+	POINT crossBoxRightDown;
+	if( edge.from.row == edge.to.row ) {
+		// horizontal
+		crossBoxLeftUp.x = ((pointFrom.x + pointTo.x) - crossWidth) / 2;
+		crossBoxLeftUp.y = pointFrom.y - crossHeight / 2;
+	} else {
+		// vertical
+		crossBoxLeftUp.x = pointFrom.x - crossWidth / 2;
+		crossBoxLeftUp.y = ((pointFrom.y + pointTo.y) - crossHeight) / 2;
+	}
+	crossBoxRightDown.x = crossBoxLeftUp.x + crossWidth;
+	crossBoxRightDown.y = crossBoxLeftUp.y + crossHeight;
+	
+	::MoveToEx(hdc, crossBoxLeftUp.x, crossBoxLeftUp.y, NULL);
+	::LineTo(hdc, crossBoxRightDown.x, crossBoxRightDown.y);
+	::MoveToEx(hdc, crossBoxRightDown.x, crossBoxLeftUp.y, NULL);
+	::LineTo(hdc, crossBoxLeftUp.x, crossBoxRightDown.y);
+}
+
+void CGameDesign::drawCrosses(HDC hdc, const CSlitherlinkGame& game) const
+{
+	std::vector<Edge> edges = game.GetEdges();
+	HGDIOBJ penDefault = ::SelectObject(hdc, objects.at("penBorderCross"));
+	for( Edge edge : edges ) {
+		if( game.IsCrossed(edge) ) {
+			drawCross(hdc, edge);
+		}
+	}
+	::SelectObject(hdc, penDefault);
+}
+
 void CGameDesign::DrawWindowContents(HDC hdc, const CSlitherlinkGame& game)
 {
 	drawGrid(hdc);
 	drawBorders(hdc, game);
 	drawNumbers(hdc, game);
+	drawCrosses(hdc, game);
 }

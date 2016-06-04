@@ -73,14 +73,18 @@ public:
 	static CSlitherlinkGame StartNewGame(const std::wstring& filename);
 
 	std::vector<Edge> GetEdgesByState(EdgeState state) const;
+	std::vector<Edge> GetEdges() const;
 	const Matrix& GetNumbers() const;
 	int GetRowCount() const;
 	int GetColCount() const;
 	bool IsShown(int row, int col) const;
+	bool IsCrossed(Edge edge) const;
 	bool IsSatisfiedCell(int row, int col) const;
 
 	bool ToggleEdgeStatus(Edge edge);
+	bool ToggleEdgeCross(Edge edge);
 	void EraseBorders();
+	void EraseCrosses();
 
 	bool SaveToFile(const std::wstring& filename) const;
 private:
@@ -92,6 +96,7 @@ private:
 	int edgesCountWrong;
 	PointGraph graph;
 	std::unordered_map<Edge, EdgeState> edgeStates;
+	std::unordered_map<Edge, bool> isCrossed;
 
 	static void loadGameMatrix(const std::wstring& filename, Matrix* matr, std::unordered_map<Edge, EdgeState>* edgeStates);
 
@@ -101,6 +106,7 @@ private:
 	void initEdgeStates();
 	void initGraph();
 	void initEdgesCountWrong();
+	void initIsCrossed();
 
 	bool checkGameEnd() const;
 	bool checkIntersection(Edge edge) const;

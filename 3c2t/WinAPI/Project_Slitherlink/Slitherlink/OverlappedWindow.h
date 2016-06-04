@@ -32,6 +32,8 @@ protected:
 	void OnCreate();					// Create window event handler (WM_CREATE)
 	void OnResize();
 	void OnClick(int clickX, int clickY);
+	void OnVictory() const;
+	void OnRightClick(int clickX, int clickY);
 	bool OnSave();
 	void OnReset();
 	void OnLoad();

@@ -100,6 +100,11 @@ void COverlappedWindow::OnResize()
 	::InvalidateRect(handle, &rect, FALSE);
 }
 
+void COverlappedWindow::OnVictory() const
+{
+	MessageBox(handle, L"Puzzle solved!", L"Congratulations!", NULL);
+}
+
 void COverlappedWindow::OnClick(int clickX, int clickY)
 {
 	POINT click;
@@ -111,7 +116,22 @@ void COverlappedWindow::OnClick(int clickX, int clickY)
 	Repaint();
 
 	if( isSolved ) {
-		MessageBox(handle, L"Puzzle solved!", L"Congratulations!", NULL);
+		OnVictory();
+	}
+}
+
+void COverlappedWindow::OnRightClick(int clickX, int clickY)
+{
+	POINT click;
+	click.x = clickX;
+	click.y = clickY;
+	Edge edge = drawer.NearestEdge(click);
+	bool isSolved = game.ToggleEdgeCross(edge);
+	isChanged = true;
+	Repaint();
+
+	if( isSolved ) {
+		OnVictory();
 	}
 }
 
@@ -175,8 +195,9 @@ void COverlappedWindow::OnReset()
 		int answer = MessageBox(handle, L"Do you really want to reset the puzzle?", L"Reset", MB_YESNO);
 		if( answer == IDYES ) {
 			game.EraseBorders();
+			game.EraseCrosses();
 			Repaint();
-			isChanged = false;
+			isChanged = true;
 		}
 	}
 }
@@ -214,7 +235,7 @@ void COverlappedWindow::OnLoad()
 	}
 	drawer.ChangeGameSizes(game.GetRowCount(), game.GetColCount());
 	Repaint();
-	isChanged = false;
+	isChanged = true;
 }
 
 void COverlappedWindow::OnClose()
@@ -304,6 +325,12 @@ LRESULT COverlappedWindow::windowProc(HWND handle, UINT message, WPARAM wParam, 
 	{
 		COverlappedWindow* window = reinterpret_cast<COverlappedWindow*>(GetWindowLongPtr(handle, GWLP_USERDATA));
 		window->OnClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		COverlappedWindow* window = reinterpret_cast<COverlappedWindow*>(GetWindowLongPtr(handle, GWLP_USERDATA));
+		window->OnRightClick(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 		return 0;
 	}
 	default:
