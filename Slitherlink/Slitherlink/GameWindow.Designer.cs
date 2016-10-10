@@ -107,12 +107,14 @@
             this.drawingArea.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.drawingArea.Location = new System.Drawing.Point(13, 36);
+            this.drawingArea.Location = new System.Drawing.Point(0, 27);
             this.drawingArea.Name = "drawingArea";
-            this.drawingArea.Size = new System.Drawing.Size(259, 214);
+            this.drawingArea.Size = new System.Drawing.Size(284, 223);
             this.drawingArea.TabIndex = 1;
             this.drawingArea.TabStop = false;
+            this.drawingArea.Click += new System.EventHandler(this.drawingArea_Click);
             this.drawingArea.Paint += new System.Windows.Forms.PaintEventHandler(this.drawingArea_Paint);
+            this.drawingArea.Resize += new System.EventHandler(this.drawingArea_Resize);
             // 
             // GameWindow
             // 
@@ -124,7 +126,6 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "GameWindow";
             this.Text = "Slitherlink";
-            this.Resize += new System.EventHandler(this.GameWindow_Resize);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.drawingArea)).EndInit();
