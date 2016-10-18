@@ -12,9 +12,8 @@ namespace Slitherlink
 {
     public partial class GameWindow : Form
     {
-        Pen pen = new Pen(Color.Green);
-        GameDrawer drawer;
-        GameController gameController;
+        private GameDrawer drawer;
+        private GameController gameController;
 
         public GameWindow()
         {
@@ -33,7 +32,8 @@ namespace Slitherlink
 
         private void drawingArea_Paint(object sender, PaintEventArgs e) {
             drawer.DrawGrid(e.Graphics);
-            drawer.DrawActiveEdges(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Active));
+            drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Active));
+            drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Crossed));
         }
 
         private void drawingArea_Click(object sender, EventArgs e) {
@@ -48,8 +48,5 @@ namespace Slitherlink
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             Application.Exit();
         }
-
-        // auxiliary functions
-        
     }
 }

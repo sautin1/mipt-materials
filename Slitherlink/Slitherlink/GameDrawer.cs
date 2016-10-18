@@ -16,6 +16,8 @@ namespace Slitherlink {
         private int colHeight;
         private int marginVertical = 10;
         private int marginHorizontal = 10;
+        private double crossFrac = 0.1;
+        private int crossMaxSize = 14;
         IDictionary<String, Pen> pens;
 
         public GameDrawer() {
@@ -44,7 +46,8 @@ namespace Slitherlink {
         }
 
         public void DrawGrid(Graphics graphics) {
-            Pen pen = pens["penBorderInactive"];
+            // TODO: call drawEdges() here
+            Pen pen = pens["penEdgeInactive"];
             // draw horizontal lines
             for (int i = 0; i < rowCount + 1; ++i) {
                 int y = marginVertical + rowHeight * i;
@@ -58,11 +61,13 @@ namespace Slitherlink {
             }
         }
 
-        public void DrawActiveEdges(Graphics graphics, IList<Edge> edges) {
-            Pen pen = pens["penBorderActive"];
-            foreach (Edge edge in edges) {
-                graphics.DrawLine(pen, toPoint(edge.From), toPoint(edge.To));
-            }
+        public void DrawEdgesActive(Graphics graphics, IList<Edge> edges) {
+            drawEdges(graphics, edges, "penEdgeActive");
+        }
+
+        public void DrawEdgesCrossed(Graphics graphics, IList<Edge> edges) {
+            drawEdges(graphics, edges, "penEdgeCrossed");
+            drawCrosses(graphics, edges);
         }
 
         public GridPoint GetLeftUpperGridPoint(Point p) {
@@ -107,13 +112,46 @@ namespace Slitherlink {
             Color colorBorderInactive = Color.FromArgb(180, 180, 180);
             Color colorBorderActive = Color.FromArgb(0, 0, 250);
             int lineWidthInactive = 1;
-            int lineWidthActive = 3;
+            int lineWidthCross = 2;
+            int lineWidthActive = 4;
 
             pens = new Dictionary<String, Pen>();
             Pen pen = new Pen(colorBorderInactive, lineWidthInactive);
             pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-            pens["penBorderInactive"] = pen;
-            pens["penBorderActive"] = new Pen(colorBorderActive, lineWidthActive);
+            pens["penEdgeInactive"] = pen;
+            pens["penEdgeCrossed"] = pen;
+            pens["penEdgeActive"] = new Pen(colorBorderActive, lineWidthActive);
+            pens["penCross"] = new Pen(colorBorderInactive, lineWidthCross);
+        }
+
+        private void drawEdges(Graphics graphics, IList<Edge> edges, String penStyle) {
+            Pen pen = pens[penStyle];
+            foreach (Edge edge in edges) {
+                graphics.DrawLine(pen, toPoint(edge.From), toPoint(edge.To));
+            }
+        }
+
+        private void drawCrosses(Graphics graphics, IList<Edge> edges) {
+            foreach (Edge edge in edges) {
+                Point from = toPoint(edge.From);
+                Point to = toPoint(edge.To);
+                int crossSize = Math.Min(
+                    Convert.ToInt32(Math.Round(crossFrac * Math.Max(colWidth, rowHeight))),
+                    crossMaxSize
+                );
+                Point crossRectLeftPoint = new Point(
+                    (from.X + to.X - crossSize) / 2, 
+                    (from.Y + to.Y - crossSize) / 2
+                );
+                Rectangle rect = new Rectangle(crossRectLeftPoint, new Size(crossSize, crossSize));
+                drawCross(graphics, rect);
+            }
+        }
+
+        private void drawCross(Graphics graphics, Rectangle rect) {
+            Pen pen = pens["penCross"];
+            graphics.DrawLine(pen, new Point(rect.Left, rect.Top), new Point(rect.Right, rect.Bottom));
+            graphics.DrawLine(pen, new Point(rect.Left, rect.Bottom), new Point(rect.Right, rect.Top));
         }
 
         private Point toPoint(GridPoint gridPoint) {

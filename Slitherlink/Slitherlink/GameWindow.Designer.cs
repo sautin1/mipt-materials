@@ -124,6 +124,7 @@
             this.Controls.Add(this.drawingArea);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
+            this.MinimumSize = new System.Drawing.Size(200, 200);
             this.Name = "GameWindow";
             this.Text = "Slitherlink";
             this.menuStrip1.ResumeLayout(false);
