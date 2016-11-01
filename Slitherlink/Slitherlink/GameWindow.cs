@@ -14,6 +14,9 @@ namespace Slitherlink
     {
         private GameDrawer drawer;
         private GameController gameController;
+        
+        private int formWidthInitial = 250;
+        private int formHeightExcess = 49;
 
         public GameWindow()
         {
@@ -21,6 +24,17 @@ namespace Slitherlink
             Size clientRectSize = drawingArea.ClientRectangle.Size;
             gameController = new GameController();
             drawer = new GameDrawer(clientRectSize, gameController.RowCount, gameController.ColCount);
+            this.Size = new Size(formWidthInitial, countFormHeight(formWidthInitial));
+        }
+
+        private int countFormHeight(int width)
+        {
+            return Convert.ToInt32(Math.Round(width * getAspectRatio()) + formHeightExcess);
+        }
+
+        private double getAspectRatio()
+        {
+            return 1.0 * gameController.RowCount / gameController.ColCount;
         }
 
         // Drawing area event handlers
@@ -43,10 +57,21 @@ namespace Slitherlink
             drawingArea.Invalidate();
         }
 
+        private void drawingArea_DoubleClick(object sender, EventArgs e) {
+            drawingArea_Click(sender, e);
+        }
+
         // Menu event handlers
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             Application.Exit();
+        }
+
+        // Form event handlers
+
+        private void GameWindow_Resize(object sender, EventArgs e) {
+            int formWidth = this.Width;
+            this.Size = new Size(formWidth, countFormHeight(formWidth));
         }
     }
 }
