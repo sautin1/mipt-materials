@@ -63,6 +63,7 @@ namespace Slitherlink {
 
     class GameController {
         private IDictionary<Edge, Edge.EdgeState> edgeStates;
+        private List<List<int>> numbers;
         private int rowCount;
         private int colCount;
 
@@ -74,42 +75,11 @@ namespace Slitherlink {
             get { return colCount; }
         }
 
-        // temporary
-        public GameController() {
-            rowCount = 3;
-            colCount = 3;
-            edgeStates = new Dictionary<Edge, Edge.EdgeState>();
-            edgeStates.Add(new Edge(new GridPoint(0, 0), new GridPoint(0, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(0, 1), new GridPoint(0, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(0, 2), new GridPoint(0, 3)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 0), new GridPoint(1, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 1), new GridPoint(1, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 2), new GridPoint(1, 3)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 0), new GridPoint(2, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 1), new GridPoint(2, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 2), new GridPoint(2, 3)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(3, 0), new GridPoint(3, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(3, 1), new GridPoint(3, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(3, 2), new GridPoint(3, 3)), Edge.EdgeState.Passive);
-
-            edgeStates.Add(new Edge(new GridPoint(0, 0), new GridPoint(1, 0)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 0), new GridPoint(2, 0)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 0), new GridPoint(3, 0)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(0, 1), new GridPoint(1, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 1), new GridPoint(2, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 1), new GridPoint(3, 1)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(0, 2), new GridPoint(1, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 2), new GridPoint(2, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 2), new GridPoint(3, 2)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(0, 3), new GridPoint(1, 3)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(1, 3), new GridPoint(2, 3)), Edge.EdgeState.Passive);
-            edgeStates.Add(new Edge(new GridPoint(2, 3), new GridPoint(3, 3)), Edge.EdgeState.Passive);
-        }
-
-        public GameController(int rowCount, int colCount, IDictionary<Edge, Edge.EdgeState> edgeStates) {
-            this.edgeStates = edgeStates;
+        public GameController(int rowCount, int colCount, List<List<int>> numbers, IDictionary<Edge, Edge.EdgeState> edgeStates) {
             this.rowCount = rowCount;
             this.colCount = colCount;
+            this.numbers = numbers;
+            this.edgeStates = edgeStates;
         }
 
         public void ToggleEdgeState(Edge edge, bool toggleCross) {
@@ -127,6 +97,10 @@ namespace Slitherlink {
 
         public IList<Edge> GetEdgesByState(Edge.EdgeState state) {
             return edgeStates.Where(pair => pair.Value == state).Select(pair => pair.Key).ToList();
+        }
+
+        public List<List<int>> GetNumbers() {
+            return numbers;
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows;
 
 namespace Slitherlink
 {
@@ -22,7 +23,7 @@ namespace Slitherlink
         {
             InitializeComponent();
             Size clientRectSize = drawingArea.ClientRectangle.Size;
-            gameController = new GameController();
+            gameController = new SimpleGameLoader().LoadGame();
             drawer = new GameDrawer(clientRectSize, gameController.RowCount, gameController.ColCount);
             this.Size = new Size(formWidthInitial, countFormHeight(formWidthInitial));
         }
@@ -48,6 +49,7 @@ namespace Slitherlink
             drawer.DrawGrid(e.Graphics);
             drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Active));
             drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Crossed));
+            drawer.DrawNumbers(e.Graphics, gameController.GetNumbers());
         }
 
         private void drawingArea_Click(object sender, EventArgs e) {
@@ -62,6 +64,21 @@ namespace Slitherlink
         }
 
         // Menu event handlers
+
+        private void loadToolStripMenuItem_Click(object sender, EventArgs e) {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "All Files (*.*)|*.*";
+            openFileDialog.FilterIndex = 1;
+
+            bool userClickedOK = openFileDialog.ShowDialog() == DialogResult.OK;
+            if (userClickedOK == true) {
+                string chosenFile = openFileDialog.FileName;
+                gameController = new FileGameLoader(chosenFile).LoadGame();
+                drawer.ChangeGameSizes(gameController.RowCount, gameController.ColCount);
+                drawingArea.Invalidate();
+            }
+
+        }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             Application.Exit();
