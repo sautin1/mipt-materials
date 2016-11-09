@@ -70,12 +70,13 @@ namespace Slitherlink {
             drawCrosses(graphics, edges);
         }
 
-        public void DrawNumbers(Graphics graphics, List<List<int>> numbers) {
+        public void DrawNumbers(Graphics graphics, List<List<int>> numbers, List<List<bool>> numbersSatisfaction) {
             StringFormat format = new StringFormat();
             Font font = new Font("Arial", (int)Math.Round(fontSizeFraction * Math.Min(rowHeight, colWidth)));
             format.Alignment = StringAlignment.Center;
             format.LineAlignment = StringAlignment.Center;
-            Brush brush = brushes["colorNumberUnsatisfied"];
+            Brush brushSatisfied = brushes["brushNumberSatisfied"];
+            Brush brushUnsatisfied = brushes["brushNumberUnsatisfied"];
             for (int row = 0; row < numbers.Count; ++row) {
                 for (int col = 0; col < numbers[row].Count; ++col) {
                     if (numbers[row][col] >= 0) {
@@ -85,6 +86,7 @@ namespace Slitherlink {
                         Point pointTo = toPoint(gridPointTo);
                         Size rectSize = new Size(pointTo.X - pointFrom.X, pointTo.Y - pointFrom.Y);
                         Rectangle rect = new Rectangle(pointFrom, rectSize);
+                        Brush brush = numbersSatisfaction[row][col] ? brushSatisfied : brushUnsatisfied;
                         graphics.DrawString(numbers[row][col].ToString(), font, brush, rect, format);
                     }
                 }
@@ -147,8 +149,8 @@ namespace Slitherlink {
             pens["penCross"] = new Pen(colorBorderInactive, lineWidthCross);
 
             brushes = new Dictionary<String, Brush>();
-            brushes["colorNumberUnsatisfied"] = new SolidBrush(colorNumberUnsatisfied);
-            brushes["colorNumberSatisfied"] = new SolidBrush(colorNumberSatisfied);
+            brushes["brushNumberUnsatisfied"] = new SolidBrush(colorNumberUnsatisfied);
+            brushes["brushNumberSatisfied"] = new SolidBrush(colorNumberSatisfied);
         }
 
         private void drawEdges(Graphics graphics, IList<Edge> edges, String penStyle) {

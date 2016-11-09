@@ -49,7 +49,7 @@ namespace Slitherlink
             drawer.DrawGrid(e.Graphics);
             drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Active));
             drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Crossed));
-            drawer.DrawNumbers(e.Graphics, gameController.GetNumbers());
+            drawer.DrawNumbers(e.Graphics, gameController.GetNumbers(), gameController.GetNumbersSatisfaction());
         }
 
         private void drawingArea_Click(object sender, EventArgs e) {
