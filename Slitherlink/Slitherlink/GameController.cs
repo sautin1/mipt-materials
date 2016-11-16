@@ -92,7 +92,7 @@ namespace Slitherlink {
                 List<int> row = Enumerable.Repeat(0, colCount).ToList();
                 edgesAroundCounter.Add(row);
             }
-            foreach (KeyValuePair<Edge, Edge.EdgeState> pair in edgeStates ) {
+            foreach (KeyValuePair<Edge, Edge.EdgeState> pair in edgeStates) {
                 Edge edge = pair.Key;
                 Edge.EdgeState state = pair.Value;
                 if (state == Edge.EdgeState.Active || state == Edge.EdgeState.Wrong) {
@@ -109,27 +109,14 @@ namespace Slitherlink {
             recountNumbersSatisfaction();
         }
 
-        public void ToggleEdgeState(Edge edge, bool toggleCross) {
+        public void ToggleEdgeState(Edge edge, bool isToggleCross) {
             Edge.EdgeState stateCur;
             if (edgeStates.TryGetValue(edge, out stateCur)) {
-                if (toggleCross) {
-                    if (stateCur == Edge.EdgeState.Crossed) {
-                        edgeStates[edge] = Edge.EdgeState.Passive;
-                    } else {
-                        edgeStates[edge] = Edge.EdgeState.Crossed;
-                        onRemoveEdge(edge);
-                    }
+                if (isToggleCross) {
+                    toggleCross(edge, stateCur);
                 } else {
-                    if (stateCur == Edge.EdgeState.Active) {
-                        edgeStates[edge] = Edge.EdgeState.Passive;
-                        onRemoveEdge(edge);
-                    } else {
-                        edgeStates[edge] = Edge.EdgeState.Active;
-                        onAddEdge(edge);
-                    }
+                    toggleNonCross(edge, stateCur);
                 }
-            } else {
-                throw new ArgumentException("Wrong edge provided");
             }
         }
 
@@ -146,8 +133,52 @@ namespace Slitherlink {
             return numbersSatisfaction;
         }
 
-        public bool IsNumberSatisfied(GridPoint point) {
+        private bool isNumberSatisfied(GridPoint point) {
             return edgesAroundCounter[point.Row][point.Col] == numbers[point.Row][point.Col];
+        }
+
+        private bool isWrongEdge(Edge edge) {
+            List<GridPoint> points = adjacentGridPoints(edge);
+            bool isMistake = false;
+            foreach (GridPoint point in points) {
+                isMistake = isMistake || (numbers[point.Row][point.Col] >= 0 && 
+                    numbers[point.Row][point.Col] < edgesAroundCounter[point.Row][point.Col]);
+            }
+            return isMistake;
+        }
+
+        private void toggleCross(Edge edge, Edge.EdgeState stateCur) {
+            switch (stateCur) {
+                case Edge.EdgeState.Crossed:
+                    edgeStates[edge] = Edge.EdgeState.Passive;
+                    break;
+                case Edge.EdgeState.Active:
+                    onEdgeRemoved(edge);
+                    goto case Edge.EdgeState.Passive;
+                case Edge.EdgeState.Passive:
+                case Edge.EdgeState.Wrong:
+                    edgeStates[edge] = Edge.EdgeState.Crossed;
+                    break;
+                default:
+                    throw new KeyNotFoundException("Found unexpected edge state");
+            }
+        }
+
+        private void toggleNonCross(Edge edge, Edge.EdgeState stateCur) {
+            switch (stateCur) {
+                case Edge.EdgeState.Passive:
+                    edgeStates[edge] = onEdgeAdded(edge);
+                    break;
+                case Edge.EdgeState.Active:
+                case Edge.EdgeState.Wrong:
+                    onEdgeRemoved(edge);
+                    goto case Edge.EdgeState.Crossed;
+                case Edge.EdgeState.Crossed:
+                    edgeStates[edge] = Edge.EdgeState.Passive;
+                    break;
+                default:
+                    throw new KeyNotFoundException("Found unexpected edge state");
+            }
         }
 
         private List<GridPoint> adjacentGridPoints(Edge edge) {
@@ -163,26 +194,53 @@ namespace Slitherlink {
             return points;
         }
 
-        private void onAddEdge(Edge edge) {
-            List<GridPoint> points = adjacentGridPoints(edge);
-            foreach (GridPoint point in points) {
-                ++edgesAroundCounter[point.Row][point.Col];
-                numbersSatisfaction[point.Row][point.Col] = IsNumberSatisfied(point);
+        private List<Edge> surroundingEdges(GridPoint point) {
+            List<Edge> edges = new List<Edge>() {
+                new Edge(point, new GridPoint(point.Row, point.Col + 1)), // up  , horizontal
+                new Edge(point, new GridPoint(point.Row + 1, point.Col)), // left, vertical
+                new Edge(new GridPoint(point.Row + 1, point.Col), new GridPoint(point.Row + 1, point.Col + 1)), // down , horizontal
+                new Edge(new GridPoint(point.Row, point.Col + 1), new GridPoint(point.Row + 1, point.Col + 1))  // right, vertical
+            };
+            return edges;
+        }
+
+        private void correctSurroundingEdges(GridPoint point) {
+            List<Edge> edges = surroundingEdges(point);
+            foreach (Edge edge in edges) {
+                if (edgeStates[edge] == Edge.EdgeState.Wrong) {
+                    edgeStates[edge] = Edge.EdgeState.Active;
+                }
             }
         }
 
-        private void onRemoveEdge(Edge edge) {
+        // should be called every time an edge is added
+        // returns the state of the added edge (Active or Wrong)
+        private Edge.EdgeState onEdgeAdded(Edge edge) {
+            List<GridPoint> points = adjacentGridPoints(edge);
+            foreach (GridPoint point in points) {
+                ++edgesAroundCounter[point.Row][point.Col];
+                numbersSatisfaction[point.Row][point.Col] = isNumberSatisfied(point);
+            }
+            return isWrongEdge(edge) ? Edge.EdgeState.Wrong : Edge.EdgeState.Active;
+        }
+
+        // should be called every time an edge is removed
+        private void onEdgeRemoved(Edge edge) {
             List<GridPoint> points = adjacentGridPoints(edge);
             foreach (GridPoint point in points) {
                 --edgesAroundCounter[point.Row][point.Col];
-                numbersSatisfaction[point.Row][point.Col] = IsNumberSatisfied(point);
+                bool wasNumberSatisfied = numbersSatisfaction[point.Row][point.Col];
+                numbersSatisfaction[point.Row][point.Col] = isNumberSatisfied(point);
+                if (!wasNumberSatisfied && numbersSatisfaction[point.Row][point.Col]) {
+                    correctSurroundingEdges(point);
+                }
             }
         }
 
         private void recountNumbersSatisfaction() {
             for (int row = 0; row < rowCount; ++row) {
                 for (int col = 0; col < colCount; ++col) {
-                    numbersSatisfaction[row][col] = IsNumberSatisfied(new GridPoint(row, col));
+                    numbersSatisfaction[row][col] = isNumberSatisfied(new GridPoint(row, col));
                 }
             }
         }

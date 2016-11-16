@@ -70,6 +70,10 @@ namespace Slitherlink {
             drawCrosses(graphics, edges);
         }
 
+        public void DrawEdgesWrong(Graphics graphics, IList<Edge> edges) {
+            drawEdges(graphics, edges, "penEdgeWrong");
+        }
+
         public void DrawNumbers(Graphics graphics, List<List<int>> numbers, List<List<bool>> numbersSatisfaction) {
             StringFormat format = new StringFormat();
             Font font = new Font("Arial", (int)Math.Round(fontSizeFraction * Math.Min(rowHeight, colWidth)));
@@ -132,21 +136,24 @@ namespace Slitherlink {
         }
 
         private void initSettings() {
-            Color colorBorderInactive = Color.FromArgb(180, 180, 180);
-            Color colorBorderActive = Color.FromArgb(0, 0, 250);
+            Color colorEdgeInactive = Color.FromArgb(180, 180, 180);
+            Color colorEdgeActive = Color.FromArgb(0, 0, 250);
+            Color colorEdgeWrong = Color.Red;
             Color colorNumberUnsatisfied = Color.FromArgb(180, 100, 100);
             Color colorNumberSatisfied = Color.FromArgb(80, 80, 80);
-            int lineWidthInactive = 1;
-            int lineWidthCross = 2;
-            int lineWidthActive = 4;
+            int widthEdgeInactive = 1;
+            int widthEdgeActive = 4;
+            int widthEdgeWrong = 4;
+            int widthCross = 2;
 
             pens = new Dictionary<String, Pen>();
-            Pen pen = new Pen(colorBorderInactive, lineWidthInactive);
+            Pen pen = new Pen(colorEdgeInactive, widthEdgeInactive);
             pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
             pens["penEdgeInactive"] = pen;
             pens["penEdgeCrossed"] = pen;
-            pens["penEdgeActive"] = new Pen(colorBorderActive, lineWidthActive);
-            pens["penCross"] = new Pen(colorBorderInactive, lineWidthCross);
+            pens["penEdgeActive"] = new Pen(colorEdgeActive, widthEdgeActive);
+            pens["penEdgeWrong"] = new Pen(colorEdgeWrong, widthEdgeWrong);
+            pens["penCross"] = new Pen(colorEdgeInactive, widthCross);
 
             brushes = new Dictionary<String, Brush>();
             brushes["brushNumberUnsatisfied"] = new SolidBrush(colorNumberUnsatisfied);

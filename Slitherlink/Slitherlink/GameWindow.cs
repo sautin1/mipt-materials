@@ -49,6 +49,7 @@ namespace Slitherlink
             drawer.DrawGrid(e.Graphics);
             drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Active));
             drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Crossed));
+            drawer.DrawEdgesWrong(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Wrong));
             drawer.DrawNumbers(e.Graphics, gameController.GetNumbers(), gameController.GetNumbersSatisfaction());
         }
 
