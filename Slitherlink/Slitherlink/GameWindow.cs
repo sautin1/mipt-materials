@@ -78,7 +78,11 @@ namespace Slitherlink
                 drawer.ChangeGameSizes(gameController.RowCount, gameController.ColCount);
                 drawingArea.Invalidate();
             }
+        }
 
+        private void resetToolStripMenuItem_Click(object sender, EventArgs e) {
+            gameController.ClearGame();
+            drawingArea.Invalidate();
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {

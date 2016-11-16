@@ -87,11 +87,7 @@ namespace Slitherlink {
             this.numbers = numbers;
             this.edgeStates = edgeStates;
 
-            edgesAroundCounter = new List<List<int>>(rowCount);
-            for (int rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-                List<int> row = Enumerable.Repeat(0, colCount).ToList();
-                edgesAroundCounter.Add(row);
-            }
+            clearEdgesAroundCounter();
             foreach (KeyValuePair<Edge, Edge.EdgeState> pair in edgeStates) {
                 Edge edge = pair.Key;
                 Edge.EdgeState state = pair.Value;
@@ -102,10 +98,7 @@ namespace Slitherlink {
                     }
                 }
             }
-            numbersSatisfaction = new List<List<bool>>(rowCount);
-            for (int row = 0; row < rowCount; ++row) {
-                numbersSatisfaction.Add(Enumerable.Repeat(false, colCount).ToList());
-            }
+            clearNumberSatisfaction();
             recountNumbersSatisfaction();
         }
 
@@ -131,6 +124,33 @@ namespace Slitherlink {
         public List<List<bool>> GetNumbersSatisfaction() {
             // TODO: implement GetGridPoints(), refactor satisfaction, numbers, edgeAroundCounter to be hash tables
             return numbersSatisfaction;
+        }
+
+        public void ClearGame() {
+            clearEdgeStates();
+            clearNumberSatisfaction();
+            clearEdgesAroundCounter();
+        }
+
+        private void clearEdgeStates() {
+            foreach (Edge key in edgeStates.Keys.ToList()) {
+                edgeStates[key] = Edge.EdgeState.Passive;
+            }
+        }
+
+        private void clearNumberSatisfaction() {
+            numbersSatisfaction = new List<List<bool>>(rowCount);
+            for (int row = 0; row < rowCount; ++row) {
+                numbersSatisfaction.Add(Enumerable.Repeat(false, colCount).ToList());
+            }
+        }
+
+        private void clearEdgesAroundCounter() {
+            edgesAroundCounter = new List<List<int>>(rowCount);
+            for (int rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
+                List<int> row = Enumerable.Repeat(0, colCount).ToList();
+                edgesAroundCounter.Add(row);
+            }
         }
 
         private bool isNumberSatisfied(GridPoint point) {
