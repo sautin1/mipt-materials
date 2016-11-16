@@ -228,10 +228,10 @@ namespace Slitherlink {
             return edges;
         }
 
-        private void correctSurroundingEdges(GridPoint point) {
+        private void updateSurroundingEdges(GridPoint point) {
             List<Edge> edges = surroundingEdges(point);
             foreach (Edge edge in edges) {
-                if (edgeStates[edge] == Edge.EdgeState.Wrong) {
+                if (edgeStates[edge] == Edge.EdgeState.Wrong && !isWrongEdge(edge)) {
                     edgeStates[edge] = Edge.EdgeState.Active;
                 }
             }
@@ -256,7 +256,7 @@ namespace Slitherlink {
                 bool wasNumberSatisfied = numbersSatisfaction[point.Row][point.Col];
                 numbersSatisfaction[point.Row][point.Col] = isNumberSatisfied(point);
                 if (!wasNumberSatisfied && numbersSatisfaction[point.Row][point.Col]) {
-                    correctSurroundingEdges(point);
+                    updateSurroundingEdges(point);
                 }
             }
         }
