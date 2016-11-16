@@ -29,5 +29,15 @@ namespace Slitherlink {
             }
             return matr;
         }
+
+        public static void ClearFile(string path) {
+            File.WriteAllText(path, string.Empty);
+        }
+
+        public static void AppendLineToFile(string path, string line) {
+            using (StreamWriter sw = File.AppendText(path)) {
+                sw.WriteLine(line);
+            }
+        }
     }
 }

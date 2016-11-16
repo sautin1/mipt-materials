@@ -80,6 +80,19 @@ namespace Slitherlink
             }
         }
 
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e) {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
+            saveFileDialog.FilterIndex = 1;
+            saveFileDialog.RestoreDirectory = true;
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK) {
+                string chosenFile = saveFileDialog.FileName;
+                FileGameSaver saver = new FileGameSaver(chosenFile);
+                saver.SaveGame(gameController);
+            }
+        }
+
         private void resetToolStripMenuItem_Click(object sender, EventArgs e) {
             gameController.ClearGame();
             drawingArea.Invalidate();

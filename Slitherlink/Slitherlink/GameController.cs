@@ -113,6 +113,10 @@ namespace Slitherlink {
             }
         }
 
+        public IDictionary<Edge, Edge.EdgeState> GetEdgeStates() {
+            return edgeStates;
+        }
+
         public IList<Edge> GetEdgesByState(Edge.EdgeState state) {
             return edgeStates.Where(pair => pair.Value == state).Select(pair => pair.Key).ToList();
         }
@@ -172,11 +176,11 @@ namespace Slitherlink {
                 case Edge.EdgeState.Crossed:
                     edgeStates[edge] = Edge.EdgeState.Passive;
                     break;
+                case Edge.EdgeState.Wrong:
                 case Edge.EdgeState.Active:
                     onEdgeRemoved(edge);
                     goto case Edge.EdgeState.Passive;
                 case Edge.EdgeState.Passive:
-                case Edge.EdgeState.Wrong:
                     edgeStates[edge] = Edge.EdgeState.Crossed;
                     break;
                 default:

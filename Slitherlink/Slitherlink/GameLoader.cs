@@ -11,7 +11,7 @@ namespace Slitherlink {
     }
 
     class FileGameLoader : IGameLoader {
-        string path;
+        private string path;
 
         public FileGameLoader(string path) {
             this.path = path;
