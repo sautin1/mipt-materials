@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Slitherlink {
     public struct GridPoint : IComparable<GridPoint> {
@@ -73,6 +74,8 @@ namespace Slitherlink {
         private int rowCount;
         private int colCount;
 
+        private int numbersUnsatisfiedCounter;
+
         public int RowCount {
             get { return rowCount; }
         }
@@ -110,6 +113,12 @@ namespace Slitherlink {
                 } else {
                     toggleNonCross(edge, stateCur);
                 }
+            }
+            // temporary solution
+            if (numbersUnsatisfiedCounter == 0) {
+                string successMessage = "Congratulations!\nYou have won!";
+                MessageBoxButtons buttons = MessageBoxButtons.OK;
+                MessageBox.Show(successMessage, "Success", buttons);
             }
         }
 
@@ -158,7 +167,7 @@ namespace Slitherlink {
         }
 
         private bool isNumberSatisfied(GridPoint point) {
-            return edgesAroundCounter[point.Row][point.Col] == numbers[point.Row][point.Col];
+            return numbers[point.Row][point.Col] < 0 || edgesAroundCounter[point.Row][point.Col] == numbers[point.Row][point.Col];
         }
 
         private bool isWrongEdge(Edge edge) {
@@ -243,7 +252,13 @@ namespace Slitherlink {
             List<GridPoint> points = adjacentGridPoints(edge);
             foreach (GridPoint point in points) {
                 ++edgesAroundCounter[point.Row][point.Col];
+                bool wasNumberSatisfied = numbersSatisfaction[point.Row][point.Col];
                 numbersSatisfaction[point.Row][point.Col] = isNumberSatisfied(point);
+                if (wasNumberSatisfied && !numbersSatisfaction[point.Row][point.Col]) {
+                    ++numbersUnsatisfiedCounter;
+                } else if (!wasNumberSatisfied && numbersSatisfaction[point.Row][point.Col]) {
+                    --numbersUnsatisfiedCounter;
+                }
             }
             return isWrongEdge(edge) ? Edge.EdgeState.Wrong : Edge.EdgeState.Active;
         }
@@ -255,7 +270,10 @@ namespace Slitherlink {
                 --edgesAroundCounter[point.Row][point.Col];
                 bool wasNumberSatisfied = numbersSatisfaction[point.Row][point.Col];
                 numbersSatisfaction[point.Row][point.Col] = isNumberSatisfied(point);
-                if (!wasNumberSatisfied && numbersSatisfaction[point.Row][point.Col]) {
+                if (wasNumberSatisfied && !numbersSatisfaction[point.Row][point.Col]) {
+                    ++numbersUnsatisfiedCounter;
+                } else if (!wasNumberSatisfied && numbersSatisfaction[point.Row][point.Col]) {
+                    --numbersUnsatisfiedCounter;
                     updateSurroundingEdges(point);
                 }
             }
@@ -265,6 +283,9 @@ namespace Slitherlink {
             for (int row = 0; row < rowCount; ++row) {
                 for (int col = 0; col < colCount; ++col) {
                     numbersSatisfaction[row][col] = isNumberSatisfied(new GridPoint(row, col));
+                    if (!numbersSatisfaction[row][col]) {
+                        ++numbersUnsatisfiedCounter;
+                    }
                 }
             }
         }
