@@ -236,7 +236,7 @@ namespace Slitherlink {
                 edgeInfo.isCrossed = false;
             } else {
                 if (edgeInfo.isActive || edgeInfo.isWrong) {
-                    onEdgeRemoved(edge);
+                    afterEdgeRemoved(edge);
                 }
                 edgeInfo.isCrossed = true;
             }
@@ -248,20 +248,21 @@ namespace Slitherlink {
         private void toggleNonCross(Edge edge) {
             EdgeInfo edgeInfo = edgeInfos[edge];
             if (edgeInfo.isActive) {
-                // active and wrong
-                onEdgeRemoved(edge);
+                // active or wrong
                 edgeInfo.isActive = false;
                 edgeInfo.isWrong = false;
+                edgeInfos[edge] = edgeInfo;
+                afterEdgeRemoved(edge);
             } else if (edgeInfo.isCrossed) {
                 // crossed
                 edgeInfo.isCrossed = false;
+                edgeInfos[edge] = edgeInfo;
             } else {
                 // passive
-                onEdgeAdded(edge);
-                edgeInfo.isWrong = isEdgeWrong(edge);
                 edgeInfo.isActive = true;
+                edgeInfos[edge] = edgeInfo;
+                afterEdgeAdded(edge);
             }
-            edgeInfos[edge] = edgeInfo;
         }
 
         private bool isEdgeWrong(Edge edge) {
@@ -323,12 +324,12 @@ namespace Slitherlink {
             return edges;
         }
 
-        private void updateSurroundingEdges(GridPoint point) {
-            List<Edge> edges = surroundingEdges(point);
+        private void updateSurroundingEdges(GridCell cell) {
+            List<Edge> edges = surroundingEdges(cell);
             foreach (Edge edge in edges) {
                 if (edgeInfos[edge].isWrong && !isEdgeWrong(edge)) {
                     EdgeInfo edgeInfo = edgeInfos[edge];
-                    edgeInfo.isActive = true;
+                    edgeInfo.isWrong = false;
                     edgeInfos[edge] = edgeInfo;
                 }
             }
@@ -346,20 +347,17 @@ namespace Slitherlink {
             if (openEnds.Count == 0) {
                 openLineEnds.Add(edge.From);
                 openLineEnds.Add(edge.To);
-                //++lineCount;
             } else if (openEnds.Count == 1) {
                 openLineEnds.Remove(openEnds[0]);
                 openLineEnds.Add(edge.From.Equals(openEnds[0]) ? edge.To : edge.From);
             } else {
                 openLineEnds.Remove(edge.From);
                 openLineEnds.Remove(edge.To);
-                //lineCount -= 1;
             }
         }
 
-        // should be called every time an edge is added
-        // returns the state of the added edge (Active or Wrong)
-        private void onEdgeAdded(Edge edge) {
+        // should be called always after an edge has been added
+        private void afterEdgeAdded(Edge edge) {
             List<GridPoint> cells = adjacentGridCells(edge);
             foreach (GridPoint cell in cells) {
                 ++cellEdgesAroundCounter[cell];
@@ -375,14 +373,12 @@ namespace Slitherlink {
             EdgeInfo edgeInfo = edgeInfos[edge];
             if (isEdgeWrong(edge)) {
                 edgeInfo.isWrong = true;
-            } else {
-                edgeInfo.isActive = true;
             }
             edgeInfos[edge] = edgeInfo;
         }
 
-        // should be called every time an edge is removed
-        private void onEdgeRemoved(Edge edge) {
+        // should be called always after an edge has been removed
+        private void afterEdgeRemoved(Edge edge) {
             updateOpenLineEnds(edge, false);
             List<GridPoint> points = adjacentGridCells(edge);
             foreach (GridPoint point in points) {

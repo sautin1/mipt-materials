@@ -59,6 +59,9 @@ namespace Slitherlink
             Edge edgeNearest = drawer.NearestGridEdge(clickInfo.Location);
             gameController.ToggleEdgeState(edgeNearest, clickInfo.Button == MouseButtons.Right);
             drawingArea.Invalidate();
+            if (gameController.IsGameFinished()) {
+                MessageBox.Show("You have solved the puzzle!", "Congratulations!");
+            }
         }
 
         private void drawingArea_DoubleClick(object sender, EventArgs e) {
