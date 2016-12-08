@@ -16,7 +16,6 @@ namespace Slitherlink {
         private int colWidth;
         private int rowWidth;
         private int colHeight;
-        private IList<GridCell> gridCells;
 
         private int marginVertical = 10;
         private int marginHorizontal = 10;
@@ -26,9 +25,8 @@ namespace Slitherlink {
         IDictionary<String, Pen> pens;
         IDictionary<String, Brush> brushes;
 
-        public GameDrawer(Size windowSize, int rowCount, int colCount, IList<GridCell> gridCells) {
+        public GameDrawer(Size windowSize, int rowCount, int colCount) {
             ChangeGameSizes(rowCount, colCount);
-            this.gridCells = gridCells;
             initSettings();
         }
 
@@ -75,7 +73,7 @@ namespace Slitherlink {
             drawEdges(graphics, edges, "penEdgeWrong");
         }
 
-        public void DrawNumbers(Graphics graphics, IDictionary<GridCell, int> numbers, IDictionary<GridCell, bool> numbersSatisfaction) {
+        public void DrawNumbers(Graphics graphics, IDictionary<GridCell, int> numbers, IDictionary<GridCell, bool> numbersSatisfaction, IList<GridCell> gridCells) {
             StringFormat format = new StringFormat();
             Font font = new Font("Arial", (int)Math.Round(fontSizeFraction * Math.Min(rowHeight, colWidth)));
             format.Alignment = StringAlignment.Center;
