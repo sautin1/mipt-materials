@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Slitherlink {
+    using GridCell = GridPoint;
+
     class GameDrawer {
         private int rowCount;
         private int colCount;
@@ -14,6 +16,8 @@ namespace Slitherlink {
         private int colWidth;
         private int rowWidth;
         private int colHeight;
+        private IList<GridCell> gridCells;
+
         private int marginVertical = 10;
         private int marginHorizontal = 10;
         private double crossFrac = 0.1;
@@ -22,12 +26,9 @@ namespace Slitherlink {
         IDictionary<String, Pen> pens;
         IDictionary<String, Brush> brushes;
 
-        public GameDrawer() {
-            initSettings();
-        }
-
-        public GameDrawer(Size windowSize, int rowCount, int colCount) {
+        public GameDrawer(Size windowSize, int rowCount, int colCount, IList<GridCell> gridCells) {
             ChangeGameSizes(rowCount, colCount);
+            this.gridCells = gridCells;
             initSettings();
         }
 
@@ -74,25 +75,23 @@ namespace Slitherlink {
             drawEdges(graphics, edges, "penEdgeWrong");
         }
 
-        public void DrawNumbers(Graphics graphics, List<List<int>> numbers, List<List<bool>> numbersSatisfaction) {
+        public void DrawNumbers(Graphics graphics, IDictionary<GridCell, int> numbers, IDictionary<GridCell, bool> numbersSatisfaction) {
             StringFormat format = new StringFormat();
             Font font = new Font("Arial", (int)Math.Round(fontSizeFraction * Math.Min(rowHeight, colWidth)));
             format.Alignment = StringAlignment.Center;
             format.LineAlignment = StringAlignment.Center;
             Brush brushSatisfied = brushes["brushNumberSatisfied"];
             Brush brushUnsatisfied = brushes["brushNumberUnsatisfied"];
-            for (int row = 0; row < numbers.Count; ++row) {
-                for (int col = 0; col < numbers[row].Count; ++col) {
-                    if (numbers[row][col] >= 0) {
-                        GridPoint gridPointFrom = new GridPoint(row, col);
-                        GridPoint gridPointTo = new GridPoint(row + 1, col + 1);
-                        Point pointFrom = toPoint(gridPointFrom);
-                        Point pointTo = toPoint(gridPointTo);
-                        Size rectSize = new Size(pointTo.X - pointFrom.X, pointTo.Y - pointFrom.Y);
-                        Rectangle rect = new Rectangle(pointFrom, rectSize);
-                        Brush brush = numbersSatisfaction[row][col] ? brushSatisfied : brushUnsatisfied;
-                        graphics.DrawString(numbers[row][col].ToString(), font, brush, rect, format);
-                    }
+            foreach (GridCell cell in gridCells) {
+                if (numbers[cell] >= 0) {
+                    GridPoint gridPointFrom = cell;
+                    GridPoint gridPointTo = new GridPoint(cell.Row + 1, cell.Col + 1);
+                    Point pointFrom = toPoint(gridPointFrom);
+                    Point pointTo = toPoint(gridPointTo);
+                    Size rectSize = new Size(pointTo.X - pointFrom.X, pointTo.Y - pointFrom.Y);
+                    Rectangle rect = new Rectangle(pointFrom, rectSize);
+                    Brush brush = numbersSatisfaction[cell] ? brushSatisfied : brushUnsatisfied;
+                    graphics.DrawString(numbers[cell].ToString(), font, brush, rect, format);
                 }
             }
         }

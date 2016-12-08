@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Slitherlink {
+    using GridCell = GridPoint;
+
     interface IGameSaver{
         void SaveGame(GameController controller);
     }
@@ -20,18 +22,22 @@ namespace Slitherlink {
             List<string> lines = new List<string> {
                 controller.RowCount.ToString() + ' ' + controller.ColCount.ToString()
             };
-            List<List<int>> numbers = controller.GetNumbers();
+            IDictionary<GridCell, int> numbers = controller.GetNumbers();
+            IList<int> numberRow = new List<int>(controller.ColCount);
             for (int row = 0; row < controller.RowCount; ++row) {
-                lines.Add(String.Join(" ", numbers[row]));
+                for (int col = 0; col < controller.ColCount; ++col) {
+                    numberRow.Add(numbers[new GridCell(row, col)]);
+                }
+                lines.Add(String.Join(" ", numberRow));
             }
 
-            IDictionary<Edge, Edge.EdgeState> edgeStates = controller.GetEdgeStates();
+            IDictionary<Edge, EdgeInfo> edgeInfos = controller.GetEdgeInfos();
             for (int row = 0; row < controller.RowCount + 1; ++row) {
                 List<int> rowStates = new List<int>(controller.ColCount);
                 for (int col = 0; col < controller.ColCount; ++col) {
                     GridPoint from = new GridPoint(row, col);
                     GridPoint to = new GridPoint(row, col + 1);
-                    rowStates.Add((int)edgeStates[new Edge(from, to)]);
+                    rowStates.Add(edgeInfos[new Edge(from, to)].ToInt());
                 }
                 lines.Add(String.Join(" ", rowStates));
             }
@@ -41,7 +47,7 @@ namespace Slitherlink {
                 for (int col = 0; col < controller.ColCount + 1; ++col) {
                     GridPoint from = new GridPoint(row, col);
                     GridPoint to = new GridPoint(row + 1, col);
-                    rowStates.Add((int)edgeStates[new Edge(from, to)]);
+                    rowStates.Add(edgeInfos[new Edge(from, to)].ToInt());
                 }
                 lines.Add(String.Join(" ", rowStates));
             }

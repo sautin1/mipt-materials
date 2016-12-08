@@ -49,7 +49,6 @@
     <Compile Include="FileUtils.cs" />
     <Compile Include="GameLoader.cs" />
     <Compile Include="GameSaver.cs" />
-    <Compile Include="GameSerializer.cs" />
     <Compile Include="GameWindow.cs">
       <SubType>Form</SubType>
     </Compile>

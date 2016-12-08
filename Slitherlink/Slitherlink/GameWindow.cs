@@ -24,7 +24,8 @@ namespace Slitherlink
             InitializeComponent();
             Size clientRectSize = drawingArea.ClientRectangle.Size;
             gameController = new SimpleGameLoader().LoadGame();
-            drawer = new GameDrawer(clientRectSize, gameController.RowCount, gameController.ColCount);
+            drawer = new GameDrawer(clientRectSize, gameController.RowCount, gameController.ColCount, 
+                                    gameController.GetGridCells());
             this.Size = new Size(formWidthInitial, countFormHeight(formWidthInitial));
         }
 
@@ -47,9 +48,9 @@ namespace Slitherlink
 
         private void drawingArea_Paint(object sender, PaintEventArgs e) {
             drawer.DrawGrid(e.Graphics);
-            drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Active));
-            drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Crossed));
-            drawer.DrawEdgesWrong(e.Graphics, gameController.GetEdgesByState(Edge.EdgeState.Wrong));
+            drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByInfo(new EdgeInfo(true, false, false)));
+            drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByCrossed(true));
+            drawer.DrawEdgesWrong(e.Graphics, gameController.GetEdgesByWrong(true));
             drawer.DrawNumbers(e.Graphics, gameController.GetNumbers(), gameController.GetNumbersSatisfaction());
         }
 
