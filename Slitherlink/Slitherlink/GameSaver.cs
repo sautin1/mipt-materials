@@ -22,7 +22,7 @@ namespace Slitherlink {
             List<string> lines = new List<string> {
                 controller.RowCount.ToString() + ' ' + controller.ColCount.ToString()
             };
-            IDictionary<GridCell, int> numbers = controller.GetNumbers();
+            IDictionary<GridCell, int> numbers = controller.Numbers();
             for (int row = 0; row < controller.RowCount; ++row) {
                 IList<int> numberRow = new List<int>(controller.ColCount);
                 for (int col = 0; col < controller.ColCount; ++col) {
@@ -31,7 +31,7 @@ namespace Slitherlink {
                 lines.Add(String.Join(" ", numberRow));
             }
 
-            IDictionary<Edge, EdgeInfo> edgeInfos = controller.GetEdgeInfos();
+            IDictionary<Edge, EdgeInfo> edgeInfos = controller.EdgeInfos();
             for (int row = 0; row < controller.RowCount + 1; ++row) {
                 List<int> rowStates = new List<int>(controller.ColCount);
                 for (int col = 0; col < controller.ColCount; ++col) {

@@ -47,10 +47,10 @@ namespace Slitherlink
 
         private void drawingArea_Paint(object sender, PaintEventArgs e) {
             drawer.DrawGrid(e.Graphics);
-            drawer.DrawEdgesActive(e.Graphics, gameController.GetEdgesByInfo(new EdgeInfo(true, false, false)));
-            drawer.DrawEdgesCrossed(e.Graphics, gameController.GetEdgesByCrossed(true));
-            drawer.DrawEdgesWrong(e.Graphics, gameController.GetEdgesByWrong(true));
-            drawer.DrawNumbers(e.Graphics, gameController.GetNumbers(), gameController.GetNumbersSatisfaction(), gameController.GetGridCells());
+            drawer.DrawEdgesActive(e.Graphics, gameController.EdgesByInfo(new EdgeInfo(true, false, false)));
+            drawer.DrawEdgesCrossed(e.Graphics, gameController.EdgesByCrossed(true));
+            drawer.DrawEdgesWrong(e.Graphics, gameController.EdgesByWrong(true));
+            drawer.DrawNumbers(e.Graphics, gameController.Numbers(), gameController.NumbersSatisfaction(), gameController.GridCells());
         }
 
         private void drawingArea_Click(object sender, EventArgs e) {
@@ -59,7 +59,7 @@ namespace Slitherlink
             gameController.ToggleEdgeState(edgeNearest, clickInfo.Button == MouseButtons.Right);
             drawingArea.Invalidate();
             if (gameController.IsGameFinished()) {
-                MessageBox.Show("You have solved the puzzle!", "Congratulations!");
+                //MessageBox.Show("You have solved the puzzle!", "Congratulations!");
             }
         }
 
