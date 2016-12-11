@@ -161,8 +161,9 @@ namespace Slitherlink {
         // Modifications to the game state
 
         public void ClearGame() {
-            //clearEdgeStates();
-            //verifier.ClearGame();
+            clearEdgeInfos();
+            verifier.Clear();
+            isGameFinished = IsGameFinished();
         }
 
         public void ToggleEdgeState(Edge edge, bool isToggleCross) {
@@ -177,11 +178,11 @@ namespace Slitherlink {
 
         //__________________________________________________________________________________________
 
-        //private void clearEdgeStates() {
-        //    foreach (Edge key in edgeInfos.Keys.ToList()) {
-        //        edgeInfos[key] = new EdgeInfo(false, false, false);
-        //    }
-        //}
+        private void clearEdgeInfos() {
+            foreach (Edge key in edgeInfos.Keys.ToList()) {
+                edgeInfos[key] = new EdgeInfo(false, false, false);
+            }
+        }
 
         private void checkIsGameFinished(Edge edgeLast) {
             isGameFinished = verifier.NumbersUnsatisfiedCount() == 0 && !edgeInfos[edgeLast].isWrong;
@@ -195,7 +196,9 @@ namespace Slitherlink {
                 if (edgeInfo.isActive) {
                     // active or wrong
                     verifier.OnEdgeRemoved(edge);
-                    //updateSurroundingEdges(point);
+                    foreach (GridCell cell in adjacentGridCells(edge)) {
+                        updateSurroundingEdges(cell);
+                    }
                 }
                 edgeInfo.isCrossed = true;
             }
@@ -212,7 +215,9 @@ namespace Slitherlink {
                 edgeInfo.isActive = false;
                 edgeInfo.isWrong = false;
                 edgeInfos[edge] = edgeInfo;
-                //updateSurroundingEdges(point);
+                foreach (GridCell cell in adjacentGridCells(edge)) {
+                    updateSurroundingEdges(cell);
+                }
             } else if (edgeInfo.isCrossed) {
                 // crossed
                 edgeInfo.isCrossed = false;
@@ -240,16 +245,25 @@ namespace Slitherlink {
             return cells;
         }
 
+        private List<Edge> surroundingEdges(GridCell cell) {
+            List<Edge> edges = new List<Edge>() {
+                new Edge(cell, new GridCell(cell.Row, cell.Col + 1)), // up  , horizontal
+                new Edge(cell, new GridCell(cell.Row + 1, cell.Col)), // left, vertical
+                new Edge(new GridCell(cell.Row + 1, cell.Col), new GridCell(cell.Row + 1, cell.Col + 1)), // down , horizontal
+                new Edge(new GridCell(cell.Row, cell.Col + 1), new GridCell(cell.Row + 1, cell.Col + 1))  // right, vertical
+            };
+            return edges;
+        }
 
-        //private void updateSurroundingEdges(GridCell cell) {
-        //    List<Edge> edges = surroundingEdges(cell);
-        //    foreach (Edge edge in edges) {
-        //        if (edgeInfos[edge].isWrong && !isEdgeWrong(edge)) {
-        //            EdgeInfo edgeInfo = edgeInfos[edge];
-        //            edgeInfo.isWrong = false;
-        //            edgeInfos[edge] = edgeInfo;
-        //        }
-        //    }
-        //}
+        private void updateSurroundingEdges(GridCell cell) {
+            List<Edge> edges = surroundingEdges(cell);
+            foreach (Edge edge in edges) {
+                if (edgeInfos[edge].isWrong && verifier.IsEdgeCorrect(edge)) {
+                    EdgeInfo edgeInfo = edgeInfos[edge];
+                    edgeInfo.isWrong = false;
+                    edgeInfos[edge] = edgeInfo;
+                }
+            }
+        }
     }
 }

@@ -20,14 +20,13 @@ namespace Slitherlink {
 
             public GameVerifier(GameController controller) {
                 this.controller = controller;
+
+                this.cellEdgesAroundCounter = new Dictionary<GridCell, int>();
+                this.cellNumbersSatisfaction = new Dictionary<GridCell, bool>();
+
                 calculateEdgesAroundCounter();
                 calculateCellNumbersSatisfaction();
-
                 //this.openLineEnds = new HashSet<GridPoint>(); /**/
-
-
-                //clearNumberSatisfaction();
-                //recountNumbersSatisfaction();
             }
 
             // Section of various getters
@@ -40,12 +39,11 @@ namespace Slitherlink {
                 return cellNumbersSatisfaction;
             }
 
-            //public void ClearGame() {
-            //    clearNumberSatisfaction();
-            //    clearEdgesAroundCounter();
-            //}
-
             // Section of class modifying methods
+            public void Clear() {
+                calculateEdgesAroundCounter();
+                calculateCellNumbersSatisfaction();
+            }
 
             // should be called always when an edge is being added
             public void OnEdgeAdded(Edge edge) {
@@ -89,7 +87,6 @@ namespace Slitherlink {
             // Section of initializers for private fields
 
             private void calculateEdgesAroundCounter() {
-                cellEdgesAroundCounter = new Dictionary<GridCell, int>();
                 foreach (GridCell cell in controller.GridCells()) {
                     cellEdgesAroundCounter[cell] = 0;
                 }
@@ -108,7 +105,6 @@ namespace Slitherlink {
 
             private void calculateCellNumbersSatisfaction() {
                 numbersUnsatisfiedCounter = 0;
-                this.cellNumbersSatisfaction = new Dictionary<GridCell, bool>();
                 foreach (GridCell cell in controller.GridCells()) {
                     cellNumbersSatisfaction[cell] = isCellNumberSatisfied(cell);
                     if (!cellNumbersSatisfaction[cell]) {
