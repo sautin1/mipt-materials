@@ -118,6 +118,10 @@ namespace Slitherlink {
             return edgeInfos;
         }
 
+        public EdgeInfo EdgeInfoByEdge(Edge edge) {
+            return edgeInfos[edge];
+        }
+
         public IList<Edge> EdgesByInfo(EdgeInfo edgeInfo) {
             return edgeInfos.Where(pair => pair.Value.Equals(edgeInfo)).Select(pair => pair.Key).ToList();
         }
@@ -195,10 +199,7 @@ namespace Slitherlink {
             } else {
                 if (edgeInfo.isActive) {
                     // active or wrong
-                    verifier.OnEdgeRemoved(edge);
-                    foreach (GridCell cell in adjacentGridCells(edge)) {
-                        updateSurroundingEdges(cell);
-                    }
+                    verifier.OnEdgeRemoved(edge, edgeInfos);
                 }
                 edgeInfo.isCrossed = true;
             }
@@ -211,13 +212,10 @@ namespace Slitherlink {
             EdgeInfo edgeInfo = edgeInfos[edge];
             if (edgeInfo.isActive) {
                 // active or wrong
-                verifier.OnEdgeRemoved(edge);
+                verifier.OnEdgeRemoved(edge, edgeInfos);
                 edgeInfo.isActive = false;
                 edgeInfo.isWrong = false;
                 edgeInfos[edge] = edgeInfo;
-                foreach (GridCell cell in adjacentGridCells(edge)) {
-                    updateSurroundingEdges(cell);
-                }
             } else if (edgeInfo.isCrossed) {
                 // crossed
                 edgeInfo.isCrossed = false;
@@ -226,41 +224,11 @@ namespace Slitherlink {
                 // passive
                 verifier.OnEdgeAdded(edge);
                 edgeInfo.isActive = true;
-                edgeInfo.isWrong = !verifier.IsEdgeCorrect(edge);
                 edgeInfos[edge] = edgeInfo;
-            }
-        }
-
-        private List<GridPoint> adjacentGridCells(Edge edge) {
-            List<GridCell> cells = new List<GridCell>();
-            if (edge.IsHorizontal() && edge.From.Row < rowCount ||
-                !edge.IsHorizontal() && edge.From.Col < colCount) {
-                cells.Add(edge.From);
-            }
-            if (edge.IsHorizontal() && edge.From.Row > 0) {
-                cells.Add(new GridCell(edge.From.Row - 1, edge.From.Col));
-            } else if (!edge.IsHorizontal() && edge.To.Col > 0) {
-                cells.Add(new GridCell(edge.From.Row, edge.From.Col - 1));
-            }
-            return cells;
-        }
-
-        private List<Edge> surroundingEdges(GridCell cell) {
-            List<Edge> edges = new List<Edge>() {
-                new Edge(cell, new GridCell(cell.Row, cell.Col + 1)), // up  , horizontal
-                new Edge(cell, new GridCell(cell.Row + 1, cell.Col)), // left, vertical
-                new Edge(new GridCell(cell.Row + 1, cell.Col), new GridCell(cell.Row + 1, cell.Col + 1)), // down , horizontal
-                new Edge(new GridCell(cell.Row, cell.Col + 1), new GridCell(cell.Row + 1, cell.Col + 1))  // right, vertical
-            };
-            return edges;
-        }
-
-        private void updateSurroundingEdges(GridCell cell) {
-            List<Edge> edges = surroundingEdges(cell);
-            foreach (Edge edge in edges) {
-                if (edgeInfos[edge].isWrong && verifier.IsEdgeCorrect(edge)) {
-                    EdgeInfo edgeInfo = edgeInfos[edge];
-                    edgeInfo.isWrong = false;
+                bool isWrong = !verifier.IsEdgeCorrect(edge);
+                if (edgeInfo.isWrong != isWrong) {
+                    edgeInfo.isWrong = isWrong;
+                    edgeInfo.isActive = !isWrong;
                     edgeInfos[edge] = edgeInfo;
                 }
             }

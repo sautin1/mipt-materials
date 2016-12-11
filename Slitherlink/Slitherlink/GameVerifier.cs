@@ -47,21 +47,21 @@ namespace Slitherlink {
 
             // should be called always when an edge is being added
             public void OnEdgeAdded(Edge edge) {
-                onEdgeEvent(edge, true);
+                onEdgeEvent(edge, null, true);
                 //updateOpenLineEnds(edge, true);
             }
 
             // should be called always when an edge is being removed
-            public void OnEdgeRemoved(Edge edge) {
+            public void OnEdgeRemoved(Edge edge, IDictionary<Edge, EdgeInfo> edgeInfos) {
                 //updateOpenLineEnds(edge, false);
-                onEdgeEvent(edge, false);
+                onEdgeEvent(edge, edgeInfos, false);
             }
 
             // Sections with target functionality of this class
 
             public bool IsEdgeCorrect(Edge edge) {
                 bool isNumberSatisfied = true;
-                List<GridCell> cells = controller.adjacentGridCells(edge);
+                List<GridCell> cells = adjacentGridCells(edge);
                 foreach (GridCell cell in cells) {
                     isNumberSatisfied &= !isCellNumberViolated(cell);
                 }
@@ -77,11 +77,17 @@ namespace Slitherlink {
             }
 
             private bool isSelfIntersection(Edge edge) {
-                return false;
+                return isSelfIntersection(edge.From) || isSelfIntersection(edge.To);
+            }
+
+            private bool isSelfIntersection(GridPoint point) {
+                IList<Edge> edges = incomingEdgesActiveNonCrossed(point);
+                return edges.Count > 2;
             }
 
             private bool isLineClosed(Edge edge) {
-                return false;
+                IDictionary<GridPoint, bool> isVisited = new Dictionary<GridPoint, bool>();
+                return dfsLineClosed(edge.From, edge.From, isVisited);
             }
 
             // Section of initializers for private fields
@@ -95,7 +101,7 @@ namespace Slitherlink {
                     Edge edge = pair.Key;
                     EdgeInfo edgeInfo = pair.Value;
                     if (edgeInfo.isActive) {
-                        List<GridCell> adjacentCells = controller.adjacentGridCells(edge);
+                        List<GridCell> adjacentCells = adjacentGridCells(edge);
                         foreach (GridPoint cell in adjacentCells) {
                             cellEdgesAroundCounter[cell] += 1;
                         }
@@ -125,92 +131,123 @@ namespace Slitherlink {
                 }
             }
 
-            private void onEdgeEvent(Edge edge, bool isAdded) {
-                List<GridCell> cells = controller.adjacentGridCells(edge);
+            private void onEdgeEvent(Edge edge, IDictionary<Edge, EdgeInfo> edgeInfos, bool isAdded) {
+                List<GridCell> cells = adjacentGridCells(edge);
                 foreach (GridCell cell in cells) {
                     cellEdgesAroundCounter[cell] += isAdded ? 1 : -1;
                     updateCellSatisfaction(cell);
                 }
+                if (!isAdded && edgeInfos != null) {
+                    foreach (GridCell cell in adjacentGridCells(edge)) {
+                        updateSurroundingEdges(cell, edgeInfos);
+                    }
+                    updateReachableEdges(edge, edgeInfos);
+                }
             }
 
-            //private bool isEdgeWrong(Edge edge) {
-            //    // check number satisfaction
-            //    List<GridPoint> cells = adjacentGridCells(edge);
-            //    bool isMistake = false;
-            //    foreach (GridPoint cell in cells) {
-            //        isMistake = isMistake || (cellNumbers[cell] >= 0 &&
-            //            cellNumbers[cell] < cellEdgesAroundCounter[cell]);
-            //    }
+            private List<GridPoint> adjacentGridCells(Edge edge) {
+                List<GridCell> cells = new List<GridCell>();
+                if (edge.IsHorizontal() && edge.From.Row < controller.RowCount ||
+                    !edge.IsHorizontal() && edge.From.Col < controller.ColCount) {
+                    cells.Add(edge.From);
+                }
+                if (edge.IsHorizontal() && edge.From.Row > 0) {
+                    cells.Add(new GridCell(edge.From.Row - 1, edge.From.Col));
+                } else if (!edge.IsHorizontal() && edge.To.Col > 0) {
+                    cells.Add(new GridCell(edge.From.Row, edge.From.Col - 1));
+                }
+                return cells;
+            }
 
-            //    // check self-intersections
-            //    isMistake = isMistake || isSelfIntersection(edge.From) || isSelfIntersection(edge.To);
-            //    // check early closure of line
-            //    isMistake = isMistake || (isLinesClosed() && numbersUnsatisfiedCounter > 0);
-            //    return isMistake;
-            //}
+            private List<Edge> surroundingEdges(GridCell cell) {
+                List<Edge> edges = new List<Edge>() {
+                    new Edge(cell, new GridCell(cell.Row, cell.Col + 1)), // up  , horizontal
+                    new Edge(cell, new GridCell(cell.Row + 1, cell.Col)), // left, vertical
+                    new Edge(new GridCell(cell.Row + 1, cell.Col), new GridCell(cell.Row + 1, cell.Col + 1)), // down , horizontal
+                    new Edge(new GridCell(cell.Row, cell.Col + 1), new GridCell(cell.Row + 1, cell.Col + 1))  // right, vertical
+                };
+                return edges;
+            }
 
-            //private bool tryValidateEdge(Edge edge) {
-            //    if (!edgeInfos[edge].isWrong) {
-            //        return true;
-            //    }
-            //    bool success = isEdgeWrong(edge);
-            //    if (success) {
-            //        EdgeInfo edgeInfo = edgeInfos[edge];
-            //        edgeInfo.isActive = true;
-            //        edgeInfos[edge] = edgeInfo;
-            //    }
-            //    return success;
-            //}
+            private List<Edge> incomingEdges(GridPoint point) {
+                List<Edge> edges = surroundingEdges(point);
+                edges.AddRange(surroundingEdges(new GridPoint(point.Row - 1, point.Col - 1)));
+                edges = edges.Where(edge => 
+                    controller.edgeInfos.ContainsKey(edge) && (edge.From.Equals(point) || edge.To.Equals(point))
+                ).ToList();
+                return edges;
+            }
 
-            //private bool isSelfIntersection(GridPoint point) {
-            //    List<Edge> edges = incomingEdges(point);
-            //    edges = edges.Where(
-            //        edge => edgeInfos[edge].isActive
-            //    ).ToList();
-            //    return edges.Count > 2;
-            //}
+            private List<Edge> incomingEdgesActiveNonCrossed(GridPoint point) {
+                List<Edge> edges = incomingEdges(point);
+                edges = edges.Where(
+                    edge => controller.edgeInfos[edge].isActive && !controller.edgeInfos[edge].isCrossed
+                ).ToList();
+                return edges;
+            }
 
-            //private bool isLinesClosed() {
-            //    return openLineEnds.Count == 0;
-            //}
+            private void tryValidateEdge(Edge edge, IDictionary<Edge, EdgeInfo> edgeInfos) {
+                EdgeInfo edgeInfo = controller.edgeInfos[edge];
+                if (edgeInfo.isWrong && IsEdgeCorrect(edge)) {
+                    edgeInfo.isWrong = false;
+                    edgeInfos[edge] = edgeInfo;
+                }
+            }
 
-            //private List<Edge> incomingEdges(GridPoint point) {
-            //    List<Edge> edges = surroundingEdges(point);
-            //    edges.AddRange(surroundingEdges(new GridPoint(point.Row - 1, point.Col - 1)));
-            //    edges = edges.Where(edge => edgeInfos.ContainsKey(edge) && (edge.From.Equals(point) || edge.To.Equals(point))).ToList();
-            //    return edges;
-            //}
+            private void updateSurroundingEdges(GridCell cell, IDictionary<Edge, EdgeInfo> edgeInfos) {
+                List<Edge> edges = surroundingEdges(cell);
+                foreach (Edge edge in edges) {
+                    tryValidateEdge(edge, edgeInfos);
+                }
+            }
 
-            //private List<Edge> surroundingEdges(GridPoint point) {
-            //    List<Edge> edges = new List<Edge>() {
-            //        new Edge(point, new GridPoint(point.Row, point.Col + 1)), // up  , horizontal
-            //        new Edge(point, new GridPoint(point.Row + 1, point.Col)), // left, vertical
-            //        new Edge(new GridPoint(point.Row + 1, point.Col), new GridPoint(point.Row + 1, point.Col + 1)), // down , horizontal
-            //        new Edge(new GridPoint(point.Row, point.Col + 1), new GridPoint(point.Row + 1, point.Col + 1))  // right, vertical
-            //    };
-            //    return edges;
-            //}
+            private void updateReachableEdges(Edge edge, IDictionary<Edge, EdgeInfo> edgeInfos) {
+                IDictionary<GridPoint, bool> isVisited = new Dictionary<GridPoint, bool>();
+                dfsVerifyEdges(edge.From, edge.From, isVisited, edgeInfos);
+            }
 
-            //private void updateOpenLineEnds(Edge edge, bool isAdded) {
-            //    List<GridPoint> openEnds = new List<GridPoint>();
-            //    if (openLineEnds.Contains(edge.From)) {
-            //        openEnds.Add(edge.From);
-            //    }
-            //    if (openLineEnds.Contains(edge.To)) {
-            //        openEnds.Add(edge.To);
-            //    }
+            private bool dfsVerifyEdges(GridPoint point, GridPoint parent, 
+                IDictionary<GridPoint, bool> isVisited, 
+                IDictionary<Edge, EdgeInfo> edgeInfos) {
 
-            //    if (openEnds.Count == 0) {
-            //        openLineEnds.Add(edge.From);
-            //        openLineEnds.Add(edge.To);
-            //    } else if (openEnds.Count == 1) {
-            //        openLineEnds.Remove(openEnds[0]);
-            //        openLineEnds.Add(edge.From.Equals(openEnds[0]) ? edge.To : edge.From);
-            //    } else {
-            //        openLineEnds.Remove(edge.From);
-            //        openLineEnds.Remove(edge.To);
-            //    }
-            //}
+                isVisited[point] = true;
+                bool lineClosed = false;
+                foreach (Edge edge in incomingEdgesActiveNonCrossed(point)) {
+                    if (!edge.Equals(new Edge(point, parent))) {
+                        GridPoint pointTo = edge.From.Equals(point) ? edge.To : edge.From;
+                        if (isVisited.ContainsKey(pointTo) && isVisited[pointTo]) {
+                            break;
+                        } else {
+                            lineClosed = dfsVerifyEdges(pointTo, point, isVisited, edgeInfos);
+                            EdgeInfo edgeInfo = edgeInfos[edge];
+                            if (edgeInfo.isWrong != lineClosed) {
+                                edgeInfo.isWrong = lineClosed;
+                                edgeInfos[edge] = edgeInfo;
+                            }
+                        }
+                    }
+                }
+                return lineClosed;
+            }
+
+            private bool dfsLineClosed(GridPoint point, GridPoint parent, IDictionary<GridPoint, bool> isVisited) {
+                isVisited[point] = true;
+                bool lineClosed = false;
+                foreach (Edge edge in incomingEdgesActiveNonCrossed(point)) {
+                    if (!edge.Equals(new Edge(point, parent))) {
+                        GridPoint pointTo = edge.From.Equals(point) ? edge.To : edge.From;
+                        lineClosed = lineClosed || isVisited.ContainsKey(pointTo) && isVisited[pointTo];
+                        if (lineClosed) {
+                            break;
+                        } else {
+                            lineClosed = dfsLineClosed(pointTo, point, isVisited);
+                        }
+                    }
+                }
+
+                return lineClosed;
+            }
+
         }
     }
 }
