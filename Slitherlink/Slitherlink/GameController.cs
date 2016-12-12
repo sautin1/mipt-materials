@@ -167,7 +167,7 @@ namespace Slitherlink {
         public void ClearGame() {
             clearEdgeInfos();
             verifier.Clear();
-            isGameFinished = IsGameFinished();
+            //isGameFinished = checkIsGameFinished();
         }
 
         public void ToggleEdgeState(Edge edge, bool isToggleCross) {
@@ -188,8 +188,18 @@ namespace Slitherlink {
             }
         }
 
+        private int countEdgeWrong() {
+            int edgeWrongCounter = 0;
+            foreach (KeyValuePair<Edge, EdgeInfo> pair in edgeInfos) {
+                if (pair.Value.isWrong) {
+                    ++edgeWrongCounter;
+                }
+            }
+            return edgeWrongCounter;
+        }
+
         private void checkIsGameFinished(Edge edgeLast) {
-            isGameFinished = verifier.NumbersUnsatisfiedCount() == 0 && !edgeInfos[edgeLast].isWrong;
+            isGameFinished = verifier.NumbersUnsatisfiedCount() == 0 && countEdgeWrong() == 0 && verifier.IsLineClosed();
         }
 
         private void toggleCross(Edge edge) {

@@ -59,6 +59,11 @@ namespace Slitherlink {
 
             // Sections with target functionality of this class
 
+            public bool IsLineClosed() {
+                IList<Edge> edges = controller.EdgesByActive(true);
+                return dfsLineClosed(edges[0].From, edges[0].From, new Dictionary<GridPoint, bool>());
+            }
+
             public bool IsEdgeCorrect(Edge edge) {
                 return isEdgeCorrectSimple(edge) && (!isLineClosed(edge) || numbersUnsatisfiedCounter == 0);
             }
@@ -90,8 +95,7 @@ namespace Slitherlink {
             }
 
             private bool isLineClosed(Edge edge) {
-                IDictionary<GridPoint, bool> isVisited = new Dictionary<GridPoint, bool>();
-                return dfsLineClosed(edge.From, edge.From, isVisited);
+                return dfsLineClosed(edge.From, edge.From, new Dictionary<GridPoint, bool>());
             }
 
             // Section of initializers for private fields

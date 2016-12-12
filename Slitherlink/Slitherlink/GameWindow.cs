@@ -59,7 +59,7 @@ namespace Slitherlink
             gameController.ToggleEdgeState(edgeNearest, clickInfo.Button == MouseButtons.Right);
             drawingArea.Invalidate();
             if (gameController.IsGameFinished()) {
-                //MessageBox.Show("You have solved the puzzle!", "Congratulations!");
+                MessageBox.Show("You have solved the puzzle!", "Congratulations!");
             }
         }
 
