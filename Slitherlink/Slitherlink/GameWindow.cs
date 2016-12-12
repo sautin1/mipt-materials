@@ -116,6 +116,12 @@ namespace Slitherlink
             System.Diagnostics.Process.Start("http://www.nikoli.com/en/puzzles/slitherlink/rule.html");
         }
 
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e) {
+            using (AboutBox aboutBox = new AboutBox()) {
+                aboutBox.ShowDialog();
+            }
+        }
+
         // Form event handlers
 
         private void GameWindow_Resize(object sender, EventArgs e) {
