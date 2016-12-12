@@ -16,8 +16,8 @@ namespace Slitherlink
         private GameDrawer drawer;
         private GameController gameController;
         
-        private int formWidthInitial = 250;
-        private int formHeightExcess = 49;
+        private int formWidthInitial = 300;
+        private int formHeightExcess = 45;
 
         public GameWindow()
         {
