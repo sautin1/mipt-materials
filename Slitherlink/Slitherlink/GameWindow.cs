@@ -68,8 +68,7 @@ namespace Slitherlink
         }
 
         // Menu event handlers
-
-        private void loadToolStripMenuItem_Click(object sender, EventArgs e) {
+        private void loadToolStripMenuItem_Click_1(object sender, EventArgs e) {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "All Files (*.*)|*.*";
             openFileDialog.FilterIndex = 1;
@@ -103,6 +102,18 @@ namespace Slitherlink
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             Application.Exit();
+        }
+
+        private void rulesToolStripMenuItem_Click(object sender, EventArgs e) {
+            System.Diagnostics.Process.Start("http://www.conceptispuzzles.com/ru/index.aspx?uri=puzzle/slitherlink/rules");
+        }
+
+        private void hintsToolStripMenuItem_Click(object sender, EventArgs e) {
+            System.Diagnostics.Process.Start("http://www.conceptispuzzles.com/ru/index.aspx?uri=puzzle/slitherlink/techniques");
+        }
+
+        private void tutorialToolStripMenuItem_Click(object sender, EventArgs e) {
+            System.Diagnostics.Process.Start("http://www.nikoli.com/en/puzzles/slitherlink/rule.html");
         }
 
         // Form event handlers
