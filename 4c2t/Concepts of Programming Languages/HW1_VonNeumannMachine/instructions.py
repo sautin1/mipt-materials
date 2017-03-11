@@ -21,7 +21,7 @@ def byte_array_to_address(byte_array):
 
 
 class CommandType(IntEnum):
-    glob, stack, jmp, add, sub, mul, div, mod, print, read, stop = range(11)
+    glob, stack, mov, jmp, add, sub, mul, div, mod, print, read, stop = range(12)
 
 
 class Instruction(object):
@@ -45,6 +45,104 @@ class GlobInstruction(Instruction):
         return False
 
 
+class StackInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class MovInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        address_to, address_from = byte_array_to_address(self.value[:2]), byte_array_to_address(self.value[2:])
+        table[address_to] = address_from
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class JmpInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class AddInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class SubInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class MulInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class DivInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
+class ModInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
 class PrintInstruction(Instruction):
     def __init__(self, flag, value):
         Instruction.__init__(self, flag, value)
@@ -62,6 +160,18 @@ class PrintInstruction(Instruction):
         return False
 
 
+class ReadInstruction(Instruction):
+    def __init__(self, flag, value):
+        Instruction.__init__(self, flag, value)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        increase_instruction_pointer(table, INSTRUCTION_LENGTH)
+        return False
+
+
 class StopInstruction(Instruction):
     def __init__(self, flag, value):
         Instruction.__init__(self, flag, value)
@@ -75,8 +185,17 @@ class StopInstruction(Instruction):
 
 command_type_to_instruction = {
     CommandType.glob: GlobInstruction,
+    CommandType.stack: StackInstruction,
+    CommandType.mov: MovInstruction,
+    CommandType.jmp: JmpInstruction,
+    CommandType.add: AddInstruction,
+    CommandType.sub: SubInstruction,
+    CommandType.mul: MulInstruction,
+    CommandType.div: DivInstruction,
+    CommandType.mod: ModInstruction,
     CommandType.print: PrintInstruction,
-    CommandType.stop: StopInstruction
+    CommandType.read: ReadInstruction,
+    CommandType.st: StopInstruction
 }
 
 
