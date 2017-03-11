@@ -8,11 +8,17 @@ def increase_instruction_pointer(table, increment):
     table[0][-1] += increment
 
 
+def byte_array_to_int(byte_array, dtype='>i4'):
+    return np.fromstring(byte_array.tostring(), dtype=dtype)[0]
+
+
 def byte_array_to_value(byte_array):
-    return np.fromstring(byte_array.tostring(), dtype='>i4')[0]  # big-endian np.int32
+    return byte_array_to_int(byte_array)  # big-endian np.int32
+
 
 def byte_array_to_address(byte_array):
-    return np.fromstring(byte_array.tostring(), dtype='>i2')[0]  # big-endian np.int16
+    return byte_array_to_int(byte_array, dtype='>i2')  # big-endian np.int16
+
 
 class CommandType(IntEnum):
     glob, stack, jmp, add, sub, mul, div, mod, print, read, stop = range(11)
@@ -48,9 +54,10 @@ class PrintInstruction(Instruction):
 
     def execute(self, table):
         if self.flag > 0:
-            print(''.join(map(chr, self.value)))
+            print(chr(byte_array_to_value(self.value)))
         else:
-            print(table[self.value][-1])
+            address = byte_array_to_address(self.value[-2:])
+            print(table[address][-1])
         increase_instruction_pointer(table, INSTRUCTION_LENGTH)
         return False
 
