@@ -9,3 +9,18 @@
 Инструкции:
 mov addr1 addr2
 
+Устройство образа программы:
+1. ip
+2. sp
+3. arithmetic result
+4. glob_1
+...
+n+3. glob_n
+
+n+4. instr_1
+...
+n+m+3. instr_m
+
+n+m+4. stack_1
+...
+n+m+k+3. stack_k
