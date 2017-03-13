@@ -54,16 +54,10 @@ class Machine(object):
             found_stop = instruction.execute(table)
 
 if __name__ == '__main__':
-    # x = np.array([CommandType.glob, 0, 0, 0, 0, 0,  # ip
-    #               CommandType.glob, 0, 0, 0, 0, 0,  # sp
-    #               CommandType.glob, 0, 0, 0, 0, 0,  # arithmetic_result
-    #               CommandType.glob, 0, 0, 0, 10, 12,
-    #               CommandType.print, 0, 0, 0, 0, 1,
-    #               CommandType.print, 1, 0, 0, 0, 65,
-    #               CommandType.stop, 0, 0, 0, 0, 0], dtype=np.byte)
     x = np.array([CommandType.glob, 0, 0, 0, 0, 0,
                   CommandType.glob, 0, 0, 0, 0, 0,
                   CommandType.glob, 0, 0, 0, 0, 0,
+                  CommandType.jmp, 0, 0, 0, 0, 30,
                   CommandType.mov, 0, 0, 12, 0, 0,
                   CommandType.print, 0, 0, 0, 0, 12,
                   CommandType.stop, 0, 0, 0, 0, 0], dtype=np.byte)
