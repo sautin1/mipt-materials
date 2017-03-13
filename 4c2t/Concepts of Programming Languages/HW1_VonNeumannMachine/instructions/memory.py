@@ -15,7 +15,8 @@ class GlobInstruction(Instruction):
 class StackInstruction(Instruction):
     def __init__(self, flag=None, args=None, value=None):
         Instruction.__init__(self, flag, args)
-        self.value = value
+        if args is None:
+            self.value = value
 
     def to_bytes(self):
         pass

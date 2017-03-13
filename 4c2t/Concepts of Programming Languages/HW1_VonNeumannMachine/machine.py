@@ -35,6 +35,9 @@ class Table(object):
         self.instructions.pop()
         self.instructions[1].value -= INSTRUCTION_LENGTH
 
+    def get_arithmetic_result(self):
+        return self.instructions[2].value
+
     def set_arithmetic_result(self, new_value):
         self.instructions[2].value = new_value
 
@@ -57,11 +60,12 @@ if __name__ == '__main__':
     x = np.array([CommandType.glob, 0, 0, 0, 0, 0,      # 0
                   CommandType.glob, 0, 0, 0, 0, 0,      # 6
                   CommandType.glob, 0, 0, 0, 0, 0,      # 12
-                  CommandType.jmp, 0, 0, 0, 0, 30,      # 18
-                  CommandType.mov, 0, 0, 12, 0, 0,      # 24
-                  CommandType.read, 0, 0, 0, 0, 12,     # 30
-                  CommandType.print, 0, 0, 0, 0, 12,    # 36
-                  CommandType.stop, 0, 0, 0, 0, 0       # 42
+                  CommandType.mov, 1, 0, 12, 0, 4,      # 18
+                  CommandType.sub, 2, 0, 12, 0, 1,      # 24
+                  CommandType.print, 0, 0, 0, 0, 12,    # 30
+                  CommandType.cjmp, 1, 0, 48, 0, 24,    # 36
+                  CommandType.print, 0, 0, 0, 0, 0,     # 42
+                  CommandType.stop, 0, 0, 0, 0, 0       # 48
                   ], dtype=np.byte)
     arr = x.tobytes()
     with open('data/fib', 'wb') as fout:

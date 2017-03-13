@@ -26,6 +26,22 @@ class JmpInstruction(Instruction):
         return False
 
 
+class CjmpInstruction(Instruction):
+    def __init__(self, flag, args):
+        Instruction.__init__(self, flag, args)
+
+    def to_bytes(self):
+        pass
+
+    def execute(self, table):
+        if table.get_arithmetic_result():
+            table.set_instruction_pointer(self.addresses[-1])
+        elif self.flag:
+            table.set_instruction_pointer(self.addresses[0])
+        else:
+            Instruction.execute(self, table)
+        return False
+
 class StopInstruction(Instruction):
     def __init__(self, flag, args):
         Instruction.__init__(self, flag, args)

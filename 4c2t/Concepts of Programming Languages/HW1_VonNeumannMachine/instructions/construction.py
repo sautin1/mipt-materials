@@ -3,11 +3,11 @@ from enum import IntEnum
 from .arithmetics import AddInstruction, SubInstruction, MulInstruction, DivInstruction, ModInstruction
 from .io import ReadInstruction, PrintInstruction
 from .memory import GlobInstruction, StackInstruction, PushInstruction, PopInstruction
-from .other import JmpInstruction, MovInstruction, StopInstruction
+from .other import JmpInstruction, CjmpInstruction, MovInstruction, StopInstruction
 
 
 class CommandType(IntEnum):
-    glob, stack, push, pop, mov, jmp, add, sub, mul, div, mod, print, read, stop = range(14)
+    glob, stack, push, pop, mov, jmp, cjmp, add, sub, mul, div, mod, print, read, stop = range(15)
 
 
 command_type_to_instruction = {
@@ -17,6 +17,7 @@ command_type_to_instruction = {
     CommandType.pop: PopInstruction,
     CommandType.mov: MovInstruction,
     CommandType.jmp: JmpInstruction,
+    CommandType.cjmp: CjmpInstruction,
     CommandType.add: AddInstruction,
     CommandType.sub: SubInstruction,
     CommandType.mul: MulInstruction,
