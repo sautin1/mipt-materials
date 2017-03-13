@@ -54,13 +54,15 @@ class Machine(object):
             found_stop = instruction.execute(table)
 
 if __name__ == '__main__':
-    x = np.array([CommandType.glob, 0, 0, 0, 0, 0,
-                  CommandType.glob, 0, 0, 0, 0, 0,
-                  CommandType.glob, 0, 0, 0, 0, 0,
-                  CommandType.jmp, 0, 0, 0, 0, 30,
-                  CommandType.mov, 0, 0, 12, 0, 0,
-                  CommandType.print, 0, 0, 0, 0, 12,
-                  CommandType.stop, 0, 0, 0, 0, 0], dtype=np.byte)
+    x = np.array([CommandType.glob, 0, 0, 0, 0, 0,      # 0
+                  CommandType.glob, 0, 0, 0, 0, 0,      # 6
+                  CommandType.glob, 0, 0, 0, 0, 0,      # 12
+                  CommandType.jmp, 0, 0, 0, 0, 30,      # 18
+                  CommandType.mov, 0, 0, 12, 0, 0,      # 24
+                  CommandType.read, 0, 0, 0, 0, 12,     # 30
+                  CommandType.print, 0, 0, 0, 0, 12,    # 36
+                  CommandType.stop, 0, 0, 0, 0, 0       # 42
+                  ], dtype=np.byte)
     arr = x.tobytes()
     with open('data/fib', 'wb') as fout:
         fout.write(arr)
