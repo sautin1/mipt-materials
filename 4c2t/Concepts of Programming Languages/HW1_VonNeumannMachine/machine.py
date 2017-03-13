@@ -24,6 +24,9 @@ class Table(object):
     def set_instruction_pointer(self, new_value):
         self.instructions[0].value = new_value
 
+    def get_instruction_pointer(self):
+        return self.instructions[0].value
+
     def push_to_stack(self, value):
         self.instructions.append(StackInstruction(value=value))
         self.instructions[1].value += INSTRUCTION_LENGTH
@@ -45,9 +48,9 @@ class Machine(object):
         table = self.table
         found_stop = False
         while not found_stop:
-            instruction_idx = table.get_instruction_index()
-            print('run: ', table[instruction_idx].value)
-            instruction = table.instructions[instruction_idx]
+            instruction_pointer = table.get_instruction_pointer()
+            print('run: ', instruction_pointer, table[instruction_pointer])
+            instruction = table[instruction_pointer]
             found_stop = instruction.execute(table)
 
 if __name__ == '__main__':
@@ -61,8 +64,8 @@ if __name__ == '__main__':
     x = np.array([CommandType.glob, 0, 0, 0, 0, 0,
                   CommandType.glob, 0, 0, 0, 0, 0,
                   CommandType.glob, 0, 0, 0, 0, 0,
-                  CommandType.mov, 0, 0, 2, 0, 0,
-                  CommandType.print, 0, 0, 0, 0, 2,
+                  CommandType.mov, 0, 0, 12, 0, 0,
+                  CommandType.print, 0, 0, 0, 0, 12,
                   CommandType.stop, 0, 0, 0, 0, 0], dtype=np.byte)
     arr = x.tobytes()
     with open('data/fib', 'wb') as fout:
