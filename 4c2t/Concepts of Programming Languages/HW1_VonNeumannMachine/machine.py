@@ -63,7 +63,7 @@ if __name__ == '__main__':
                   CommandType.mov, 1, 0, 12, 0, 4,      # 18
                   CommandType.sub, 2, 0, 12, 0, 1,      # 24
                   CommandType.print, 0, 0, 0, 0, 12,    # 30
-                  CommandType.cjmp, 1, 0, 48, 0, 24,    # 36
+                  CommandType.cjump, 1, 0, 48, 0, 24,   # 36
                   CommandType.print, 0, 0, 0, 0, 0,     # 42
                   CommandType.stop, 0, 0, 0, 0, 0       # 48
                   ], dtype=np.byte)

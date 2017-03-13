@@ -7,7 +7,7 @@ from .other import JmpInstruction, CjmpInstruction, MovInstruction, StopInstruct
 
 
 class CommandType(IntEnum):
-    glob, stack, push, pop, mov, jmp, cjmp, add, sub, mul, div, mod, print, read, stop = range(15)
+    glob, stack, push, pop, mov, jmp, cjump, add, sub, mul, div, mod, print, read, stop = range(15)
 
 
 command_type_to_instruction = {
@@ -17,7 +17,7 @@ command_type_to_instruction = {
     CommandType.pop: PopInstruction,
     CommandType.mov: MovInstruction,
     CommandType.jmp: JmpInstruction,
-    CommandType.cjmp: CjmpInstruction,
+    CommandType.cjump: CjmpInstruction,
     CommandType.add: AddInstruction,
     CommandType.sub: SubInstruction,
     CommandType.mul: MulInstruction,
