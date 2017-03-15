@@ -1,4 +1,7 @@
-.fib n:
+GLOB n
+GLOB res
+
+FUN .fib n
     VAR i
     VAR res
     VAR tmp
@@ -8,22 +11,20 @@
     IF EQ0 n .trivial
 
     MOV i 2
-    .loop:
-        CALL fib n -> tmp
+    LAB .loop
+        CALL .fib n -> tmp
         ADD res tmp -> res
         SUB i 1 -> i
         SUB n 1 -> n
         IF EQ0 i .nontrivial .loop
-    .trivial:
+    LAB .trivial
         RET 1
-    .nontrivial:
+    LAB .nontrivial
         RET res
 
-main:
-    VAR n
-    VAR res
-    PRINT "Calculate Fibonacci numbers"
-    PRINT "Enter a number: "
+FUN .main
+    PRINT '"Calculate Fibonacci numbers"'
+    PRINT '"Enter a number: "'
     READ -> n
-    CALL fib n -> res
+    CALL .fib n -> res
     PRINT res

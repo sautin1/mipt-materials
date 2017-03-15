@@ -2,7 +2,7 @@ from .base import Instruction
 
 
 class GlobInstruction(Instruction):
-    def __init__(self, flag, args):
+    def __init__(self, flag=None, args=None):
         Instruction.__init__(self, flag, args)
 
     def to_bytes(self):

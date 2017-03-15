@@ -1,7 +1,7 @@
 from .base import Instruction
 
 
-class MovInstruction(Instruction):
+class MoveInstruction(Instruction):
     def __init__(self, flag, args):
         Instruction.__init__(self, flag, args)
 

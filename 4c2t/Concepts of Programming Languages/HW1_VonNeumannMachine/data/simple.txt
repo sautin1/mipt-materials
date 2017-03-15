@@ -1,0 +1,4 @@
+GLOB n
+GLOB res
+MOV res 13
+PRINT '"lol abc"'

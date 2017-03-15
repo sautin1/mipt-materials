@@ -4,13 +4,25 @@ from instructions.base import INSTRUCTION_LENGTH
 from instructions.construction import CommandType, instruction_from_bytes
 from instructions.memory import StackInstruction
 
+from instructions.memory import GlobInstruction
+
 
 class Table(object):
-    def __init__(self, table_bytes):
-        self.instructions = list(map(instruction_from_bytes, table_bytes))
+    def __init__(self, table_bytes=None):
+        self.instructions = [
+            GlobInstruction(),  # instruction pointer
+            GlobInstruction(),  # stack pointer
+            GlobInstruction()   # arithmetic result
+        ]
+        if table_bytes is not None:
+            self.instructions += list(map(instruction_from_bytes, table_bytes))
 
     def __getitem__(self, item):
         return self.instructions[item // INSTRUCTION_LENGTH]
+
+    @staticmethod
+    def get_arithmetic_result_address():
+        return INSTRUCTION_LENGTH * 2
 
     def get_instruction_index(self):
         return self.instructions[0].value // INSTRUCTION_LENGTH
@@ -40,6 +52,9 @@ class Table(object):
 
     def set_arithmetic_result(self, new_value):
         self.instructions[2].value = new_value
+
+    def size(self):
+        return len(self.instructions) * INSTRUCTION_LENGTH
 
 
 class Machine(object):

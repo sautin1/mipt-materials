@@ -1,4 +1,4 @@
-from .byte_utils import byte_array_to_int
+from byte_utils import byte_array_to_int
 
 INSTRUCTION_LENGTH = 6
 

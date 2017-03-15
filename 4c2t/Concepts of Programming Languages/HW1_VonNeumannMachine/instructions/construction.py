@@ -3,7 +3,7 @@ from enum import IntEnum
 from .arithmetics import AddInstruction, SubInstruction, MulInstruction, DivInstruction, ModInstruction
 from .io import ReadInstruction, PrintInstruction
 from .memory import GlobInstruction, StackInstruction, PushInstruction, PopInstruction
-from .other import JmpInstruction, CjmpInstruction, MovInstruction, StopInstruction
+from .other import JmpInstruction, CjmpInstruction, MoveInstruction, StopInstruction
 
 
 class CommandType(IntEnum):
@@ -15,7 +15,7 @@ command_type_to_instruction = {
     CommandType.stack: StackInstruction,
     CommandType.push: PushInstruction,
     CommandType.pop: PopInstruction,
-    CommandType.mov: MovInstruction,
+    CommandType.mov: MoveInstruction,
     CommandType.jmp: JmpInstruction,
     CommandType.cjump: CjmpInstruction,
     CommandType.add: AddInstruction,
