@@ -1,4 +1,6 @@
 GLOB n
 GLOB res
-MOV res 13
+LABEL lol
+MOVE res 13
 PRINT '"lol abc"'
+PRINT res

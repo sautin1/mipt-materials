@@ -24,3 +24,24 @@ n+m+3. instr_m
 n+m+4. stack_1
 ...
 n+m+k+3. stack_k
+
+GLOB name
+VAR name
+FUN name arg1 ... argN
+LABEL name
+IF operator varName labelNameTrue [labelNameFalse]
+
+ADD varName1 varName2 -> resultVarName
+ADD varName1 number -> resultVarName
+SUB varName1 varName2 -> resultVarName
+SUB varName1 number -> resultVarName
+MUL varName1 varName2 -> resultVarName
+MUL varName1 number -> resultVarName
+DIV varName1 varName2 -> resultVarName
+DIV varName1 number -> resultVarName
+MOD varName1 varName2 -> resultVarName
+MOD varName1 number -> resultVarName
+
+READ -> varName
+PRINT '"stringContents"'
+PRINT name

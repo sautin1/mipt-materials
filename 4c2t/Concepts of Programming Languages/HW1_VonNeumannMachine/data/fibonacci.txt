@@ -10,16 +10,16 @@ FUN .fib n
     SUB n 1 -> n
     IF EQ0 n .trivial
 
-    MOV i 2
-    LAB .loop
+    MOVE i 2
+    LABEL .loop
         CALL .fib n -> tmp
         ADD res tmp -> res
         SUB i 1 -> i
         SUB n 1 -> n
         IF EQ0 i .nontrivial .loop
-    LAB .trivial
+    LABEL .trivial
         RET 1
-    LAB .nontrivial
+    LABEL .nontrivial
         RET res
 
 FUN .main

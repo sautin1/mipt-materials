@@ -3,8 +3,8 @@ from operator import add, sub, mul, floordiv, mod
 
 
 class ArithmeticInstruction(Instruction):
-    def __init__(self, flag, args):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def calculate_result(self, operation, table):
         x = table[self.addresses[0]].value if self.flag % 2 == 0 else self.addresses[0]
@@ -13,8 +13,8 @@ class ArithmeticInstruction(Instruction):
 
 
 class AddInstruction(ArithmeticInstruction):
-    def __init__(self, flag, args):
-        ArithmeticInstruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -26,8 +26,8 @@ class AddInstruction(ArithmeticInstruction):
 
 
 class SubInstruction(ArithmeticInstruction):
-    def __init__(self, flag, args):
-        ArithmeticInstruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -39,8 +39,8 @@ class SubInstruction(ArithmeticInstruction):
 
 
 class MulInstruction(ArithmeticInstruction):
-    def __init__(self, flag, args):
-        ArithmeticInstruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -52,8 +52,8 @@ class MulInstruction(ArithmeticInstruction):
 
 
 class DivInstruction(ArithmeticInstruction):
-    def __init__(self, flag, args):
-        ArithmeticInstruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -65,8 +65,8 @@ class DivInstruction(ArithmeticInstruction):
 
 
 class ModInstruction(ArithmeticInstruction):
-    def __init__(self, flag, args):
-        ArithmeticInstruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass

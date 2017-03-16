@@ -2,8 +2,8 @@ from .base import Instruction
 
 
 class GlobInstruction(Instruction):
-    def __init__(self, flag=None, args=None):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=0):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -13,8 +13,8 @@ class GlobInstruction(Instruction):
 
 
 class StackInstruction(Instruction):
-    def __init__(self, flag=None, args=None, value=None):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=0):
+        Instruction.__init__(self, flag, addresses, value)
         if args is None:
             self.value = value
 
@@ -26,8 +26,8 @@ class StackInstruction(Instruction):
 
 
 class PushInstruction(Instruction):
-    def __init__(self, flag, args):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -39,8 +39,8 @@ class PushInstruction(Instruction):
 
 
 class PopInstruction(Instruction):
-    def __init__(self, flag, args):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass

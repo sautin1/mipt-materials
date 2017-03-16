@@ -2,8 +2,8 @@ from .base import Instruction
 
 
 class PrintInstruction(Instruction):
-    def __init__(self, flag, args):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
@@ -15,8 +15,8 @@ class PrintInstruction(Instruction):
 
 
 class ReadInstruction(Instruction):
-    def __init__(self, flag, args):
-        Instruction.__init__(self, flag, args)
+    def __init__(self, flag=0, addresses=None, value=None):
+        Instruction.__init__(self, flag, addresses, value)
 
     def to_bytes(self):
         pass
