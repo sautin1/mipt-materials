@@ -1,12 +1,15 @@
 from .base import Instruction
 
+from instructions.opcodes import OpcodeType
+
 
 class GlobInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.glob
 
     def execute(self, table):
         return Instruction.execute(self, table)
@@ -15,11 +18,10 @@ class GlobInstruction(Instruction):
 class StackInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
-        if args is None:
-            self.value = value
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.stack
 
     def execute(self, table):
         return Instruction.execute(self, table)
@@ -29,8 +31,9 @@ class PushInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.push
 
     def execute(self, table):
         push_value = self.value if self.flag else table[self.addresses[-1]].value
@@ -42,8 +45,9 @@ class PopInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.pop
 
     def execute(self, table):
         table.pop_from_stack()

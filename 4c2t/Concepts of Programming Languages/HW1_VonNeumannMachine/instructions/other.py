@@ -1,28 +1,33 @@
 from enum import IntEnum
+import numpy as np
+
 from .base import Instruction
+from .opcodes import OpcodeType
+
+from byte_utils import int_to_byte_array
 
 
-class CjmpLogicalOperator(IntEnum):
+class CjumpLogicalOperator(IntEnum):
     EQ0, G0, L0, GE0, LE0, NEQ0 = range(6)
 
 
 logical_operator_name_to_logical_operator = {
-    'EQ0': CjmpLogicalOperator.EQ0,
-    'G0': CjmpLogicalOperator.G0,
-    'L0': CjmpLogicalOperator.L0,
-    'GE0': CjmpLogicalOperator.GE0,
-    'LE0': CjmpLogicalOperator.LE0,
-    'NEQ0': CjmpLogicalOperator.NEQ0
+    'EQ0': CjumpLogicalOperator.EQ0,
+    'G0': CjumpLogicalOperator.G0,
+    'L0': CjumpLogicalOperator.L0,
+    'GE0': CjumpLogicalOperator.GE0,
+    'LE0': CjumpLogicalOperator.LE0,
+    'NEQ0': CjumpLogicalOperator.NEQ0
 }
 
 
 logical_operator_to_predicate = {
-    CjmpLogicalOperator.EQ0: lambda x: x == 0,
-    CjmpLogicalOperator.G0: lambda x: x > 0,
-    CjmpLogicalOperator.L0: lambda x: x < 0,
-    CjmpLogicalOperator.GE0: lambda x: x >= 0,
-    CjmpLogicalOperator.LE0: lambda x: x <= 0,
-    CjmpLogicalOperator.NEQ0: lambda x: x != 0
+    CjumpLogicalOperator.EQ0: lambda x: x == 0,
+    CjumpLogicalOperator.G0: lambda x: x > 0,
+    CjumpLogicalOperator.L0: lambda x: x < 0,
+    CjumpLogicalOperator.GE0: lambda x: x >= 0,
+    CjumpLogicalOperator.LE0: lambda x: x <= 0,
+    CjumpLogicalOperator.NEQ0: lambda x: x != 0
 }
 
 
@@ -30,8 +35,9 @@ class MoveInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.move
 
     def execute(self, table):
         address_to, address_from = self.addresses
@@ -39,19 +45,20 @@ class MoveInstruction(Instruction):
         return Instruction.execute(self, table)
 
 
-class JmpInstruction(Instruction):
+class JumpInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.jump
 
     def execute(self, table):
         table.set_instruction_pointer(self.addresses[-1])
         return False
 
 
-class CjmpInstruction(Instruction):
+class CjumpInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
@@ -61,15 +68,16 @@ class CjmpInstruction(Instruction):
 
     @staticmethod
     def add_else_to_flag(flag):
-        return flag | CjmpInstruction.get_else_bitwise_shift()
+        return flag | CjumpInstruction.get_else_bitwise_shift()
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.cjump
 
     def execute(self, table):
-        flag = self.flag & (CjmpInstruction.get_else_bitwise_shift() - 1)
-        predicate = logical_operator_to_predicate[CjmpLogicalOperator(flag)]
-        need_else = self.flag & CjmpInstruction.get_else_bitwise_shift()
+        flag = self.flag & (CjumpInstruction.get_else_bitwise_shift() - 1)
+        predicate = logical_operator_to_predicate[CjumpLogicalOperator(flag)]
+        need_else = self.flag & CjumpInstruction.get_else_bitwise_shift()
         if predicate(table.get_arithmetic_result()):
             table.set_instruction_pointer(self.addresses[-1])
         elif need_else:
@@ -83,8 +91,9 @@ class StopInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.cjump
 
     def execute(self, table):
         return True

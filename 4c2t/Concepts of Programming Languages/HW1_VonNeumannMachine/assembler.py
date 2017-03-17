@@ -1,13 +1,15 @@
 import shlex
+import numpy as np
 
-from machine import Table
+from table import Table
 
 from instructions.memory import GlobInstruction
 from instructions.arithmetics import AddInstruction, SubInstruction, MulInstruction, DivInstruction, ModInstruction
 from instructions.io import PrintInstruction, ReadInstruction
-from instructions.other import MoveInstruction, JmpInstruction, CjmpInstruction
-
+from instructions.other import MoveInstruction, JumpInstruction, CjumpInstruction
 from instructions.other import logical_operator_name_to_logical_operator
+
+from byte_utils import int_to_byte_array
 
 command_name_to_arithmetic_instruction = {
     'ADD': AddInstruction,
@@ -16,6 +18,24 @@ command_name_to_arithmetic_instruction = {
     'DIV': DivInstruction,
     'MOD': ModInstruction
 }
+
+
+class Serializer(object):
+    @staticmethod
+    def to_byte_array(instruction, need_addresses=True):
+        result = np.array([instruction.get_type(), instruction.flag])
+        if need_addresses:
+            addresses = np.array(list(map(lambda address: int_to_byte_array(address, 2),
+                                          instruction.addresses))).flatten()
+            result = np.concatenate((result, addresses))
+        else:
+            value = int_to_byte_array(instruction.value, 4)
+            result = np.append(result, value)
+        return result
+
+    @staticmethod
+    def to_byte_string(instruction, need_addresses=True):
+        return Serializer.to_byte_array(instruction, need_addresses).tobytes()
 
 
 class Assembler(object):
@@ -148,7 +168,7 @@ class Assembler(object):
     def parse_jump(self, command_words):
         label_number = self.__get_label_number_or_add(command_words[1])
         self.instructions_with_wrong_addresses.append((len(self.table.instructions), False, True))
-        return [JmpInstruction(addresses=[0, label_number])]
+        return [JumpInstruction(addresses=[0, label_number])]
 
     def parse_if(self, command_words):
         instructions = []
@@ -164,13 +184,13 @@ class Assembler(object):
         cjmp_instruction_index = len(self.table.instructions) + len(instructions)
         has_left_address = len(command_words) >= 5
         if has_left_address:
-            operator = CjmpInstruction.add_else_to_flag(operator)
+            operator = CjumpInstruction.add_else_to_flag(operator)
             address_false = self.__get_label_number_or_add(command_words[4])
         else:
             address_false = 0
             self.instructions_with_wrong_addresses.append((len(self.table.instructions), False, True))
         self.instructions_with_wrong_addresses.append((cjmp_instruction_index, len(command_words) >= 5, True))
-        instructions.append(CjmpInstruction(flag=operator, addresses=[address_false, address_true]))
+        instructions.append(CjumpInstruction(flag=operator, addresses=[address_false, address_true]))
         return instructions
 
     def parse_read(self, command_words):
@@ -201,7 +221,7 @@ class Assembler(object):
 
         label_number = self.__get_label_number_or_add(command_words[1])
         self.instructions_with_wrong_addresses.append((len(self.table.instructions), False, True))
-        instructions.append(JmpInstruction(addresses=[0, label_number]))
+        instructions.append(JumpInstruction(addresses=[0, label_number]))
 
         self.local_name_to_address_stack.append(local_name_to_address)
         self.arg_name_to_address_stack.append(arg_name_to_address)
@@ -213,7 +233,7 @@ class Assembler(object):
         address_from = self.__calc_args(flag, command_words[1:2])[0]
         address_to = self.table.get_arithmetic_result_address()
         self.table.instructions.append(MoveInstruction(flag, addresses=[address_to, address_from]))
-        jmp_instruction = JmpInstruction(value=self.table.stack[-1].value)
+        jmp_instruction = JumpInstruction(value=self.table.stack[-1].value)
         self.table.instructions.append(jmp_instruction)
         self.local_name_to_address_stack.pop()
 
@@ -243,7 +263,7 @@ class Assembler(object):
     def write(self, path_to):
         with open(path_to, 'wb') as fout:
             for instruction in self.table.instructions:
-                fout.write(instruction.to_bytes())
+                fout.write(Serializer.to_byte_string(instruction))
 
 
 if __name__ == '__main__':

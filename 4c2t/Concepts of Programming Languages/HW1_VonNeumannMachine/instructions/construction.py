@@ -1,24 +1,19 @@
-from enum import IntEnum
-
 from .arithmetics import AddInstruction, SubInstruction, MulInstruction, DivInstruction, ModInstruction
 from .io import ReadInstruction, PrintInstruction
 from .memory import GlobInstruction, StackInstruction, PushInstruction, PopInstruction
-from .other import JmpInstruction, CjmpInstruction, MoveInstruction, StopInstruction
+from .other import JumpInstruction, CjumpInstruction, MoveInstruction, StopInstruction
 from byte_utils import byte_array_to_int
 
-
-class OpcodeType(IntEnum):
-    glob, stack, push, pop, mov, jmp, cjump, add, sub, mul, div, mod, print, read, stop = range(15)
-
+from .opcodes import OpcodeType
 
 opcode_type_to_instruction = {
     OpcodeType.glob: GlobInstruction,
     OpcodeType.stack: StackInstruction,
     OpcodeType.push: PushInstruction,
     OpcodeType.pop: PopInstruction,
-    OpcodeType.mov: MoveInstruction,
-    OpcodeType.jmp: JmpInstruction,
-    OpcodeType.cjump: CjmpInstruction,
+    OpcodeType.move: MoveInstruction,
+    OpcodeType.jump: JumpInstruction,
+    OpcodeType.cjump: CjumpInstruction,
     OpcodeType.add: AddInstruction,
     OpcodeType.sub: SubInstruction,
     OpcodeType.mul: MulInstruction,

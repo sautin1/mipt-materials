@@ -1,6 +1,8 @@
 from .base import Instruction
 from operator import add, sub, mul, floordiv, mod
 
+from .opcodes import OpcodeType
+
 
 class ArithmeticInstruction(Instruction):
     def __init__(self, flag=0, addresses=None, value=None):
@@ -16,8 +18,9 @@ class AddInstruction(ArithmeticInstruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.add
 
     def execute(self, table):
         res = self.calculate_result(add, table)
@@ -29,8 +32,9 @@ class SubInstruction(ArithmeticInstruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.sub
 
     def execute(self, table):
         res = self.calculate_result(sub, table)
@@ -42,8 +46,9 @@ class MulInstruction(ArithmeticInstruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.mul
 
     def execute(self, table):
         res = self.calculate_result(mul, table)
@@ -55,8 +60,9 @@ class DivInstruction(ArithmeticInstruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.div
 
     def execute(self, table):
         res = self.calculate_result(floordiv, table)
@@ -68,8 +74,9 @@ class ModInstruction(ArithmeticInstruction):
     def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
-    def to_bytes(self):
-        pass
+    @staticmethod
+    def get_type():
+        return OpcodeType.mod
 
     def execute(self, table):
         res = self.calculate_result(mod, table)
