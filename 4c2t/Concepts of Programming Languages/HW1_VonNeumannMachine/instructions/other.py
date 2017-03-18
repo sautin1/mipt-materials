@@ -1,10 +1,7 @@
 from enum import IntEnum
-import numpy as np
 
 from .base import Instruction
 from .opcodes import OpcodeType
-
-from byte_utils import int_to_byte_array
 
 
 class CjumpLogicalOperator(IntEnum):

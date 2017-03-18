@@ -1,6 +1,8 @@
 GLOB n
 GLOB res
-LABEL lol
+LABEL .lol
 MOVE res 13
-PRINT '"lol abc"'
+LABEL .lol2
+READ -> n
+IF EQ0 n .lol .lol2
 PRINT res
