@@ -60,8 +60,11 @@ class Table(object):
     def set_arithmetic_result(self, new_value):
         self.instructions[2].value = new_value
 
-    def size_without_stack(self):
-        return len(self.instructions) * INSTRUCTION_LENGTH
+    def size(self, need_stack=True):
+        result = len(self.instructions) * INSTRUCTION_LENGTH
+        if need_stack:
+            result += len(self.stack) * INSTRUCTION_LENGTH
+        return result
 
     def get_table_with_stack(self):
         return self.instructions + self.stack

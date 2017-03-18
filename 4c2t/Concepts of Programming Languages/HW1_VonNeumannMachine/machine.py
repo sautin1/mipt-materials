@@ -9,7 +9,7 @@ from assembler import Serializer
 
 class Machine(object):
     def __init__(self, path):
-        table_bytes = np.fromfile(path, dtype=np.byte).reshape((-1, INSTRUCTION_LENGTH))
+        table_bytes = np.fromfile(path, dtype=np.ubyte).reshape((-1, INSTRUCTION_LENGTH))
         self.table = Table(table_bytes)
 
     def run(self):
@@ -31,7 +31,7 @@ if __name__ == '__main__':
                   OpcodeType.cjump, 1 | 32, 0, 48, 0, 24,  # 36
                   OpcodeType.print, 0, 0, 0, 0, 0,  # 42
                   OpcodeType.stop, 0, 0, 0, 0, 0  # 48
-                  ], dtype=np.byte)
+                  ], dtype=np.ubyte)
     arr = x.tobytes()
     with open('data/fib', 'wb') as fout:
         fout.write(arr)

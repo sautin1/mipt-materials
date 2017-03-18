@@ -22,11 +22,11 @@ command_name_to_arithmetic_instruction = {
 
 class Serializer(object):
     @staticmethod
-    def to_byte_array(instruction, need_addresses=True):
-        result = np.array([instruction.get_type(), instruction.flag])
-        if need_addresses:
+    def to_byte_array(instruction):
+        result = np.array([instruction.get_type(), instruction.flag], dtype=np.ubyte)
+        if instruction.addresses is not None:
             addresses = np.array(list(map(lambda address: int_to_byte_array(address, 2),
-                                          instruction.addresses))).flatten()
+                                          instruction.addresses)), dtype=np.ubyte).flatten()
             result = np.concatenate((result, addresses))
         else:
             value = int_to_byte_array(instruction.value, 4)
@@ -34,8 +34,8 @@ class Serializer(object):
         return result
 
     @staticmethod
-    def to_byte_string(instruction, need_addresses=True):
-        return Serializer.to_byte_array(instruction, need_addresses).tobytes()
+    def to_byte_string(instruction):
+        return Serializer.to_byte_array(instruction).tobytes()
 
 
 class Assembler(object):
@@ -81,8 +81,14 @@ class Assembler(object):
         }
 
     def __get_var_address(self, name):
-        result = self.local_name_to_address_stack[-1].get(name) or self.arg_name_to_address_stack[-1].get(name)
-        return result or self.global_name_to_address.get(name)
+        result = None
+        if self.local_name_to_address_stack:
+            result = result or self.local_name_to_address_stack[-1].get(name)
+        if self.arg_name_to_address_stack:
+            result = result or self.arg_name_to_address_stack[-1].get(name)
+        if self.global_name_to_address:
+            result = result or self.global_name_to_address.get(name)
+        return result
 
     def __get_label_number_or_add(self, label_name):
         label_number = len(self.label_name_to_number)
@@ -131,44 +137,45 @@ class Assembler(object):
                 previous_function_name = None
                 locals = []
 
+    #  1/2
     def parse_glob(self, command_words):
-        instruction_address = self.table.size()
-        self.globals[command_words[1]] = instruction_address
-        return [GlobInstruction()]
+        instruction_address = self.table.size(need_stack=False)
+        self.global_name_to_address[command_words[1]] = instruction_address
+        self.table.instructions.append(GlobInstruction())
 
     def parse_var(self, command_words):
         var_address = self.table.push_to_stack()
         self.locals[command_words[1]] = var_address
         return []
 
+    #  1/2
     def parse_print(self, command_words):
-        instructions = []
         arg = command_words[1]
         if arg[0] == '\"' and arg[-1] == '\"':
             for symbol in arg[1:-1]:
-                instructions.append(PrintInstruction(flag=1, value=ord(symbol)))
+                self.table.instructions.append(PrintInstruction(flag=1, value=ord(symbol)))
         else:
             address = self.__get_var_address(arg)
             print(address)
-            instructions.append(PrintInstruction(flag=0, addresses=[0, address]))
-        return instructions
+            self.table.instructions.append(PrintInstruction(flag=0, addresses=[0, address]))
 
+    #  1/2
     def parse_move(self, command_words):
         address_to = self.__get_var_address(command_words[1])
-        flag = self.__calc_flag(command_words[2])
+        flag = self.__calc_flag([command_words[2]])
         address_from = self.__calc_args(flag, [command_words[2]])[0]
-        return [MoveInstruction(flag=flag, addresses=[address_to, address_from])]
+        self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address_to, address_from]))
 
+    #  1/2
     def parse_label(self, command_words):
         label_name = command_words[1]
         label_number = self.__get_label_number_or_add(label_name)
         self.label_number_to_address[label_number] = self.table.size()
-        return []
 
     def parse_jump(self, command_words):
         label_number = self.__get_label_number_or_add(command_words[1])
         self.instructions_with_wrong_addresses.append((len(self.table.instructions), False, True))
-        return [JumpInstruction(addresses=[0, label_number])]
+        self.table.instructions.append(JumpInstruction(addresses=[0, label_number]))
 
     def parse_if(self, command_words):
         instructions = []
@@ -201,7 +208,6 @@ class Assembler(object):
         label_name = command_words[1]
         label_number = self.__get_label_number_or_add(label_name)
         self.label_number_to_address[label_number] = self.table.size_without_stack()
-        return []
 
     def parse_call(self, command_words):
         instructions = []
@@ -238,31 +244,27 @@ class Assembler(object):
         self.local_name_to_address_stack.pop()
 
     def parse_arithmetic(self, command_words):
-        instructions = []
-
         arithmetic_instruction = command_name_to_arithmetic_instruction.get(command_words[0])
         arg_words = command_words[1:3]
         flag = self.__calc_flag(arg_words)
         args = self.__calc_args(flag, arg_words)
-        instructions.append(arithmetic_instruction(flag, addresses=args))
+        self.table.instructions.append(arithmetic_instruction(flag, addresses=args))
 
         result_name = command_words[4]
         result_address = self.__get_var_address(result_name)
         addresses = [result_address, self.table.get_arithmetic_result_address()]
-        instructions.append(MoveInstruction(flag=0, addresses=addresses))
-        return instructions
+        self.table.instructions.append(MoveInstruction(flag=0, addresses=addresses))
 
     def parse_table(self):
-        table = self.table
         for command_words in self.words:
             print(command_words)
-            instructions = self.command_name_to_parser[command_words[0]](command_words)
-            table.instructions += instructions
+            self.command_name_to_parser[command_words[0]](command_words)
         self.__replace_label_numbers()
 
     def write(self, path_to):
         with open(path_to, 'wb') as fout:
             for instruction in self.table.instructions:
+                print(Serializer.to_byte_string(instruction))
                 fout.write(Serializer.to_byte_string(instruction))
 
 
@@ -270,4 +272,4 @@ if __name__ == '__main__':
     # assembler = Assembler('data/fibonacci.txt')
     assembler = Assembler('data/simple.txt')
     assembler.parse_table()
-    # assembler.write('data/fib')
+    assembler.write('data/simple')
