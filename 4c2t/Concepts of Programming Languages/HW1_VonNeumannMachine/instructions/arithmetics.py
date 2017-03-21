@@ -1,26 +1,26 @@
 from .base import Instruction
 from operator import add, sub, mul, floordiv, mod
 
-from .opcodes import OpcodeType
+from .enums import OpcodeType, InstructionFlag
 
 
 class ArithmeticInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     def calculate_result(self, operation, table):
-        x = table[self.addresses[0]].value if self.flag % 2 == 0 else self.addresses[0]
-        y = table[self.addresses[1]].value if self.flag // 2 == 0 else self.addresses[1]
+        x = self.get_address_by_flag(table, is_first=True)
+        y = self.get_address_by_flag(table, is_first=False)
         return operation(x, y)
 
 
 class AddInstruction(ArithmeticInstruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.add
+        return OpcodeType.ADD
 
     def execute(self, table):
         res = self.calculate_result(add, table)
@@ -29,12 +29,12 @@ class AddInstruction(ArithmeticInstruction):
 
 
 class SubInstruction(ArithmeticInstruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.sub
+        return OpcodeType.SUB
 
     def execute(self, table):
         res = self.calculate_result(sub, table)
@@ -43,12 +43,12 @@ class SubInstruction(ArithmeticInstruction):
 
 
 class MulInstruction(ArithmeticInstruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.mul
+        return OpcodeType.MUL
 
     def execute(self, table):
         res = self.calculate_result(mul, table)
@@ -57,12 +57,12 @@ class MulInstruction(ArithmeticInstruction):
 
 
 class DivInstruction(ArithmeticInstruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.div
+        return OpcodeType.DIV
 
     def execute(self, table):
         res = self.calculate_result(floordiv, table)
@@ -71,12 +71,12 @@ class DivInstruction(ArithmeticInstruction):
 
 
 class ModInstruction(ArithmeticInstruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.mod
+        return OpcodeType.MOD
 
     def execute(self, table):
         res = self.calculate_result(mod, table)

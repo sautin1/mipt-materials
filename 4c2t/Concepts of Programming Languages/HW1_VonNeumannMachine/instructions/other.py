@@ -1,11 +1,12 @@
 from enum import IntEnum
 
 from .base import Instruction
-from .opcodes import OpcodeType
+from .enums import OpcodeType, InstructionFlag
 
 
 class CjumpLogicalOperator(IntEnum):
     EQ0, G0, L0, GE0, LE0, NEQ0 = range(6)
+    # number of elements cannot exceed CjumpInstruction.get_else_bitwise_shift()
 
 
 logical_operator_name_to_logical_operator = {
@@ -29,26 +30,31 @@ logical_operator_to_predicate = {
 
 
 class MoveInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.move
+        return OpcodeType.MOVE
 
     def execute(self, table):
-        address_to, address_from = self.addresses
-        table[address_to].value = address_from if self.flag else table[address_from].value
+        assert self.flag & InstructionFlag.FIRST_ARG_IS_ADDR, 'Move destination has to be an address'
+        idx = self.addresses[0]
+        if self.flag & InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR:
+            idx = table[self.addresses[0]].value
+        value = self.get_address_by_flag(table, is_first=False)
+
+        table[idx].value = value
         return Instruction.execute(self, table)
 
 
 class JumpInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.jump
+        return OpcodeType.JUMP
 
     def execute(self, table):
         table.set_instruction_pointer(self.addresses[-1])
@@ -56,12 +62,12 @@ class JumpInstruction(Instruction):
 
 
 class CjumpInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_else_bitwise_shift():
-        return 32
+        return 16
 
     @staticmethod
     def add_else_to_flag(flag):
@@ -69,7 +75,7 @@ class CjumpInstruction(Instruction):
 
     @staticmethod
     def get_type():
-        return OpcodeType.cjump
+        return OpcodeType.CJUMP
 
     def execute(self, table):
         flag = self.flag & (CjumpInstruction.get_else_bitwise_shift() - 1)
@@ -85,12 +91,12 @@ class CjumpInstruction(Instruction):
 
 
 class StopInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.cjump
+        return OpcodeType.CJUMP
 
     def execute(self, table):
         return True

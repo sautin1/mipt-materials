@@ -1,4 +1,4 @@
-from instructions.opcodes import OpcodeType
+from instructions.enums import OpcodeType
 from instructions.construction import instruction_from_bytes
 from instructions.base import INSTRUCTION_LENGTH
 
@@ -10,7 +10,7 @@ class Table(object):
         self.stack = []
         self.instructions = []
         if table_bytes is not None:
-            stack_instruction_index = next((i for i, x in enumerate(table_bytes) if x[0] == OpcodeType.stack),
+            stack_instruction_index = next((i for i, x in enumerate(table_bytes) if x[0] == OpcodeType.STACK),
                                            len(table_bytes))
             self.instructions = list(map(instruction_from_bytes, table_bytes))
             self.stack = self.instructions[stack_instruction_index:]

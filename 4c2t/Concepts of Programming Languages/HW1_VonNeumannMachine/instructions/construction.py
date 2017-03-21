@@ -4,24 +4,24 @@ from .memory import GlobInstruction, StackInstruction, PushInstruction, PopInstr
 from .other import JumpInstruction, CjumpInstruction, MoveInstruction, StopInstruction
 from byte_utils import byte_array_to_int
 
-from .opcodes import OpcodeType
+from .enums import OpcodeType
 
 opcode_type_to_instruction = {
-    OpcodeType.glob: GlobInstruction,
-    OpcodeType.stack: StackInstruction,
-    OpcodeType.push: PushInstruction,
-    OpcodeType.pop: PopInstruction,
-    OpcodeType.move: MoveInstruction,
-    OpcodeType.jump: JumpInstruction,
-    OpcodeType.cjump: CjumpInstruction,
-    OpcodeType.add: AddInstruction,
-    OpcodeType.sub: SubInstruction,
-    OpcodeType.mul: MulInstruction,
-    OpcodeType.div: DivInstruction,
-    OpcodeType.mod: ModInstruction,
-    OpcodeType.print: PrintInstruction,
-    OpcodeType.read: ReadInstruction,
-    OpcodeType.stop: StopInstruction
+    OpcodeType.GLOB: GlobInstruction,
+    OpcodeType.STACK: StackInstruction,
+    OpcodeType.PUSH: PushInstruction,
+    OpcodeType.POP: PopInstruction,
+    OpcodeType.MOVE: MoveInstruction,
+    OpcodeType.JUMP: JumpInstruction,
+    OpcodeType.CJUMP: CjumpInstruction,
+    OpcodeType.ADD: AddInstruction,
+    OpcodeType.SUB: SubInstruction,
+    OpcodeType.MUL: MulInstruction,
+    OpcodeType.DIV: DivInstruction,
+    OpcodeType.MOD: ModInstruction,
+    OpcodeType.PRINT: PrintInstruction,
+    OpcodeType.READ: ReadInstruction,
+    OpcodeType.STOP: StopInstruction
 }
 
 

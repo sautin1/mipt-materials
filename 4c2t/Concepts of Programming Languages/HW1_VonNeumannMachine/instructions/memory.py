@@ -1,53 +1,53 @@
 from .base import Instruction
 
-from instructions.opcodes import OpcodeType
+from instructions.enums import OpcodeType, InstructionFlag
 
 
 class GlobInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=0):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.glob
+        return OpcodeType.GLOB
 
     def execute(self, table):
         return Instruction.execute(self, table)
 
 
 class StackInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=0):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.stack
+        return OpcodeType.STACK
 
     def execute(self, table):
         return Instruction.execute(self, table)
 
 
 class PushInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.push
+        return OpcodeType.PUSH
 
     def execute(self, table):
-        push_value = self.value if self.flag else table[self.addresses[-1]].value
+        push_value = self.get_address_by_flag(table, is_first=False)
         table.push_to_stack(push_value)
         return Instruction.execute(self, table)
 
 
 class PopInstruction(Instruction):
-    def __init__(self, flag=0, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.pop
+        return OpcodeType.POP
 
     def execute(self, table):
         table.pop_from_stack()

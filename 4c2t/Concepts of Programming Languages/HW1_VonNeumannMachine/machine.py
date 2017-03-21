@@ -1,7 +1,7 @@
 import numpy as np
 
 from instructions.base import INSTRUCTION_LENGTH
-from instructions.opcodes import OpcodeType
+from instructions.enums import OpcodeType, InstructionFlag, PrintEnum
 
 from table import Table
 from assembler import Serializer
@@ -22,15 +22,17 @@ class Machine(object):
             print('\tbytes:', Serializer.to_byte_array(instruction))
 
 if __name__ == '__main__':
-    x = np.array([OpcodeType.glob, 0, 0, 0, 0, 0,  # 0
-                  OpcodeType.glob, 0, 0, 0, 0, 0,  # 6
-                  OpcodeType.glob, 0, 0, 0, 0, 0,  # 12
-                  OpcodeType.move, 1, 0, 12, 0, 4,  # 18
-                  OpcodeType.sub, 2, 0, 12, 0, 1,  # 24
-                  OpcodeType.print, 0, 0, 0, 0, 12,  # 30
-                  OpcodeType.cjump, 1 | 32, 0, 48, 0, 24,  # 36
-                  OpcodeType.print, 0, 0, 0, 0, 0,  # 42
-                  OpcodeType.stop, 0, 0, 0, 0, 0  # 48
+    G0 = 1
+    HAS_ELSE_BRANCH = 16
+    x = np.array([OpcodeType.GLOB, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0,  # 0
+                  OpcodeType.GLOB, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0,  # 6
+                  OpcodeType.GLOB, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0,  # 12
+                  OpcodeType.MOVE, InstructionFlag.FIRST_ARG_IS_ADDR, 0, 12, 0, 4,  # 18
+                  OpcodeType.SUB, InstructionFlag.FIRST_ARG_IS_ADDR, 0, 12, 0, 1,  # 24
+                  OpcodeType.PRINT, PrintEnum.ADDR, 0, 0, 0, 12,  # 30
+                  OpcodeType.CJUMP, G0 | HAS_ELSE_BRANCH, 0, 48, 0, 24,  # 36
+                  OpcodeType.PRINT, PrintEnum.ADDR, 0, 0, 0, 0,  # 42
+                  OpcodeType.STOP, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0  # 48
                   ], dtype=np.ubyte)
     arr = x.tobytes()
     with open('data/fib', 'wb') as fout:
