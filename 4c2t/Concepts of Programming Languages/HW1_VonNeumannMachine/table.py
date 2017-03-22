@@ -24,11 +24,24 @@ class Table(object):
             self.stack = []
 
     def __getitem__(self, item):
-        return self.instructions[item // INSTRUCTION_LENGTH]
+        idx = item // INSTRUCTION_LENGTH
+        if idx < len(self.instructions):
+            result = self.instructions[idx]
+        else:
+            idx -= len(self.instructions)
+            result = self.stack[idx]
+        return result
 
     @staticmethod
-    def get_arithmetic_result_address():
+    def get_arithmetic_glob_address():
         return INSTRUCTION_LENGTH * 2
+
+    @staticmethod
+    def get_stack_pointer_address():
+        return INSTRUCTION_LENGTH
+
+    def __update_stack_pointer(self):
+        self.instructions[1].value = INSTRUCTION_LENGTH * (len(self.stack) - 1 + len(self.instructions))
 
     def get_instruction_index(self):
         return self.instructions[0].value // INSTRUCTION_LENGTH
@@ -47,12 +60,12 @@ class Table(object):
 
     def push_to_stack(self, value=0):
         self.stack.append(StackInstruction(value=value))
-        self.instructions[1].value += INSTRUCTION_LENGTH
+        self.__update_stack_pointer()
         return self.instructions[1].value
 
     def pop_from_stack(self):
         self.stack.pop()
-        self.instructions[1].value -= INSTRUCTION_LENGTH
+        self.__update_stack_pointer()
 
     def get_arithmetic_result(self):
         return self.instructions[2].value

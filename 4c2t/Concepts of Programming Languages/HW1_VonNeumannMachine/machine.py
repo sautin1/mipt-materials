@@ -22,17 +22,23 @@ class Machine(object):
             print('\tbytes:', Serializer.to_byte_array(instruction))
 
 if __name__ == '__main__':
-    G0 = 1
+    G0 = 5
     HAS_ELSE_BRANCH = 16
     x = np.array([OpcodeType.GLOB, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0,  # 0
                   OpcodeType.GLOB, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0,  # 6
                   OpcodeType.GLOB, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0,  # 12
-                  OpcodeType.MOVE, InstructionFlag.FIRST_ARG_IS_ADDR, 0, 12, 0, 4,  # 18
+                  # OpcodeType.MOVE, InstructionFlag.FIRST_ARG_IS_ADDR, 0, 12, 0, 4,  # 18
+                  OpcodeType.READ, InstructionFlag.LAST_ARG_IS_ADDR, 0, 0, 0, 12,  # 18
                   OpcodeType.SUB, InstructionFlag.FIRST_ARG_IS_ADDR, 0, 12, 0, 1,  # 24
                   OpcodeType.PRINT, PrintEnum.ADDR, 0, 0, 0, 12,  # 30
                   OpcodeType.CJUMP, G0 | HAS_ELSE_BRANCH, 0, 48, 0, 24,  # 36
                   OpcodeType.PRINT, PrintEnum.ADDR, 0, 0, 0, 0,  # 42
-                  OpcodeType.STOP, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 0  # 48
+                  OpcodeType.PUSH, InstructionFlag.ARGS_ARE_VALUES, 0, 0, 0, 120,  # 48
+                  OpcodeType.PRINT, PrintEnum.ADDR, 0, 0, 0, 6,  # 54
+                  OpcodeType.PRINT, PrintEnum.ADDR_OF_ADDR, 0, 0, 0, 6,  # 60
+                  OpcodeType.POP, 0, 0, 0, 0, 0,  # 66
+                  OpcodeType.PRINT, PrintEnum.ADDR, 0, 0, 0, 6,  # 72
+                  OpcodeType.STOP, 0, 0, 0, 0, 0  # 78
                   ], dtype=np.ubyte)
     arr = x.tobytes()
     with open('data/fib', 'wb') as fout:

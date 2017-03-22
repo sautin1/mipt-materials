@@ -30,7 +30,7 @@ logical_operator_to_predicate = {
 
 
 class MoveInstruction(Instruction):
-    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.FIRST_ARG_IS_ADDR, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -38,18 +38,19 @@ class MoveInstruction(Instruction):
         return OpcodeType.MOVE
 
     def execute(self, table):
-        assert self.flag & InstructionFlag.FIRST_ARG_IS_ADDR, 'Move destination has to be an address'
+        is_first_addr = self.flag & (InstructionFlag.FIRST_ARG_IS_ADDR | InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR)
+        assert is_first_addr, 'Move target has to be an address'
         idx = self.addresses[0]
         if self.flag & InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR:
             idx = table[self.addresses[0]].value
-        value = self.get_address_by_flag(table, is_first=False)
+        value = self.get_value_by_flag(table, is_first=False, need_address=True)
 
         table[idx].value = value
         return Instruction.execute(self, table)
 
 
 class JumpInstruction(Instruction):
-    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
+    def __init__(self, flag=None, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -91,7 +92,7 @@ class CjumpInstruction(Instruction):
 
 
 class StopInstruction(Instruction):
-    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
+    def __init__(self, flag=None, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod

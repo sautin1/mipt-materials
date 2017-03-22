@@ -4,7 +4,7 @@ from instructions.enums import OpcodeType, InstructionFlag
 
 
 class GlobInstruction(Instruction):
-    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=0):
+    def __init__(self, flag=None, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -16,7 +16,7 @@ class GlobInstruction(Instruction):
 
 
 class StackInstruction(Instruction):
-    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=0):
+    def __init__(self, flag=None, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -36,13 +36,13 @@ class PushInstruction(Instruction):
         return OpcodeType.PUSH
 
     def execute(self, table):
-        push_value = self.get_address_by_flag(table, is_first=False)
+        push_value = self.get_value_by_flag(table, need_address=False)
         table.push_to_stack(push_value)
         return Instruction.execute(self, table)
 
 
 class PopInstruction(Instruction):
-    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
+    def __init__(self, flag=None, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod

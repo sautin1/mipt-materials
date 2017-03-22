@@ -9,8 +9,8 @@ class ArithmeticInstruction(Instruction):
         Instruction.__init__(self, flag, addresses, value)
 
     def calculate_result(self, operation, table):
-        x = self.get_address_by_flag(table, is_first=True)
-        y = self.get_address_by_flag(table, is_first=False)
+        x = self.get_value_by_flag(table, is_first=True, need_address=True)
+        y = self.get_value_by_flag(table, is_first=False, need_address=True)
         return operation(x, y)
 
 

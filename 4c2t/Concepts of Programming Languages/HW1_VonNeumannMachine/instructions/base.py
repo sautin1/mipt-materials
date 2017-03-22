@@ -9,8 +9,7 @@ class Instruction(object):
         self.addresses = addresses
         self.value = value
 
-    def get_address_by_flag(self, table, is_first=False):
-        result = None
+    def get_value_by_flag(self, table, is_first=False, need_address=False):
         if is_first:
             address = self.addresses[0]
             if self.flag & InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR:
@@ -18,7 +17,7 @@ class Instruction(object):
             elif self.flag & InstructionFlag.FIRST_ARG_IS_ADDR:
                 result = table[address].value
             else:
-                result = address
+                result = address if need_address else self.value
         else:
             address = self.addresses[-1]
             if self.flag & InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR:
@@ -26,7 +25,7 @@ class Instruction(object):
             elif self.flag & InstructionFlag.LAST_ARG_IS_ADDR:
                 result = table[address].value
             else:
-                result = address
+                result = address if need_address else self.value
         return result
 
     def execute(self, table):
