@@ -19,7 +19,8 @@ class Table(object):
             self.instructions += [
                 GlobInstruction(),  # instruction pointer
                 GlobInstruction(),  # stack pointer
-                GlobInstruction()  # arithmetic result
+                GlobInstruction(),  # arithmetic result
+                GlobInstruction(),  # temporary glob
             ]
             self.stack = []
 
@@ -35,6 +36,10 @@ class Table(object):
     @staticmethod
     def get_arithmetic_glob_address():
         return INSTRUCTION_LENGTH * 2
+
+    @staticmethod
+    def get_temporary_glob_address():
+        return INSTRUCTION_LENGTH * 3
 
     @staticmethod
     def get_stack_pointer_address():

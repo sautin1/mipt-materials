@@ -1,7 +1,7 @@
 import shlex
 import numpy as np
 
-from table import Table
+from table import Table, INSTRUCTION_LENGTH
 
 from instructions.memory import GlobInstruction, PushInstruction, PopInstruction
 from instructions.arithmetics import AddInstruction, SubInstruction, MulInstruction, DivInstruction, ModInstruction
@@ -53,10 +53,10 @@ class Assembler(object):
         self.instructions_with_wrong_addresses = []
 
         self.global_to_address = {}
-        # self.local_to_index = []
-        self.arg_to_address_stack = []
 
-        # self.args_passed_addresses = []
+        self.function_to_arguments_names = {}
+        self.function_to_locals_names = {}
+
         self.function_to_arguments_offsets = {}
         self.function_to_locals_offsets = {}
         self.current_function_name = None
@@ -84,16 +84,15 @@ class Assembler(object):
             'MOD': self.parse_arithmetic
         }
 
-    #
     def __find_function_arguments(self):
         for command_words in self.words:
             if command_words[0] == 'FUN':
                 function_name = command_words[1]
                 argument_names = command_words[2:]
                 offsets = {arg_name: len(argument_names)-idx-1 for idx, arg_name in enumerate(argument_names)}
+                self.function_to_arguments_names[function_name] = argument_names
                 self.function_to_arguments_offsets[function_name] = offsets
 
-    #
     def __find_function_locals(self):
         function_name = None
         for command_words in self.words:
@@ -102,12 +101,12 @@ class Assembler(object):
             if command_words[0] == 'VAR':
                 offsets = self.function_to_locals_offsets.setdefault(function_name, {})
                 self.function_to_locals_offsets[function_name][command_words[1]] = len(offsets)
+                self.function_to_locals_names.setdefault(function_name, []).append(command_words[1])
         for function_name, offsets in self.function_to_locals_offsets.items():
             for local_name in offsets.keys():
                 offsets[local_name] = len(offsets) - offsets[local_name] - 1
 
     def __put_var_address_to_arithmetic_glob(self, name):
-        result = None
         local_offsets = self.function_to_locals_offsets[self.current_function_name]
 
         local_offset = local_offsets.get(name, None)
@@ -127,6 +126,13 @@ class Assembler(object):
                                                            addresses=[address_target, global_address]))
         return self.table.get_arithmetic_glob_address()
 
+    def __save_arithmetic_glob_to_temporary_glob(self):
+        address_to = self.table.get_temporary_glob_address()
+        address_from = self.table.get_arithmetic_glob_address()
+        flag = InstructionFlag.FIRST_ARG_IS_ADDR | InstructionFlag.LAST_ARG_IS_ADDR
+        self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address_to, address_from]))
+        return self.table.get_temporary_glob_address()
+
     def __get_label_number_or_add(self, label_name):
         label_number = len(self.label_name_to_number)
         return self.label_name_to_number.setdefault(label_name, label_number)
@@ -140,41 +146,25 @@ class Assembler(object):
                 label_number = self.table.instructions[idx].addresses[1]
                 self.table.instructions[idx].addresses[1] = self.label_number_to_address[label_number]
 
-    def __calc_flag(self, args):
-        flag = InstructionFlag.ARGS_ARE_VALUES if args[0].isdigit() else InstructionFlag.FIRST_ARG_IS_ADDR
-        if len(args) > 1 and not args[-1].isdigit():
-            flag |= InstructionFlag.LAST_ARG_IS_ADDR
+    def __calc_flag(self, arg, is_first_arg=False):
+        flag = InstructionFlag.ARGS_ARE_VALUES
+        if not arg.isdigit():
+            flag = InstructionFlag.FIRST_ARG_IS_ADDR if is_first_arg else InstructionFlag.LAST_ARG_IS_ADDR
         return flag
-
-    # def __calc_args(self, flag, args_str):
-    #     args = []
-    #     if flag == InstructionFlag.FIRST_ARG_IS_ADDR:
-    #         args.append(self.__get_var_address(args_str[0]))
-    #     else:
-    #         args.append(int(args_str[0]))
-    #     if len(args_str) > 1:
-    #         if flag // 2 == 0:
-    #             args.append(self.__get_var_address(args_str[1]))
-    #         else:
-    #             args.append(int(args_str[1]))
-    #     return args
 
     def __jump_to_label(self, label_name):
         label_number = self.__get_label_number_or_add(label_name)
         self.instructions_with_wrong_addresses.append((len(self.table.instructions), False, True))
-        self.table.instructions.append(JumpInstruction(addresses=[0, label_number]))
+        return JumpInstruction(addresses=[0, label_number])
 
-    # 1
     def parse_glob(self, command_words):
         instruction_address = self.table.size(need_stack=False)
         self.global_to_address[command_words[1]] = instruction_address
         self.table.instructions.append(GlobInstruction())
 
-    # 1
     def parse_var(self, command_words):
         pass
 
-    # 1
     def parse_print(self, command_words):
         arg = command_words[1]
         if arg[0] == '\"' and arg[-1] == '\"':
@@ -186,36 +176,38 @@ class Assembler(object):
         else:
             self.table.instructions.append(PrintInstruction(flag=PrintEnum.NUMBER, value=int(arg)))
 
-    #  1/2
     def parse_move(self, command_words):
         address_to = self.__put_var_address_to_arithmetic_glob(command_words[1])
-        flag = self.__calc_flag(command_words[1:3])
-        address_from = self.__calc_args(flag, [command_words[2]])[0]
+        self.__save_arithmetic_glob_to_temporary_glob()
+
+        address_from = self.__put_var_address_to_arithmetic_glob(command_words[2])
+        flag = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+
         self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address_to, address_from]))
 
     def parse_fun(self, command_words):
         self.current_function_name = command_words[1]
         self.parse_label(command_words)
 
-    #  1/2
     def parse_label(self, command_words):
         label_name = command_words[1]
         label_number = self.__get_label_number_or_add(label_name)
         self.label_number_to_address[label_number] = self.table.size()
 
-    #  1/2
     def parse_jump(self, command_words):
         self.__jump_to_label(command_words[1])
 
-    #  1/2
     def parse_if(self, command_words):
         operator = logical_operator_name_to_logical_operator[command_words[1]]
 
         compared_value_str = command_words[2]
-        address_to = self.table.get_arithmetic_glob_address()
-        flag = self.__calc_flag(compared_value_str)
-        address_from = self.__calc_args(flag, [compared_value_str])[0]
-        self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address_to, address_from]))
+        if compared_value_str.isdigit():
+            flag = InstructionFlag.FIRST_ARG_IS_ADDR
+            address = self.table.get_arithmetic_glob_address()
+            value = int(compared_value_str)
+            self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address, value]))
+        else:
+            self.__put_var_address_to_arithmetic_glob(compared_value_str)
 
         address_then = self.__get_label_number_or_add(command_words[3])
         has_else_branch = len(command_words) >= 5
@@ -228,72 +220,88 @@ class Assembler(object):
         self.instructions_with_wrong_addresses.append((len(self.table.instructions), has_else_branch, True))
         self.table.instructions.append(CjumpInstruction(flag=operator, addresses=[address_else, address_then]))
 
-    #  1/2
     def parse_read(self, command_words):
-        address_to = self.__get_var_address(command_words[2])
-        self.table.instructions.append(ReadInstruction(addresses=[0, address_to]))
+        address_to = self.__put_var_address_to_arithmetic_glob(command_words[2])
+        flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+        self.table.instructions.append(ReadInstruction(flag=flag, addresses=[0, address_to]))
 
-    #
     def parse_call(self, command_words):
         function_name, args_passed, result_var = command_words[1], command_words[2:-2], command_words[-1]
 
         #  pass arguments
-        args_received = self.function_to_arguments[function_name]
-        self.arg_to_address_stack.append({})
-        for arg_received, arg_passed in zip(args_received[::-1], args_passed[::-1]):
-            arg_passed_address = self.__get_var_address(arg_passed)
-            arg_address = self.table.push_to_stack(0)
-            self.table.instructions.append(MoveInstruction(flag=0, addresses=[arg_address, arg_passed_address]))
-            self.arg_to_address_stack[-1][arg_received] = arg_address
+        for arg_name, arg_passed in zip(self.function_to_arguments_names[function_name], args_passed):
+            arg_passed_address = self.__put_var_address_to_arithmetic_glob(arg_passed)
+            flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+            self.table.instructions.append(PushInstruction(flag=flag, addresses=[0, arg_passed_address]))
 
-        # prepare dict for locals
-        self.local_to_address_stack.append({})
+        # pass locals
+        instructions = []
+        for _ in self.function_to_locals_names[function_name]:
+            instructions.append(PushInstruction(flag=InstructionFlag.ARGS_ARE_VALUES, value=0))
 
         #  jump to label
-        self.__jump_to_label(function_name)
+        instructions.append(self.__jump_to_label(function_name))
 
-        #  push return value
-        self.table.push_to_stack(self.table.size(need_stack=False))
+        #  push return address
+        flag = InstructionFlag.LAST_ARG_IS_ADDR
+        return_address = self.table.size(need_stack=False) + (len(instructions) + 1) * INSTRUCTION_LENGTH
+        self.table.instructions.append(PushInstruction(flag=flag, addresses=[0, return_address]))
+        self.table.instructions += instructions
 
         #  save result
-        result_address = self.__get_var_address(result_var)
-        self.table.instructions.append(MoveInstruction(flag=0, addresses=[result_address,
-                                                                          self.table.get_arithmetic_glob_address()]))
+        return_value_address = self.__save_arithmetic_glob_to_temporary_glob()
+        result_address = self.__put_var_address_to_arithmetic_glob(result_var)
+        flag = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR
+        self.table.instructions.append(MoveInstruction(flag=flag, addresses=[result_address,
+                                                                             return_value_address]))
 
         #  remove return value from stack
-        self.table.pop_from_stack()
+        self.table.instructions.append(PopInstruction())
         #  remove args from stack
-        for _ in range(self.arg_to_address_stack[-1]):
-            self.table.pop_from_stack()
-        # remove dicts
-        self.arg_to_address_stack.pop()
-        self.local_to_address_stack.pop()
+        for _ in range(self.function_to_arguments_names[function_name]):
+            self.table.instructions.append(PopInstruction())
 
-    #
     def parse_ret(self, command_words):
-        flag = self.__calc_flag(command_words[1:2])
-        address_from = self.__calc_args(flag, command_words[1:2])[0]
-        address_to = self.table.get_arithmetic_glob_address()
-        self.table.instructions.append(MoveInstruction(flag, addresses=[address_to, address_from]))
+        return_value_address = self.__put_var_address_to_arithmetic_glob(command_words[1])
+        flag = InstructionFlag.FIRST_ARG_IS_ADDR | InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+        self.table.instructions.append(MoveInstruction(flag=flag,
+                                                       addresses=[return_value_address, return_value_address]))
 
-        for idx in range(len(self.local_to_address_stack[-1])):
-            self.table.pop_from_stack()
-        jmp_instruction = JumpInstruction(value=self.table.stack[-1].value)
-        self.table.instructions.append(jmp_instruction)
-        self.local_to_address_stack.pop()
+        # remove locals from stack
+        for _ in range(self.function_to_locals_names[self.current_function_name]):
+            self.table.instructions.append(PopInstruction())
 
-    #  1/2
+        # jump back
+        flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+        address = self.table.get_stack_pointer_address()
+        self.table.instructions.append(JumpInstruction(flag=flag, addresses=[0, address]))
+
     def parse_arithmetic(self, command_words):
         arithmetic_instruction = command_name_to_arithmetic_instruction.get(command_words[0])
-        arg_words = command_words[1:3]
-        flag = self.__calc_flag(arg_words)
-        addresses = self.__calc_args(flag, arg_words)
-        self.table.instructions.append(arithmetic_instruction(flag, addresses=addresses))
+        flag = self.__calc_flag(command_words[1], is_first_arg=True)
+        flag |= self.__calc_flag(command_words[2], is_first_arg=False)
 
-        result_name = command_words[4]
-        result_address = self.__get_var_address(result_name)
-        addresses = [result_address, self.table.get_arithmetic_glob_address()]
-        self.table.instructions.append(MoveInstruction(flag=0, addresses=addresses))
+        flag_arithm = InstructionFlag.ARGS_ARE_VALUES
+        if flag | InstructionFlag.FIRST_ARG_IS_ADDR:
+            self.__put_var_address_to_arithmetic_glob(command_words[1])
+            address_x = self.__save_arithmetic_glob_to_temporary_glob()
+            flag_arithm |= InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR
+        else:
+            address_x = int(command_words[1])
+
+        if flag | InstructionFlag.LAST_ARG_IS_ADDR:
+            address_y = self.__put_var_address_to_arithmetic_glob(command_words[2])
+            flag_arithm |= InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+        else:
+            address_y = int(command_words[2])
+
+        self.table.instructions.append(arithmetic_instruction(flag=flag_arithm, addresses=[address_x, address_y]))
+        self.__save_arithmetic_glob_to_temporary_glob()
+
+        address_to = self.__put_var_address_to_arithmetic_glob(command_words[4])
+        address_from = self.table.get_arithmetic_glob_address()
+        flag_move = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR
+        self.table.instructions.append(MoveInstruction(flag=flag_move, addresses=[address_to, address_from]))
 
     def parse_table(self):
         self.__find_function_arguments()

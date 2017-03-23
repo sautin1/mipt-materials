@@ -50,7 +50,7 @@ class MoveInstruction(Instruction):
 
 
 class JumpInstruction(Instruction):
-    def __init__(self, flag=None, addresses=None, value=None):
+    def __init__(self, flag=InstructionFlag.ARGS_ARE_VALUES, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -58,7 +58,8 @@ class JumpInstruction(Instruction):
         return OpcodeType.JUMP
 
     def execute(self, table):
-        table.set_instruction_pointer(self.addresses[-1])
+        address = self.get_value_by_flag(table, is_first=False, need_address=True)
+        table.set_instruction_pointer(address)
         return False
 
 
