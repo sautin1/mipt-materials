@@ -13,14 +13,16 @@ class PrintInstruction(Instruction):
 
     def execute(self, table):
         value = self.value
+        print_end = '\n'
         if self.flag == PrintEnum.CHAR:
             value = chr(self.value)
+            print_end = ''
         elif self.flag == PrintEnum.ADDR:
             value = table[self.addresses[-1]].value
         elif self.flag == PrintEnum.ADDR_OF_ADDR:
             value = table[table[self.addresses[-1]].value].value
 
-        print(value)
+        print(value, end=print_end)
         return Instruction.execute(self, table)
 
 

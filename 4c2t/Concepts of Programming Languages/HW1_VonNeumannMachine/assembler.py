@@ -1,12 +1,14 @@
 import shlex
 import numpy as np
 
+from os.path import join, splitext
+
 from table import Table, INSTRUCTION_LENGTH
 
 from instructions.memory import GlobInstruction, PushInstruction, PopInstruction
 from instructions.arithmetics import AddInstruction, SubInstruction, MulInstruction, DivInstruction, ModInstruction
 from instructions.io import PrintInstruction, ReadInstruction
-from instructions.other import MoveInstruction, JumpInstruction, CjumpInstruction
+from instructions.other import MoveInstruction, JumpInstruction, CjumpInstruction, StopInstruction
 from instructions.other import logical_operator_name_to_logical_operator
 
 from instructions.enums import InstructionFlag, PrintEnum
@@ -31,6 +33,8 @@ class Serializer(object):
                                           instruction.addresses)), dtype=np.ubyte).flatten()
             result = np.concatenate((result, addresses))
         else:
+            if instruction.value is None:
+                instruction.value = 0
             value = int_to_byte_array(instruction.value, 4)
             result = np.append(result, value)
         return result
@@ -43,7 +47,8 @@ class Serializer(object):
 class Assembler(object):
     def __init__(self, path_from):
         with open(path_from, 'r') as fin:
-            lines = filter(bool, map(str.strip, fin.readlines()))
+            lines = filter(bool, map(str.strip, fin.readlines()))  # strip and filter empty lines
+            lines = filter(lambda line: line[0] != '#', lines)  # filter comments
         self.words = list(map(shlex.split, lines))
         print(self.words)
         self.table = Table()
@@ -65,6 +70,7 @@ class Assembler(object):
             'GLOB': self.parse_glob,
             'VAR': self.parse_var,
 
+            'PRINTLN': self.parse_print,
             'PRINT': self.parse_print,
             'READ': self.parse_read,
 
@@ -107,14 +113,21 @@ class Assembler(object):
                 offsets[local_name] = len(offsets) - offsets[local_name] - 1
 
     def __put_var_address_to_arithmetic_glob(self, name):
-        local_offsets = self.function_to_locals_offsets[self.current_function_name]
+        local_offsets = self.function_to_locals_offsets.get(self.current_function_name, None)
+        argument_offsets = self.function_to_arguments_offsets.get(self.current_function_name, None)
 
-        local_offset = local_offsets.get(name, None)
-        argument_offset = self.function_to_arguments_offsets[self.current_function_name].get(name, None)
-        global_address = self.global_to_address.get(name, None)
+        if local_offsets is not None:
+            local_offset = local_offsets.get(name, None)
+            argument_offset = argument_offsets.get(name, None)
+        else:
+            local_offset = None
+            argument_offset = None
         if argument_offset is not None:
-            argument_offset += len(local_offsets) + 1  # +1 because of return address
+            if local_offsets is not None:
+                argument_offset += len(local_offsets)
+            argument_offset += 1  # +1 because of return address
 
+        global_address = self.global_to_address.get(name, None)
         stack_offset = local_offset or argument_offset
         if stack_offset is not None:
             sp = self.table.get_stack_pointer_address()
@@ -122,8 +135,8 @@ class Assembler(object):
                                                           addresses=[sp, stack_offset]))
         elif global_address is not None:
             address_target = self.table.get_arithmetic_glob_address()
-            self.table.instructions.append(MoveInstruction(flag=InstructionFlag.FIRST_ARG_IS_ADDR,
-                                                           addresses=[address_target, global_address]))
+            flag = InstructionFlag.FIRST_ARG_IS_ADDR
+            self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address_target, global_address]))
         return self.table.get_arithmetic_glob_address()
 
     def __save_arithmetic_glob_to_temporary_glob(self):
@@ -167,18 +180,20 @@ class Assembler(object):
 
     def parse_print(self, command_words):
         arg = command_words[1]
-        if arg[0] == '\"' and arg[-1] == '\"':
+        if arg[0] == '\"' and arg[-1] == '\"' or arg[0] == '\'' and arg[-1] == '\'':
             for symbol in arg[1:-1]:
                 self.table.instructions.append(PrintInstruction(flag=PrintEnum.CHAR, value=ord(symbol)))
-        elif arg[0].isletter():
+            if command_words[0].lower()[-2:] == 'ln':
+                self.table.instructions.append(PrintInstruction(flag=PrintEnum.CHAR, value=ord('\n')))
+        elif arg[0].isalpha():
             address = self.__put_var_address_to_arithmetic_glob(arg)
-            self.table.instructions.append(PrintInstruction(flag=PrintEnum.ADDR, addresses=[0, address]))
+            self.table.instructions.append(PrintInstruction(flag=PrintEnum.ADDR_OF_ADDR, addresses=[0, address]))
         else:
             self.table.instructions.append(PrintInstruction(flag=PrintEnum.NUMBER, value=int(arg)))
 
     def parse_move(self, command_words):
-        address_to = self.__put_var_address_to_arithmetic_glob(command_words[1])
-        self.__save_arithmetic_glob_to_temporary_glob()
+        self.__put_var_address_to_arithmetic_glob(command_words[1])
+        address_to = self.__save_arithmetic_glob_to_temporary_glob()
 
         address_from = self.__put_var_address_to_arithmetic_glob(command_words[2])
         flag = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
@@ -195,7 +210,7 @@ class Assembler(object):
         self.label_number_to_address[label_number] = self.table.size()
 
     def parse_jump(self, command_words):
-        self.__jump_to_label(command_words[1])
+        self.table.instructions.append(self.__jump_to_label(command_words[1]))
 
     def parse_if(self, command_words):
         operator = logical_operator_name_to_logical_operator[command_words[1]]
@@ -208,11 +223,13 @@ class Assembler(object):
             self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address, value]))
         else:
             self.__put_var_address_to_arithmetic_glob(compared_value_str)
+            flag = InstructionFlag.FIRST_ARG_IS_ADDR | InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+            address = self.table.get_arithmetic_glob_address()
+            self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address, address]))
 
         address_then = self.__get_label_number_or_add(command_words[3])
         has_else_branch = len(command_words) >= 5
         if has_else_branch:
-            #  has else branch
             operator = CjumpInstruction.add_else_to_flag(operator)
             address_else = self.__get_label_number_or_add(command_words[4])
         else:
@@ -299,7 +316,7 @@ class Assembler(object):
         self.__save_arithmetic_glob_to_temporary_glob()
 
         address_to = self.__put_var_address_to_arithmetic_glob(command_words[4])
-        address_from = self.table.get_arithmetic_glob_address()
+        address_from = self.table.get_temporary_glob_address()
         flag_move = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR
         self.table.instructions.append(MoveInstruction(flag=flag_move, addresses=[address_to, address_from]))
 
@@ -310,10 +327,10 @@ class Assembler(object):
         print(self.function_to_locals_offsets)
         print('Arguments:')
         print(self.function_to_arguments_offsets)
-        return
         for command_words in self.words:
             print(command_words)
             self.command_name_to_parser[command_words[0]](command_words)
+        self.table.instructions.append(StopInstruction())
         self.__replace_label_numbers()
 
     def write(self, path_to):
@@ -324,7 +341,11 @@ class Assembler(object):
 
 
 if __name__ == '__main__':
-    assembler = Assembler('data/fibonacci.txt')
-    # assembler = Assembler('data/simple.txt')
+    # assembler = Assembler('data/fibonacci.txt')
+    input_dir, output_dir = 'data', 'translated'
+    input_file_name = 'calc.txt'
+    input_file = join(input_dir, input_file_name)
+    output_file = join(output_dir, splitext(input_file_name)[0])
+    assembler = Assembler(input_file)
     assembler.parse_table()
-    assembler.write('data/simple')
+    assembler.write(output_file)

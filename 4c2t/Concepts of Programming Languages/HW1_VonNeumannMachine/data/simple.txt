@@ -1,8 +1,0 @@
-GLOB n
-GLOB res
-LABEL .lol
-MOVE res 13
-LABEL .lol2
-READ -> n
-IF EQ0 n .lol .lol2
-PRINT res

@@ -93,12 +93,12 @@ class CjumpInstruction(Instruction):
 
 
 class StopInstruction(Instruction):
-    def __init__(self, flag=None, addresses=None, value=None):
+    def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
     def get_type():
-        return OpcodeType.CJUMP
+        return OpcodeType.STOP
 
     def execute(self, table):
         return True

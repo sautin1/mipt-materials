@@ -4,7 +4,7 @@ from instructions.enums import OpcodeType, InstructionFlag
 
 
 class GlobInstruction(Instruction):
-    def __init__(self, flag=None, addresses=None, value=0):
+    def __init__(self, flag=0, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -16,7 +16,7 @@ class GlobInstruction(Instruction):
 
 
 class StackInstruction(Instruction):
-    def __init__(self, flag=None, addresses=None, value=0):
+    def __init__(self, flag=0, addresses=None, value=0):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
@@ -42,7 +42,7 @@ class PushInstruction(Instruction):
 
 
 class PopInstruction(Instruction):
-    def __init__(self, flag=None, addresses=None, value=None):
+    def __init__(self, flag=0, addresses=None, value=None):
         Instruction.__init__(self, flag, addresses, value)
 
     @staticmethod
