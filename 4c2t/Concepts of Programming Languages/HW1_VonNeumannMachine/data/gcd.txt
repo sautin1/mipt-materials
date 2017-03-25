@@ -1,0 +1,38 @@
+# this example was created to demonstrate loops
+
+FUN .gcd x y
+    VAR tmp
+    LABEL .loop
+        IF EQ0 y .exit
+        MOD x y -> tmp
+        MOVE x y
+        MOVE y tmp
+        JUMP .loop
+    LABEL .exit
+        RET x
+
+FUN .lcm x y
+    VAR gcd
+    VAR res
+    CALL .gcd x y -> gcd
+    MUL x y -> res
+    DIV res gcd -> res
+    RET res
+
+FUN .main
+    VAR x
+    VAR y
+    VAR res
+
+    PRINTLN '"Calculate greatest common divisor and least common multiple of x and y"'
+
+    PRINT "'Enter x: '"
+    READ -> x
+    PRINT "'Enter y: '"
+    READ -> y
+
+    CALL .gcd x y -> res
+    PRINT res
+
+    CALL .lcm x y -> res
+    PRINT res

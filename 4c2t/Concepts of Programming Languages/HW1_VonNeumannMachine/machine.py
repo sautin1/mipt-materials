@@ -14,12 +14,10 @@ class Machine(object):
         found_stop = False
         while not found_stop:
             instruction_pointer = self.table.get_instruction_pointer()
-            # print('run: ', instruction_pointer, self.table[instruction_pointer])
             instruction = self.table[instruction_pointer]
             found_stop = instruction.execute(self.table)
-            # print('\tbytes:', Serializer.to_byte_array(instruction))
 
 if __name__ == '__main__':
-    input_file = 'translated/factorial'
+    input_file = 'translated/gcd'
     machine = Machine(input_file)
     machine.run()

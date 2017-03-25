@@ -14,9 +14,10 @@ FUN .factorial n
         RET 1
 
 FUN .main
-    PRINTLN '"Calculate n!"'
     VAR n
     VAR res
+
+    PRINTLN '"Calculate n!"'
     PRINT '"Enter n: "'
     READ -> n
     PRINT '"n! = "'

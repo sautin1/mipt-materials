@@ -52,7 +52,6 @@ class Assembler(object):
             lines = filter(bool, map(str.strip, fin.readlines()))  # strip and filter empty lines
             lines = filter(lambda line: line[0] != '#', lines)  # filter comments
         self.words = list(map(shlex.split, lines))
-        print(self.words)
         self.table = Table()
 
         self.main_function_address = None
@@ -111,7 +110,7 @@ class Assembler(object):
             for local_name in offsets.keys():
                 offsets[local_name] = len(offsets) - offsets[local_name] - 1
 
-    def __put_var_address_to_arithmetic_glob(self, name):
+    def __put_var_address_to_arithmetic_glob(self, name, extra_stack_offset=0):
         local_offsets = self.function_to_locals_offsets.get(self.current_function_name, None)
         argument_offsets = self.function_to_arguments_offsets.get(self.current_function_name, None)
 
@@ -130,8 +129,9 @@ class Assembler(object):
         stack_offset = local_offset if local_offset is not None else argument_offset
         if stack_offset is not None:
             sp = self.table.get_stack_pointer_address()
+            stack_offset = (stack_offset + extra_stack_offset) * INSTRUCTION_LENGTH
             self.table.instructions.append(SubInstruction(flag=InstructionFlag.FIRST_ARG_IS_ADDR,
-                                                          addresses=[sp, stack_offset * INSTRUCTION_LENGTH]))
+                                                          addresses=[sp, stack_offset]))
         elif global_address is not None:
             address_target = self.table.get_arithmetic_glob_address()
             flag = InstructionFlag.FIRST_ARG_IS_ADDR
@@ -249,8 +249,8 @@ class Assembler(object):
 
         # pass arguments
         arg_names = self.function_to_arguments_names[function_name]
-        for arg_name, arg_passed in zip(arg_names, args_passed):
-            arg_passed_address = self.__put_var_address_to_arithmetic_glob(arg_passed)
+        for idx, (arg_name, arg_passed) in enumerate(zip(arg_names, args_passed)):
+            arg_passed_address = self.__put_var_address_to_arithmetic_glob(arg_passed, extra_stack_offset=idx)
             flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
             self.table.instructions.append(PushInstruction(flag=flag, addresses=[0, arg_passed_address]))
 
@@ -329,12 +329,7 @@ class Assembler(object):
 
     def parse_table(self):
         self.__search_functions()
-        print('Locals:')
-        print(self.function_to_locals_offsets)
-        print('Arguments:')
-        print(self.function_to_arguments_offsets)
         for command_words in self.words:
-            print(command_words)
             self.command_name_to_parser[command_words[0]](command_words)
 
         # delete main function's locals from stack
@@ -358,7 +353,7 @@ class Assembler(object):
 
 if __name__ == '__main__':
     input_dir, output_dir = 'data', 'translated'
-    input_file_name = 'factorial.txt'
+    input_file_name = 'gcd.txt'
     input_file = join(input_dir, input_file_name)
     output_file = join(output_dir, splitext(input_file_name)[0])
     assembler = Assembler(input_file)
