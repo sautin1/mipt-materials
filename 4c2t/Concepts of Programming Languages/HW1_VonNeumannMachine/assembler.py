@@ -336,7 +336,14 @@ class Assembler(object):
         for command_words in self.words:
             print(command_words)
             self.command_name_to_parser[command_words[0]](command_words)
+
+        # delete main function's locals from stack
+        main_locals = self.function_to_locals_offsets[MAIN_FUNCTION_NAME]
+        for _ in main_locals:
+            self.table.instructions.append(PopInstruction())
+        # add stop instruction
         self.table.instructions.append(StopInstruction())
+
         self.__replace_label_numbers()
         assert self.main_function_address, 'No main function has been found'
         idx = self.table.get_instruction_index()
@@ -351,7 +358,7 @@ class Assembler(object):
 
 if __name__ == '__main__':
     input_dir, output_dir = 'data', 'translated'
-    input_file_name = 'equal.txt'
+    input_file_name = 'factorial.txt'
     input_file = join(input_dir, input_file_name)
     output_file = join(output_dir, splitext(input_file_name)[0])
     assembler = Assembler(input_file)

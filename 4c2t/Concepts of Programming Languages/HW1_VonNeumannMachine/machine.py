@@ -20,6 +20,6 @@ class Machine(object):
             # print('\tbytes:', Serializer.to_byte_array(instruction))
 
 if __name__ == '__main__':
-    input_file = 'translated/equal'
+    input_file = 'translated/factorial'
     machine = Machine(input_file)
     machine.run()
