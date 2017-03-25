@@ -1,0 +1,35 @@
+# this example was created for fun
+
+FUN .power a n
+    VAR res
+    VAR resRec
+    VAR remainder
+
+    IF EQ0 n .returnOne
+
+    MOVE res 1
+    MOD n 2 -> remainder
+    IF EQ0 remainder .recursive
+    MOVE res a
+
+    LABEL .recursive
+        DIV n 2 -> n
+        CALL .power a n -> resRec
+        MUL resRec resRec -> resRec
+        MUL resRec res -> res
+        RET res
+
+    LABEL .returnOne
+        RET 1
+
+FUN .main
+    VAR a
+    VAR n
+    VAR res
+    PRINTLN '"Calculate a^n (using binary powering algorithm)"'
+    PRINT "'Enter a: '"
+    READ -> a
+    PRINT "'Enter n: '"
+    READ -> n
+    CALL .power a n -> res
+    PRINTLN res
