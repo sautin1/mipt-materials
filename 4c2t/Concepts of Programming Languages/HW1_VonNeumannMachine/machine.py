@@ -18,6 +18,6 @@ class Machine(object):
             found_stop = instruction.execute(self.table)
 
 if __name__ == '__main__':
-    input_file = 'translated/fibonacci'
+    input_file = 'translated/prime'
     machine = Machine(input_file)
     machine.run()

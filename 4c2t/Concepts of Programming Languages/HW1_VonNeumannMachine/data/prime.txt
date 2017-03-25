@@ -1,0 +1,37 @@
+# this example was created for fun
+
+FUN .isPrime n
+    VAR divisor
+    VAR remainder
+    VAR tmp
+
+    DIV n 2 -> divisor
+    # if divisor == 0 <=> n == 0 or n == 1 then n is not prime
+    IF EQ0 divisor .returnNotPrime
+    LABEL .loop
+        # if divisor == 1 <=> n == 2 or n == 3 then n is prime
+        SUB divisor 1 -> tmp
+        IF EQ0 tmp .returnPrime
+
+        MOD n divisor -> remainder
+        IF EQ0 remainder .returnNotPrime
+        SUB divisor 1 -> divisor
+        JUMP .loop
+    LABEL .returnNotPrime
+        RET 0
+    LABEL .returnPrime
+        RET 1
+
+FUN .main
+    VAR n
+    VAR res
+    PRINTLN "'Checks the primality of n'"
+    PRINT "'Enter n: '"
+    READ -> n
+    CALL .isPrime n -> res
+    IF EQ0 res .printNotPrime
+    PRINTLN "'Prime'"
+    JUMP .exit
+    LABEL .printNotPrime
+        PRINTLN "'Not prime'"
+    LABEL .exit

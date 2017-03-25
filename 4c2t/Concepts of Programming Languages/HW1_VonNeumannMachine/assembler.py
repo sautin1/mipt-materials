@@ -361,7 +361,7 @@ class Assembler(object):
 
 if __name__ == '__main__':
     input_dir, output_dir = 'data', 'translated'
-    input_file_name = 'fibonacci.txt'
+    input_file_name = 'prime.txt'
     input_file = join(input_dir, input_file_name)
     output_file = join(output_dir, splitext(input_file_name)[0])
     assembler = Assembler(input_file)
