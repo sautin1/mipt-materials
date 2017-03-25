@@ -194,9 +194,13 @@ class Assembler(object):
     def parse_move(self, command_words):
         self.__put_var_address_to_arithmetic_glob(command_words[1])
         address_to = self.__save_arithmetic_glob_to_temporary_glob()
+        flag = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR
 
-        address_from = self.__put_var_address_to_arithmetic_glob(command_words[2])
-        flag = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+        if command_words[2].isdigit():
+            address_from = int(command_words[2])
+        else:
+            address_from = self.__put_var_address_to_arithmetic_glob(command_words[2])
+            flag |= InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
 
         self.table.instructions.append(MoveInstruction(flag=flag, addresses=[address_to, address_from]))
 
@@ -353,7 +357,7 @@ class Assembler(object):
 
 if __name__ == '__main__':
     input_dir, output_dir = 'data', 'translated'
-    input_file_name = 'gcd.txt'
+    input_file_name = 'fibonacci.txt'
     input_file = join(input_dir, input_file_name)
     output_file = join(output_dir, splitext(input_file_name)[0])
     assembler = Assembler(input_file)

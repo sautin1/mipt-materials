@@ -18,6 +18,6 @@ class Machine(object):
             found_stop = instruction.execute(self.table)
 
 if __name__ == '__main__':
-    input_file = 'translated/gcd'
+    input_file = 'translated/fibonacci'
     machine = Machine(input_file)
     machine.run()

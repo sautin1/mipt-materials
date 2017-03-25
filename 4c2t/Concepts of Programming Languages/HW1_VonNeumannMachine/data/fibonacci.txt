@@ -1,33 +1,31 @@
 # this example was created to meet all the requirements of the task
 
-GLOB n
-GLOB res
-
 FUN .fib n
     VAR i
     VAR res
     VAR tmp
 
-    IF EQ0 n .trivial
+    IF EQ0 n .returnOne
     SUB n 1 -> n
-    IF EQ0 n .trivial
+    IF EQ0 n .returnOne
 
     MOVE i 2
+    MOVE res 0
     LABEL .loop
         CALL .fib n -> tmp
         ADD res tmp -> res
         SUB i 1 -> i
         SUB n 1 -> n
-        IF EQ0 i .nontrivial .loop
-    LABEL .trivial
-        RET 1
-    LABEL .nontrivial
+        IF G0 i .loop
         RET res
+    LABEL .returnOne
+        RET 1
 
 FUN .main
+    VAR n
+    VAR res
     PRINTLN '"Calculate Fibonacci number (F_n)"'
     PRINT '"Enter n: "'
     READ -> n
     CALL .fib n -> res
-    PRINT res
-    EXIT
+    PRINTLN res
