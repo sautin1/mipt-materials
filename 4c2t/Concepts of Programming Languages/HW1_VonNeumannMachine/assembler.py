@@ -254,8 +254,12 @@ class Assembler(object):
         # pass arguments
         arg_names = self.function_to_arguments_names[function_name]
         for idx, (arg_name, arg_passed) in enumerate(zip(arg_names, args_passed)):
-            arg_passed_address = self.__put_var_address_to_arithmetic_glob(arg_passed, extra_stack_offset=idx)
-            flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
+            if arg_passed.isdigit():
+                arg_passed_address = int(arg_passed)
+                flag = InstructionFlag.ARGS_ARE_VALUES
+            else:
+                arg_passed_address = self.__put_var_address_to_arithmetic_glob(arg_passed, extra_stack_offset=idx)
+                flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
             self.table.instructions.append(PushInstruction(flag=flag, addresses=[0, arg_passed_address]))
 
         # push return address
