@@ -263,18 +263,18 @@ class Assembler(object):
         # jump to label
         self.__jump_to_label(function_name)
 
+        # remove return value from stack
+        self.table.instructions.append(PopInstruction())
+        # remove args from stack
+        for _ in arg_names:
+            self.table.instructions.append(PopInstruction())
+
         # save result
         return_value_address = self.__save_arithmetic_glob_to_temporary_glob()
         result_address = self.__put_var_address_to_arithmetic_glob(result_var)
         flag = InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR | InstructionFlag.LAST_ARG_IS_ADDR
         self.table.instructions.append(MoveInstruction(flag=flag, addresses=[result_address,
                                                                              return_value_address]))
-
-        # remove return value from stack
-        self.table.instructions.append(PopInstruction())
-        # remove args from stack
-        for _ in arg_names:
-            self.table.instructions.append(PopInstruction())
 
     def parse_ret(self, command_words):
         # save result to arithmetic glob
@@ -304,14 +304,14 @@ class Assembler(object):
         flag |= self.__calc_flag(command_words[2], is_first_arg=False)
 
         flag_arithm = InstructionFlag.ARGS_ARE_VALUES
-        if flag | InstructionFlag.FIRST_ARG_IS_ADDR:
+        if flag & InstructionFlag.FIRST_ARG_IS_ADDR:
             self.__put_var_address_to_arithmetic_glob(command_words[1])
             address_x = self.__save_arithmetic_glob_to_temporary_glob()
             flag_arithm |= InstructionFlag.FIRST_ARG_IS_ADDR_OF_ADDR
         else:
             address_x = int(command_words[1])
 
-        if flag | InstructionFlag.LAST_ARG_IS_ADDR:
+        if flag & InstructionFlag.LAST_ARG_IS_ADDR:
             address_y = self.__put_var_address_to_arithmetic_glob(command_words[2])
             flag_arithm |= InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
         else:

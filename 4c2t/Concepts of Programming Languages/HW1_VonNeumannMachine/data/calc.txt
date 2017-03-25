@@ -9,7 +9,7 @@ FUN .main
     LABEL .loop
         PRINT "'Enter x: '"
         READ -> x
-        PRINT "'Enter y (x < y): '"
+        PRINT "'Enter y (y < x): '"
         READ -> y
 
     IF EQ0 x .checkYZero .calc

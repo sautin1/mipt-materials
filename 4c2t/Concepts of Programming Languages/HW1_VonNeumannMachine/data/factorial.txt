@@ -1,0 +1,22 @@
+FUN .factorial n
+    VAR res
+    VAR resRec
+    IF EQ0 n .returnOne
+    MOVE res n
+    SUB n 1 -> n
+    CALL .factorial n -> resRec
+    MUL res resRec -> res
+    RET res
+
+    LABEL .returnOne
+        RET 1
+
+FUN .main
+    PRINTLN '"Calculate n!"'
+    VAR n
+    VAR res
+    PRINT '"Enter n: "'
+    READ -> n
+    PRINT '"n! = "'
+    CALL .factorial n -> res
+    PRINT res
