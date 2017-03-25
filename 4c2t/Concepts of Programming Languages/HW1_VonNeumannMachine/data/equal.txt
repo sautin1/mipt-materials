@@ -1,3 +1,5 @@
+# this example was created to demonstrate function calls
+
 GLOB num1
 GLOB num2
 

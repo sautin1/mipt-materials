@@ -1,3 +1,5 @@
+# this example was created to demonstrate arithmetic operations
+
 GLOB x
 GLOB y
 GLOB res

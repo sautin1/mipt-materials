@@ -1,3 +1,5 @@
+# this example was created to demonstrate recursion
+
 FUN .factorial n
     VAR res
     VAR resRec
