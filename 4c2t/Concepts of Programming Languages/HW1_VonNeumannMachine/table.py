@@ -25,6 +25,7 @@ class Table(object):
             self.stack = []
 
     def __getitem__(self, item):
+        assert item % INSTRUCTION_LENGTH == 0, 'Table.__get_item__: index is wrong'
         idx = item // INSTRUCTION_LENGTH
         if idx < len(self.instructions):
             result = self.instructions[idx]

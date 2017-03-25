@@ -1,0 +1,29 @@
+GLOB num1
+GLOB num2
+
+FUN .printIntro
+    PRINTLN "'Checks the equality of two numbers: x and y'"
+    RET 0
+
+FUN .areEqual x y
+    VAR min
+    VAR tmp
+    SUB x y -> tmp
+    IF EQ0 tmp .returnEqual
+    RET 0
+    LABEL .returnEqual
+    RET 1
+
+FUN .main
+    CALL .printIntro -> num1
+    PRINT "'Enter x: '"
+    READ -> num1
+    PRINT "'Enter y: '"
+    READ -> num2
+    CALL .areEqual num1 num2 -> num1
+    IF EQ0 num1 .printUnequal
+        PRINTLN "'Equal'"
+        JUMP .exit
+    LABEL .printUnequal
+        PRINTLN "'Unequal'"
+    LABEL .exit

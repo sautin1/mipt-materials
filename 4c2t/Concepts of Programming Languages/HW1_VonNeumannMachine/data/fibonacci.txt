@@ -23,8 +23,9 @@ FUN .fib n
         RET res
 
 FUN .main
-    PRINT '"Calculate Fibonacci numbers"'
-    PRINT '"Enter a number: "'
+    PRINTLN '"Calculate Fibonacci number (F_n)"'
+    PRINT '"Enter n: "'
     READ -> n
     CALL .fib n -> res
     PRINT res
+    EXIT

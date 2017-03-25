@@ -1,45 +1,47 @@
 GLOB x
 GLOB y
 GLOB res
-PRINTLN "'Calculator'"
-PRINTLN "'Enter 0 twice to exit'"
 
-LABEL .loop
-    PRINT "'Enter x: '"
-    READ -> x
-    PRINT "'Enter y (x < y): '"
-    READ -> y
+FUN .main
+    PRINTLN "'Calculator'"
+    PRINTLN "'Enter 0 twice to exit'"
 
-IF EQ0 x .checkYZero .calc
+    LABEL .loop
+        PRINT "'Enter x: '"
+        READ -> x
+        PRINT "'Enter y (x < y): '"
+        READ -> y
 
-LABEL .checkYZero
-    IF EQ0 y .exit .calc
+    IF EQ0 x .checkYZero .calc
 
-LABEL .calc
-    PRINT "'x + y = '"
-    ADD x y -> res
-    PRINT res
+    LABEL .checkYZero
+        IF EQ0 y .exit .calc
 
-    PRINT "'x - y = '"
-    SUB x y -> res
-    PRINT res
+    LABEL .calc
+        PRINT "'x + y = '"
+        ADD x y -> res
+        PRINT res
 
-    PRINT "'x * y = '"
-    MUL x y -> res
-    PRINT res
+        PRINT "'x - y = '"
+        SUB x y -> res
+        PRINT res
 
-    IF EQ0 y .finIter
-    PRINT "'x / y = '"
-    DIV x y -> res
-    PRINT res
+        PRINT "'x * y = '"
+        MUL x y -> res
+        PRINT res
 
-    PRINT "'x % y = '"
-    MOD x y -> res
-    PRINT res
+        IF EQ0 y .finIter
+        PRINT "'x / y = '"
+        DIV x y -> res
+        PRINT res
 
-LABEL .finIter
-    PRINTLN "''"
+        PRINT "'x % y = '"
+        MOD x y -> res
+        PRINT res
 
-    JUMP .loop
+    LABEL .finIter
+        PRINTLN "''"
 
-LABEL .exit
+        JUMP .loop
+
+    LABEL .exit
