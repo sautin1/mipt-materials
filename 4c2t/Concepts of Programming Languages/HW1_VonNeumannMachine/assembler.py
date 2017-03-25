@@ -175,7 +175,8 @@ class Assembler(object):
         self.table.instructions.append(GlobInstruction())
 
     def parse_var(self, command_words):
-        pass
+        # push local
+        self.table.instructions.append(PushInstruction(flag=InstructionFlag.ARGS_ARE_VALUES, value=0))
 
     def parse_print(self, command_words):
         arg = command_words[1]
@@ -253,17 +254,11 @@ class Assembler(object):
             flag = InstructionFlag.LAST_ARG_IS_ADDR_OF_ADDR
             self.table.instructions.append(PushInstruction(flag=flag, addresses=[0, arg_passed_address]))
 
-        local_offsets = self.function_to_locals_offsets[function_name]
-
         # push return address
         flag = InstructionFlag.ARGS_ARE_VALUES
-        # current size + push return address + push all locals + jump
-        return_address = self.table.size(need_stack=False) + (len(local_offsets) + 2) * INSTRUCTION_LENGTH
+        # current size + push return address + jump
+        return_address = self.table.size(need_stack=False) + 2 * INSTRUCTION_LENGTH
         self.table.instructions.append(PushInstruction(flag=flag, addresses=[0, return_address]))
-
-        # push locals
-        for _ in local_offsets:
-            self.table.instructions.append(PushInstruction(flag=InstructionFlag.ARGS_ARE_VALUES, value=0))
 
         # jump to label
         self.__jump_to_label(function_name)
