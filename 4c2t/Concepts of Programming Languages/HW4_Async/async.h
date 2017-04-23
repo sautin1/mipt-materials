@@ -9,7 +9,7 @@ template<typename T>
 class CFuture {
 public:
     CFuture(const std::shared_ptr<std::shared_ptr<T>>& _value,
-            const std::shared_ptr<std::shared_ptr<std::exception>>& _exception,
+            const std::shared_ptr<std::shared_ptr<std::logic_error>>& _exception,
             const std::shared_ptr<std::mutex> _mutex)
         : value(_value),
           exception(_exception),
@@ -21,7 +21,7 @@ private:
     std::shared_ptr<T> getOrFail() const;
 
     std::shared_ptr<std::shared_ptr<T>> value;
-    std::shared_ptr<std::shared_ptr<std::exception>> exception;
+    std::shared_ptr<std::shared_ptr<std::logic_error>> exception;
     std::shared_ptr<std::mutex> mutex;
 };
 
@@ -30,17 +30,17 @@ class CPromise {
 public:
     CPromise()
         : value(new std::shared_ptr<T>()),
-          exception(new std::shared_ptr<std::exception>()),
+          exception(new std::shared_ptr<std::logic_error>()),
           mutex(new std::mutex()) {
         mutex->lock();
     }
 
     void SetValue(const T& _value);
-    void SetException(const std::exception& _exception);
-    CFuture<T> GetFuture() const;
+    void SetException(std::shared_ptr<std::logic_error> _exception);
+    std::shared_ptr<CFuture<T>> GetFuture() const;
 private:
     std::shared_ptr<std::shared_ptr<T>> value;
-    std::shared_ptr<std::shared_ptr<std::exception>> exception;
+    std::shared_ptr<std::shared_ptr<std::logic_error>> exception;
     std::shared_ptr<std::mutex> mutex;
 };
 
@@ -77,12 +77,12 @@ void CPromise<T>::SetValue(const T& _value) {
 }
 
 template<typename T>
-void CPromise<T>::SetException(const std::exception& _exception) {
-    *exception = std::make_shared<std::exception>(_exception);
+void CPromise<T>::SetException(std::shared_ptr<std::logic_error> _exception) {
+    *exception = _exception;
     mutex->unlock();
 }
 
 template<typename T>
-CFuture<T> CPromise<T>::GetFuture() const {
-    return CFuture<T>(value, exception, mutex);
+std::shared_ptr<CFuture<T>> CPromise<T>::GetFuture() const {
+    return std::make_shared<CFuture<T>>(value, exception, mutex);
 }
