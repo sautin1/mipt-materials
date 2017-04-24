@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <exception>
 #include <memory>
 #include <mutex>
@@ -18,7 +19,9 @@ public:
     std::shared_ptr<T> Get() const;
     std::shared_ptr<T> TryGet() const;
     void Wait() const;
-    std::shared_ptr<const CFuture<T>> Then(const std::shared_ptr<CFuture<T>> next) const;
+
+    template<class TReturnType, class... TArgs>
+    std::shared_ptr<const CFuture<T>> Then(std::function<TReturnType(TArgs...)> work) const;
 private:
     std::shared_ptr<T> getOrFail() const;
 
@@ -69,11 +72,17 @@ void CFuture<T>::Wait() const {
     mutex->unlock();
 }
 
+//template<typename T>
+//std::shared_ptr<const CFuture<T>> CFuture<T>::Then(const std::shared_ptr<CFuture<T>> next) const {
+//    Get();
+//    next->Get();
+//    return next;
+//}
+
 template<typename T>
-std::shared_ptr<const CFuture<T>> CFuture<T>::Then(const std::shared_ptr<CFuture<T>> next) const {
-    Get();
-    next->Get();
-    return next;
+template<class TReturnType, class... TArgs>
+std::shared_ptr<const CFuture<T>> CFuture<T>::Then(std::function<TReturnType(TArgs...)> work) const {
+
 }
 
 template<typename T>
