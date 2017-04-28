@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "test.h"
+#include "test_promise_future.h"
 
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
