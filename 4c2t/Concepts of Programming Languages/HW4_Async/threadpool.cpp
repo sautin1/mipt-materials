@@ -4,14 +4,20 @@ bool CPackedTask::ShouldStart() const {
     return !shouldStart || shouldStart->load();
 }
 
+void CPackedTask::Start() const {
+    procedure();
+}
+
 CThreadPool::CThreadPool(int threadCount)
     : deferredMasterThread(&CThreadPool::processDeferred, this),
       taskQueue(new std::queue<CPackedTask>()),
       deferredTasks(new std::vector<CPackedTask>()),
-      shouldFinish(new std::atomic<bool>(false)) {
+      shouldFinish(new std::atomic<bool>(false)),
+      queueMutex(new std::mutex()),
+      deferredMutex(new std::mutex()) {
     threads.reserve(threadCount);
     for (int i = 0; i < threadCount; ++i) {
-        threads.push_back(std::thread(&CThreadPool::processRoutines, this));
+        threads.push_back(std::thread(&CThreadPool::processTasks, this));
     }
 }
 
@@ -31,23 +37,34 @@ void CThreadPool::AddTask(const CPackedTask& task) {
     }
 }
 
-void CThreadPool::processRoutines() {
-    // access non-blocking queue
-    if (shouldFinish->load()) {
-        return;
+void CThreadPool::processTasks() {
+    while (!shouldFinish->load()) {
+        queueMutex->lock();
+        if (!taskQueue->empty()) {
+            CPackedTask task = taskQueue->front();
+            taskQueue->pop();
+            queueMutex->unlock();
+            try {
+                task.Start();
+            } catch (const std::exception& error) {
+                shouldFinish->store(true);
+                throw error;
+            }
+        } else {
+            queueMutex->unlock();
+        }
     }
 }
 
 void CThreadPool::processDeferred() {
-    // add synchronization
-    for (unsigned int i = 0; i < deferredTasks->size(); ++i) {
-        if (deferredTasks->at(i).ShouldStart()) {
-            std::swap(deferredTasks->at(i), deferredTasks->back());
-            taskQueue->push(deferredTasks->back());
-            deferredTasks->pop_back();
+    while (!shouldFinish) {
+        std::unique_lock<std::mutex> lock(*deferredMutex);
+        for (unsigned int i = 0; i < deferredTasks->size(); ++i) {
+            if (deferredTasks->at(i).ShouldStart()) {
+                std::swap(deferredTasks->at(i), deferredTasks->back());
+                taskQueue->push(deferredTasks->back());
+                deferredTasks->pop_back();
+            }
         }
-    }
-    if (shouldFinish->load()) {
-        return;
     }
 }

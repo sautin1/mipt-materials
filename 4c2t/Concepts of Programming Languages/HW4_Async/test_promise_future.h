@@ -71,22 +71,3 @@ TEST_F(TestPromiseFuture, WaitMethod) {
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(*result, 46);
 }
-
-class TestFutureChain : public testing::Test {
-public:
-    TestFutureChain() : size(3) {}
-
-    void SetUp() {
-        for (int i = 0; i < size; ++i) {
-            promises.emplace_back(new CPromise<int>());
-            futures.push_back(promises[i]->GetFuture());
-        }
-    }
-
-    void TearDown() {}
-
-protected:
-    const int size;
-    std::vector<std::shared_ptr<CPromise<int>>> promises;
-    std::vector<std::shared_ptr<CFuture<int>>> futures;
-};

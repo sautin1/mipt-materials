@@ -13,14 +13,11 @@ public:
     CFuture(const std::shared_ptr<std::shared_ptr<T>>& _value,
             const std::shared_ptr<std::shared_ptr<std::logic_error>>& _exception,
             const std::shared_ptr<std::mutex>& _mutex,
-            const std::shared_ptr<std::atomic<bool>> _shouldStart,
-            bool _isDeferred)
+            const std::shared_ptr<std::atomic<bool>> _shouldStart = nullptr)
         : value(_value),
           exception(_exception),
           resultReadyMutex(_mutex),
-          shouldStart(_shouldStart),
-          isDeferred(_isDeferred)
-    {}
+          shouldStart(_shouldStart) {}
 
     std::shared_ptr<T> Get() const;
     std::shared_ptr<T> TryGet() const;
@@ -30,22 +27,22 @@ public:
 //    std::shared_ptr<const CFuture<T>> Then(std::function<TReturnType(TArgs...)> work) const;
 private:
     std::shared_ptr<T> getOrFail() const;
+    bool isDeferred() const;
 
     std::shared_ptr<std::shared_ptr<T>> value;
     std::shared_ptr<std::shared_ptr<std::logic_error>> exception;
     std::shared_ptr<std::mutex> resultReadyMutex;
     std::shared_ptr<std::atomic<bool>> shouldStart;
-    bool isDeferred;
 };
 
 template <typename T>
 class CPromise {
 public:
-    CPromise(bool _isDeferred = false)
+    CPromise(const std::shared_ptr<std::atomic<bool>>& _shouldStart = nullptr)
         : value(new std::shared_ptr<T>()),
           exception(new std::shared_ptr<std::logic_error>()),
           resultReadyMutex(new std::mutex()),
-          isDeferred(_isDeferred) {
+          shouldStart(_shouldStart) {
         resultReadyMutex->lock();
     }
 
@@ -57,7 +54,6 @@ private:
     std::shared_ptr<std::shared_ptr<std::logic_error>> exception;
     std::shared_ptr<std::mutex> resultReadyMutex;
     std::shared_ptr<std::atomic<bool>> shouldStart;
-    bool isDeferred;
 };
 
 template <typename T>
@@ -79,7 +75,7 @@ std::shared_ptr<T> CFuture<T>::TryGet() const {
 
 template <typename T>
 void CFuture<T>::Wait() const {
-    if (isDeferred) {
+    if (isDeferred()) {
         shouldStart->store(true);
     }
     resultReadyMutex->lock();
@@ -108,6 +104,11 @@ std::shared_ptr<T> CFuture<T>::getOrFail() const {
 }
 
 template <typename T>
+bool CFuture<T>::isDeferred() const {
+    return shouldStart != nullptr;
+}
+
+template <typename T>
 void CPromise<T>::SetValue(const T& _value) {
     *value = std::make_shared<T>(_value);
     resultReadyMutex->unlock();
@@ -121,5 +122,5 @@ void CPromise<T>::SetException(std::shared_ptr<std::logic_error> _exception) {
 
 template <typename T>
 std::shared_ptr<CFuture<T>> CPromise<T>::GetFuture() const {
-    return std::make_shared<CFuture<T>>(value, exception, resultReadyMutex, shouldStart, isDeferred);
+    return std::make_shared<CFuture<T>>(value, exception, resultReadyMutex, shouldStart);
 }

@@ -2,6 +2,25 @@
 
 #include "promise_future.h"
 
+//class TestFutureChain : public testing::Test {
+//public:
+//    TestFutureChain() : size(3) {}
+
+//    void SetUp() {
+//        for (int i = 0; i < size; ++i) {
+//            promises.emplace_back(new CPromise<int>());
+//            futures.push_back(promises[i]->GetFuture());
+//        }
+//    }
+
+//    void TearDown() {}
+
+//protected:
+//    const int size;
+//    std::vector<std::shared_ptr<CPromise<int>>> promises;
+//    std::vector<std::shared_ptr<CFuture<int>>> futures;
+//};
+
 //TEST_F(TestFutureChain, DISABLED_WithoutExceptions) {
 //    auto work = [this](int workDuration, int index) {
 //        std::this_thread::sleep_for(std::chrono::milliseconds(workDuration));
