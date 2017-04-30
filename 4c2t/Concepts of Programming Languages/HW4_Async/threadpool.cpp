@@ -9,12 +9,12 @@ void CPackedTask::Start() const {
 }
 
 CThreadPool::CThreadPool(int threadCount)
-    : deferredMasterThread(&CThreadPool::processDeferred, this),
-      taskQueue(new std::queue<CPackedTask>()),
+    : taskQueue(new std::queue<CPackedTask>()),
       deferredTasks(new std::vector<CPackedTask>()),
       shouldFinish(new std::atomic<bool>(false)),
       queueMutex(new std::mutex()),
-      deferredMutex(new std::mutex()) {
+      deferredMutex(new std::mutex()),
+      deferredMasterThread(&CThreadPool::processDeferred, this) {
     threads.reserve(threadCount);
     for (int i = 0; i < threadCount; ++i) {
         threads.push_back(std::thread(&CThreadPool::processTasks, this));

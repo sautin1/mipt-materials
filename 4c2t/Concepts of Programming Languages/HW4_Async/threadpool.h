@@ -30,11 +30,11 @@ private:
     void processTasks();
     void processDeferred();
 
-    std::vector<std::thread> threads;
-    std::thread deferredMasterThread;
     std::shared_ptr<std::queue<CPackedTask>> taskQueue;
     std::shared_ptr<std::vector<CPackedTask>> deferredTasks;
     std::shared_ptr<std::atomic<bool>> shouldFinish;
     std::shared_ptr<std::mutex> queueMutex;
     std::shared_ptr<std::mutex> deferredMutex;
+    std::vector<std::thread> threads;
+    std::thread deferredMasterThread;
 };
