@@ -57,7 +57,7 @@ void CThreadPool::processTasks() {
 }
 
 void CThreadPool::processDeferred() {
-    while (!shouldFinish) {
+    while (!shouldFinish->load()) {
         std::unique_lock<std::mutex> lock(*deferredMutex);
         for (unsigned int i = 0; i < deferredTasks->size(); ++i) {
             if (deferredTasks->at(i).ShouldStart()) {
