@@ -15,6 +15,7 @@ public:
         : procedure(_procedure), shouldStart(_shouldStart) {}
     bool ShouldStart() const;
     void Start() const;
+
 private:
     CProcedure procedure;
     std::shared_ptr<std::atomic<bool>> shouldStart;
@@ -26,6 +27,7 @@ public:
     ~CThreadPool();
 
     void AddTask(const CPackedTask& task);
+
 private:
     void processTasks();
     void processDeferred();

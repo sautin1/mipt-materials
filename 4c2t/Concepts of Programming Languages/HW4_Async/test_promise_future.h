@@ -9,8 +9,9 @@
 
 class TestPromiseFuture : public testing::Test {
 public:
-    TestPromiseFuture() {}
+    TestPromiseFuture() = default;
 
+protected:
     void SetUp() {
         promise = std::shared_ptr<CPromise<int>>(new CPromise<int>());
         future = promise->GetFuture();
@@ -18,7 +19,7 @@ public:
 
     void TearDown() {}
 
-protected:
+private:
     std::shared_ptr<CPromise<int>> promise;
     std::shared_ptr<CFuture<int>> future;
 };

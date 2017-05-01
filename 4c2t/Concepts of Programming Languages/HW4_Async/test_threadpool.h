@@ -13,6 +13,7 @@ public:
     TestPackedTask()
         : baseProcedure([](std::shared_ptr<int> x) { *x = 1; }) {}
 
+protected:
     void SetUp() {
         x = std::make_shared<int>(0);
         procedure = std::bind(baseProcedure, x);
@@ -20,7 +21,7 @@ public:
 
     void TearDown() {}
 
-protected:
+private:
     std::shared_ptr<int> x;
     std::function<void(std::shared_ptr<int>)> baseProcedure;
     std::function<void()> procedure;
@@ -44,6 +45,8 @@ public:
     TestThreadPool()
         : baseProcedure([](std::shared_ptr<std::atomic<int>> x) { x->store(1); }) {}
 
+
+protected:
     void SetUp() {
         x = std::make_shared<std::atomic<int>>(0);
         procedure = std::bind(baseProcedure, x);
@@ -51,7 +54,7 @@ public:
 
     void TearDown() {}
 
-protected:
+private:
     void waitForValue(std::shared_ptr<std::atomic<int>> x, int value, int iter = 10, int sleepMs = 50) {
         for (int i = 0; i < iter; ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
