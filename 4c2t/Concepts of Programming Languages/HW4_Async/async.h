@@ -15,7 +15,8 @@ std::shared_ptr<CFuture<TReturnType>> Async(bool isDeferred,
     }
     std::shared_ptr<CPromise<TReturnType>> promise(std::make_shared<CPromise<TReturnType>>(shouldStart));
     std::shared_ptr<CFuture<TReturnType>> future = promise->GetFuture();
-    CProcedure procedure = [&promise, &function, &args...] {
+    // capture by value since they are passed to another thread
+    CProcedure procedure = [promise, function, args...] {
         try {
             TReturnType result = function(args...);
             promise->SetValue(result);

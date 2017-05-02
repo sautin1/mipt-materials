@@ -28,3 +28,17 @@ TEST_F(TestAsync, NotDeferred) {
     std::shared_ptr<int> result = future->Get();
     EXPECT_EQ(*result, 1);
 }
+
+TEST_F(TestAsync, Deferred) {
+    int x = 0;
+    std::function<int(int)> function = [] (int arg) {
+        return arg + 1;
+    };
+
+    std::shared_ptr<CFuture<int>> future = Async<int, int>(true, threadPool, function, x);
+    std::shared_ptr<int> result = future->TryGet();
+    EXPECT_EQ(result, nullptr);
+
+    result = future->Get();
+    EXPECT_EQ(*result, 1);
+}
