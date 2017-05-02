@@ -19,7 +19,6 @@ protected:
 
     void TearDown() {}
 
-private:
     std::shared_ptr<CPromise<int>> promise;
     std::shared_ptr<CFuture<int>> future;
 };
@@ -40,7 +39,7 @@ TEST_F(TestPromiseFuture, WaitForResult) {
 
 TEST_F(TestPromiseFuture, ExceptionInPromise) {
     std::string error_message = "It's a trap!";
-    std::shared_ptr<std::logic_error> error(new std::logic_error(error_message));
+    std::logic_error error(error_message);
     auto work = [this, error](int workDuration) {
         std::this_thread::sleep_for(std::chrono::milliseconds(workDuration));
         promise->SetException(error);

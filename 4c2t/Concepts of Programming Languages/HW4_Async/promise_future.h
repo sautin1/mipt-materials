@@ -47,7 +47,7 @@ public:
     }
 
     void SetValue(const T& _value);
-    void SetException(std::shared_ptr<std::logic_error> _exception);
+    void SetException(const std::logic_error& _exception);
     std::shared_ptr<CFuture<T>> GetFuture() const;
 private:
     std::shared_ptr<std::shared_ptr<T>> value;
@@ -115,8 +115,8 @@ void CPromise<T>::SetValue(const T& _value) {
 }
 
 template <typename T>
-void CPromise<T>::SetException(std::shared_ptr<std::logic_error> _exception) {
-    *exception = _exception;
+void CPromise<T>::SetException(const std::logic_error& _exception) {
+    *exception = std::make_shared<std::logic_error>(_exception);
     resultReadyMutex->unlock();
 }
 

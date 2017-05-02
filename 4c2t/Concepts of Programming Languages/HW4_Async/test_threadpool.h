@@ -21,7 +21,6 @@ protected:
 
     void TearDown() {}
 
-private:
     std::shared_ptr<int> x;
     std::function<void(std::shared_ptr<int>)> baseProcedure;
     std::function<void()> procedure;
@@ -54,7 +53,6 @@ protected:
 
     void TearDown() {}
 
-private:
     void waitForValue(std::shared_ptr<std::atomic<int>> x, int value, int iter = 10, int sleepMs = 50) {
         for (int i = 0; i < iter; ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
