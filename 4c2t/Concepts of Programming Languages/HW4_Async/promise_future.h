@@ -23,8 +23,8 @@ public:
     std::shared_ptr<T> TryGet() const;
     void Wait() const;
 
-//    template <class TReturnType, class... TArgs>
-//    std::shared_ptr<const CFuture<T>> Then(std::function<TReturnType(TArgs...)> work) const;
+    template <class TReturnType, class... TArgs>
+    std::shared_ptr<const CFuture<T>> Then(std::function<TReturnType(TArgs...)> work, TArgs... args) const;
 private:
     std::shared_ptr<T> getOrFail() const;
     bool isDeferred() const;

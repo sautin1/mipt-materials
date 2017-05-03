@@ -15,6 +15,8 @@ CThreadPool::CThreadPool(int threadCount)
       queueMutex(new std::mutex()),
       deferredMutex(new std::mutex()),
       deferredMasterThread(&CThreadPool::processDeferred, this) {
+    --threadCount; // one thread is responsible for activation of deferred tasks
+    readyThreadCount = threadCount;
     threads.reserve(threadCount);
     for (int i = 0; i < threadCount; ++i) {
         threads.push_back(std::thread(&CThreadPool::processTasks, this));
@@ -37,10 +39,15 @@ void CThreadPool::AddTask(const CPackedTask& task) {
     }
 }
 
+int CThreadPool::ReadyThreadCount() const {
+    return readyThreadCount;
+}
+
 void CThreadPool::processTasks() {
     while (!shouldFinish->load()) {
         queueMutex->lock();
         if (!taskQueue->empty()) {
+            --readyThreadCount;
             CPackedTask task = taskQueue->front();
             taskQueue->pop();
             queueMutex->unlock();
@@ -50,6 +57,7 @@ void CThreadPool::processTasks() {
                 shouldFinish->store(true);
                 throw error;
             }
+            ++readyThreadCount;
         } else {
             queueMutex->unlock();
         }

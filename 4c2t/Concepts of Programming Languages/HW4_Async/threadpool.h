@@ -27,11 +27,13 @@ public:
     ~CThreadPool();
 
     void AddTask(const CPackedTask& task);
+    int ReadyThreadCount() const;
 
 private:
     void processTasks();
     void processDeferred();
 
+    std::atomic<int> readyThreadCount;
     std::shared_ptr<std::queue<CPackedTask>> taskQueue;
     std::shared_ptr<std::vector<CPackedTask>> deferredTasks;
     std::shared_ptr<std::atomic<bool>> shouldFinish;

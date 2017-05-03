@@ -79,13 +79,17 @@ TEST_F(TestThreadPool, AddTaskAndStart) {
 }
 
 TEST_F(TestThreadPool, AddTaskAndStartLater) {
+    int readyThreadCount = threadPool.ReadyThreadCount();
     std::shared_ptr<std::atomic<bool>> shouldStart(new std::atomic<bool>(false));
     CPackedTask task(procedure, shouldStart);
     threadPool.AddTask(task);
+    EXPECT_EQ(threadPool.ReadyThreadCount(), readyThreadCount);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     EXPECT_EQ(x->load(), 0);
     shouldStart->store(true);
+
     waitForValue(x, 1);
+
     EXPECT_EQ(x->load(), 1);
 }
