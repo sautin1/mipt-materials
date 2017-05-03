@@ -84,12 +84,12 @@ TEST_F(TestPromiseFuture, ThenInt) {
                                                                 TTaskLaunchMode::DEFERRED);
 
     std::shared_ptr<CFuture<int>> futureCombined = futureStart
-//            ->Then(threadPool, incFunction)
+            ->Then(threadPool, incFunction)
             ->Then(threadPool, incFunction);
     try {
         std::shared_ptr<int> result = futureCombined->Get();
         EXPECT_NE(result, nullptr);
-        EXPECT_EQ(*result, 2);
+        EXPECT_EQ(*result, 3);
     } catch (const std::exception& error) {
         FAIL() << "No exception was expected";
     }

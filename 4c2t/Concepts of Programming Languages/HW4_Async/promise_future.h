@@ -25,6 +25,7 @@ public:
 
     std::shared_ptr<T> Get() const;
     std::shared_ptr<T> TryGet() const;
+    void AskForStart() const;
     void Wait() const;
 
     template <class TReturnType>
@@ -79,10 +80,15 @@ std::shared_ptr<T> CFuture<T>::TryGet() const {
 }
 
 template <typename T>
-void CFuture<T>::Wait() const {
+void CFuture<T>::AskForStart() const {
     if (isDeferred()) {
         shouldStart->store(true);
     }
+}
+
+template <typename T>
+void CFuture<T>::Wait() const {
+    AskForStart();
     resultReadyMutex->lock();
     resultReadyMutex->unlock();
 }
@@ -91,8 +97,13 @@ template <typename T>
 template <class TReturnType>
 std::shared_ptr<CFuture<T> > CFuture<T>::Then(CThreadPool& threadPool,
                                               const std::function<TReturnType(T)>& rightFunction) const {
-    std::function<TReturnType()> chainFunction = [this, rightFunction] () {
-        std::shared_ptr<T> leftResult = Get();
+    std::function<TReturnType()> chainFunction = [this, rightFunction, &threadPool] () {
+        AskForStart();
+        std::shared_ptr<T> leftResult = TryGet();
+        if (leftResult == nullptr) {
+            // return this task back to thread pool
+
+        }
         // no exception occured
         return rightFunction(*leftResult);
     };
