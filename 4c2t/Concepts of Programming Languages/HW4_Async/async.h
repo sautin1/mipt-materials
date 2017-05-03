@@ -1,22 +1,21 @@
 #pragma once
+#include "task_mode.h"
 #include "threadpool.h"
-#include "promise_future.h"
 
 #include <functional>
 
-enum class TTaskLaunchMode : char {
-    SYNC,       // synchronously
-    ASYNC,      // asynchronously, start at once
-    DEFERRED,   // asynchronously, start deferred
-    CHOOSE      // let function decide between ASYNC and SYNC
-};
+template <typename T>
+class CFuture;
+
+template <typename T>
+class CPromise;
 
 template <class TReturnType, class... TArgTypes>
 std::shared_ptr<CFuture<TReturnType>> Async(
         CThreadPool& threadPool,
         const std::function<TReturnType(TArgTypes...)>& function,
         const TArgTypes&... args,
-        TTaskLaunchMode mode = TTaskLaunchMode::CHOOSE
+        TTaskLaunchMode mode = TTaskLaunchMode::ASYNC
         ) {
     std::shared_ptr<std::atomic<bool>> shouldStart(new std::atomic<bool>(mode != TTaskLaunchMode::DEFERRED));
     std::shared_ptr<CPromise<TReturnType>> promise(std::make_shared<CPromise<TReturnType>>(shouldStart));

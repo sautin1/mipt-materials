@@ -1,5 +1,9 @@
 #pragma once
 
+#include "async.h"
+#include "task_mode.h"
+#include "threadpool.h"
+
 #include <atomic>
 #include <functional>
 #include <exception>
@@ -23,8 +27,9 @@ public:
     std::shared_ptr<T> TryGet() const;
     void Wait() const;
 
-    template <class TReturnType, class... TArgs>
-    std::shared_ptr<const CFuture<T>> Then(std::function<TReturnType(TArgs...)> work, TArgs... args) const;
+    template <class TReturnType>
+    std::shared_ptr<const CFuture<T>> Then(CThreadPool& threadPool,
+                                           const std::function<TReturnType(T)>& function) const;
 private:
     std::shared_ptr<T> getOrFail() const;
     bool isDeferred() const;
@@ -82,18 +87,21 @@ void CFuture<T>::Wait() const {
     resultReadyMutex->unlock();
 }
 
-//template <typename T>
-//std::shared_ptr<const CFuture<T>> CFuture<T>::Then(const std::shared_ptr<CFuture<T>> next) const {
-//    Get();
-//    next->Get();
-//    return next;
-//}
+template <typename T>
+template <class TReturnType>
+std::shared_ptr<const CFuture<T>> CFuture<T>::Then(CThreadPool& threadPool,
+                                                   const std::function<TReturnType(T)>& rightFunction) const {
+    std::function<TReturnType()> chainFunction = [this, rightFunction] () {
+        std::shared_ptr<T> leftResult = Get();
+        // no exception occured
+        return rightFunction(*leftResult);
+    };
 
-//template <typename T>
-//template <class TReturnType, class... TArgs>
-//std::shared_ptr<const CFuture<T>> CFuture<T>::Then(std::function<TReturnType(TArgs...)> work) const {
-
-//}
+    std::shared_ptr<CFuture<TReturnType>> future = Async<TReturnType>(threadPool,
+                                                                      chainFunction,
+                                                                      TTaskLaunchMode::DEFERRED);
+    return future;
+}
 
 template <typename T>
 std::shared_ptr<T> CFuture<T>::getOrFail() const {

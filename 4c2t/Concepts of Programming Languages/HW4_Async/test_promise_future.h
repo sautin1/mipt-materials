@@ -6,6 +6,7 @@
 #include <string>
 
 #include "promise_future.h"
+#include "threadpool.h"
 
 class TestPromiseFuture : public testing::Test {
 public:
@@ -70,4 +71,26 @@ TEST_F(TestPromiseFuture, WaitMethod) {
     std::shared_ptr<int> result = future->TryGet();
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(*result, 46);
+}
+
+TEST_F(TestPromiseFuture, ThenInt) {
+    CThreadPool threadPool;
+    std::function<int(int)> incFunction = [](int x) {
+        return x + 1;
+    };
+    std::shared_ptr<CFuture<int>> futureStart = Async<int, int>(threadPool,
+                                                                incFunction,
+                                                                0,
+                                                                TTaskLaunchMode::DEFERRED);
+
+    std::shared_ptr<const CFuture<int>> futureEnd = futureStart
+            ->Then(threadPool, incFunction)
+            ->Then(threadPool, incFunction);
+    try {
+        std::shared_ptr<int> result = futureEnd->Get();
+        EXPECT_NE(result, nullptr);
+        EXPECT_EQ(*result, 3);
+    } catch (const std::exception& error) {
+        FAIL() << "No exception was expected";
+    }
 }
