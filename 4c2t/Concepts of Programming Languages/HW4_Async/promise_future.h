@@ -28,7 +28,7 @@ public:
     void Wait() const;
 
     template <class TReturnType>
-    std::shared_ptr<const CFuture<T>> Then(CThreadPool& threadPool,
+    std::shared_ptr<CFuture<T>> Then(CThreadPool& threadPool,
                                            const std::function<TReturnType(T)>& function) const;
 private:
     std::shared_ptr<T> getOrFail() const;
@@ -89,8 +89,8 @@ void CFuture<T>::Wait() const {
 
 template <typename T>
 template <class TReturnType>
-std::shared_ptr<const CFuture<T>> CFuture<T>::Then(CThreadPool& threadPool,
-                                                   const std::function<TReturnType(T)>& rightFunction) const {
+std::shared_ptr<CFuture<T> > CFuture<T>::Then(CThreadPool& threadPool,
+                                              const std::function<TReturnType(T)>& rightFunction) const {
     std::function<TReturnType()> chainFunction = [this, rightFunction] () {
         std::shared_ptr<T> leftResult = Get();
         // no exception occured
@@ -113,7 +113,7 @@ std::shared_ptr<T> CFuture<T>::getOrFail() const {
 
 template <typename T>
 bool CFuture<T>::isDeferred() const {
-    return shouldStart != nullptr;
+    return shouldStart != nullptr && !shouldStart->load();
 }
 
 template <typename T>

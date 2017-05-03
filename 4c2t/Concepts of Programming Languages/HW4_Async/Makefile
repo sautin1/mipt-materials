@@ -6,4 +6,4 @@ compile:
 	g++ -pthread -std=c++11 -Wall -o $(OUTFILE) *.cpp -lgtest
 
 clean:
-	rm $(OUTFILE)
+	rm -f $(OUTFILE)

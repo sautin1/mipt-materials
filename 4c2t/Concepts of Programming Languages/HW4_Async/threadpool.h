@@ -23,7 +23,7 @@ private:
 
 class CThreadPool {
 public:
-    CThreadPool(int threadCount = 3);
+    CThreadPool(int threadCount = 4);
     ~CThreadPool();
 
     void AddTask(const CPackedTask& task);
