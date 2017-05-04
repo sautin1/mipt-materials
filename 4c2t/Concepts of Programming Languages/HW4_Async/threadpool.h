@@ -1,4 +1,6 @@
 #pragma once
+#include <atomic>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -17,16 +19,16 @@ public:
     ~CThreadPool();
 
     void AddTask(const CProcedure& procedure);
-    int CountReadyThreads() const;
+    int CountReadyThreads();
 
 private:
-    void processTasks(int threadId);
-    bool isThreadReady(int threadId) const;
-    int getLeastBusyThread() const;
+    void processTasks(int threadIdx);
+    bool isThreadReady(int threadIdx);
+    int getLeastBusyThread();
 
     std::atomic<bool> shouldFinish;     // poison pill
 
-    std::vector<std::mutex> mutexes;    // for accessing queues safely
+    std::deque<std::mutex> mutexes;    // for accessing queues safely (use deque since cannot store mutexes in vector)
     std::vector<CSemaphore> semaphores; // counter shows the size of queues
     std::vector<std::queue<CProcedure>> taskQueues;
     std::vector<std::thread> threads;

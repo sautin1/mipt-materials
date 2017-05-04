@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "test_thread_semaphore.h"
+#include "test_threadpool.h"
 
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
