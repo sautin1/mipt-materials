@@ -1,78 +1,76 @@
 #include "threadpool.h"
 
-bool CPackedTask::ShouldStart() const {
-    return !shouldStart || shouldStart->load();
-}
-
-void CPackedTask::Start() const {
-    procedure();
-}
-
 CThreadPool::CThreadPool(int threadCount)
-    : taskQueue(new std::queue<CPackedTask>()),
-      deferredTasks(new std::vector<CPackedTask>()),
-      shouldFinish(new std::atomic<bool>(false)),
-      queueMutex(new std::mutex()),
-      deferredMutex(new std::mutex()),
-      deferredMasterThread(&CThreadPool::processDeferred, this) {
-    --threadCount; // one thread is responsible for activation of deferred tasks
-    readyThreadCount = threadCount;
+    : shouldFinish(false),
+      mutexes(threadCount, std::mutex()),
+      semaphores(threadCount, CSemaphore(0)),
+      taskQueues(threadCount, std::queue<CProcedure>()) {
     threads.reserve(threadCount);
     for (int i = 0; i < threadCount; ++i) {
-        threads.push_back(std::thread(&CThreadPool::processTasks, this));
+        threads.push_back(std::thread(&CThreadPool::processTasks, this, i));
     }
 }
 
 CThreadPool::~CThreadPool() {
-    shouldFinish->store(true);
-    for (unsigned int i = 0; i < threads.size(); ++i) {
+    shouldFinish = true;
+    for (unsigned int i = 0; i < semaphores.size(); ++i) {
+        semaphores[i].Post();
         threads[i].join();
     }
-    deferredMasterThread.join();
 }
 
-void CThreadPool::AddTask(const CPackedTask& task) {
-    if (task.ShouldStart()) {
-        taskQueue->push(task);
-    } else {
-        deferredTasks->push_back(task);
-    }
+void CThreadPool::AddTask(const CProcedure& procedure) {
+    int threadId = getLeastBusyThread();
+    mutexes[threadId].lock();
+    taskQueues[threadId].push(procedure);
+    mutexes[threadId].unlock();
 }
 
-int CThreadPool::ReadyThreadCount() const {
-    return readyThreadCount;
-}
-
-void CThreadPool::processTasks() {
-    while (!shouldFinish->load()) {
-        queueMutex->lock();
-        if (!taskQueue->empty()) {
-            --readyThreadCount;
-            CPackedTask task = taskQueue->front();
-            taskQueue->pop();
-            queueMutex->unlock();
-            try {
-                task.Start();
-            } catch (const std::exception& error) {
-                shouldFinish->store(true);
-                throw error;
-            }
-            ++readyThreadCount;
-        } else {
-            queueMutex->unlock();
+int CThreadPool::CountReadyThreads() const {
+    int count = 0;
+    for (unsigned int i = 0; i < semaphores.size(); ++i) {
+        if (isThreadReady(i)) {
+            ++count;
         }
     }
+    return count;
 }
 
-void CThreadPool::processDeferred() {
-    while (!shouldFinish->load()) {
-        std::unique_lock<std::mutex> lock(*deferredMutex);
-        for (unsigned int i = 0; i < deferredTasks->size(); ++i) {
-            if (deferredTasks->at(i).ShouldStart()) {
-                std::swap(deferredTasks->at(i), deferredTasks->back());
-                taskQueue->push(deferredTasks->back());
-                deferredTasks->pop_back();
-            }
+void CThreadPool::processTasks(int threadId) {
+    while (true) {
+        semaphores[threadId].Wait();
+        if (shouldFinish) {
+            break;
+        }
+        mutexes[threadId].lock();
+        CProcedure task = taskQueues[threadId].front();
+        taskQueues[threadId].pop();
+        mutexes[threadId].unlock();
+
+        task();
+    }
+}
+
+bool CThreadPool::isThreadReady(int threadId) const {
+    return semaphores[threadId].GetValue() == 0;
+}
+
+int CThreadPool::getLeastBusyThread() const {
+    int minTaskThread;
+    int minTaskCount;
+    for (int i = 0; i < semaphores.size(); ++i) {
+        int currentValue = semaphores[i].GetValue();
+        if (i == 0) {
+            minTaskThread = 0;
+            minTaskCount = currentValue;
+        } else if (currentValue < minTaskCount) {
+            minTaskThread = i;
+            minTaskCount = currentValue;
+        }
+
+        if (currentValue == 0) {
+            break;
         }
     }
+    return minTaskThread;
 }
