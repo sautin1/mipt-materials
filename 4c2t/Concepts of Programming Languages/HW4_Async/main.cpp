@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "test_promise_future.h"
 #include "test_thread_semaphore.h"
 #include "test_threadpool.h"
 
