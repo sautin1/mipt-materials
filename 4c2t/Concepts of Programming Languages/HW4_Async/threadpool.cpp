@@ -1,12 +1,14 @@
 #include "threadpool.h"
 
-CThreadPool::CThreadPool(int threadCount)
-    : shouldFinish(false),
-      semaphores(threadCount, CSemaphore(0)),
-      taskQueues(threadCount, std::queue<CProcedure>()) {
+CThreadPool::CThreadPool(int _threadCount)
+    : threadCount(_threadCount),
+      shouldFinish(false),
+      semaphores(_threadCount, CSemaphore(0)),
+      taskQueues(_threadCount, std::queue<CProcedure>()) {
     threads.reserve(threadCount);
     for (int i = 0; i < threadCount; ++i) {
         threads.push_back(std::thread(&CThreadPool::processTasks, this, i));
+        threadStates.emplace_back(TThreadState::FREE);
         mutexes.emplace_back();
     }
 }
@@ -37,12 +39,18 @@ int CThreadPool::CountReadyThreads() {
     return count;
 }
 
+int CThreadPool::GetThreadCount() const {
+    return threadCount;
+}
+
 void CThreadPool::processTasks(int threadIdx) {
     while (true) {
+        threadStates[threadIdx] = TThreadState::FREE;
         semaphores[threadIdx].Wait();
         if (shouldFinish) {
             break;
         }
+        threadStates[threadIdx] = TThreadState::BUSY;
         mutexes[threadIdx].lock();
         CProcedure task = taskQueues[threadIdx].front();
         taskQueues[threadIdx].pop();
@@ -53,7 +61,7 @@ void CThreadPool::processTasks(int threadIdx) {
 }
 
 bool CThreadPool::isThreadReady(int threadIdx) {
-    return semaphores[threadIdx].GetValue() == 0;
+    return threadStates[threadIdx] == TThreadState::FREE;
 }
 
 int CThreadPool::getLeastBusyThread() {

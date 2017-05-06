@@ -13,23 +13,33 @@
 using CProcedure = std::function<void()>;
 
 
+enum class TThreadState : char {
+    BUSY, FREE
+};
+
+
 class CThreadPool {
 public:
-    CThreadPool(int threadCount = 4);
+    CThreadPool(int _threadCount = 3);
     ~CThreadPool();
 
     void AddTask(const CProcedure& procedure);
     int CountReadyThreads();
+    int GetThreadCount() const;
 
 private:
     void processTasks(int threadIdx);
     bool isThreadReady(int threadIdx);
     int getLeastBusyThread();
 
-    std::atomic<bool> shouldFinish;     // poison pill
+    int threadCount;
 
-    std::deque<std::mutex> mutexes;    // for accessing queues safely (use deque since cannot store mutexes in vector)
-    std::vector<CSemaphore> semaphores; // counter shows the size of queues
+    std::atomic<bool> shouldFinish;                     // poison pill
+
+    std::deque<std::mutex> mutexes;                     // for accessing queues safely
+                                                        // (use deque since mutexes are not moveable)
+    std::vector<CSemaphore> semaphores;                 // counter shows the size of queues
     std::vector<std::queue<CProcedure>> taskQueues;
     std::vector<std::thread> threads;
+    std::deque<std::atomic<TThreadState>> threadStates; // (use deque since atomics are not moveable)
 };
