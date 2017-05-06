@@ -70,6 +70,7 @@ public:
 
     std::shared_ptr<T> Get() const;
     std::shared_ptr<T> TryGet() const;
+    bool IsFinished() const;
     void Wait() const;
 
 private:
@@ -89,11 +90,19 @@ std::shared_ptr<T> CFuture<T>::Get() const {
 template <typename T>
 std::shared_ptr<T> CFuture<T>::TryGet() const {
     std::shared_ptr<T> result = nullptr;
-    if (resultReadyMutex->try_lock()) {
-        resultReadyMutex->unlock();
+    if (IsFinished()) {
         result = getOrFail();
     }
     return result;
+}
+
+template <typename T>
+bool CFuture<T>::IsFinished() const {
+    bool isFinished = resultReadyMutex->try_lock();
+    if (isFinished) {
+        resultReadyMutex->unlock();
+    }
+    return isFinished;
 }
 
 template <typename T>

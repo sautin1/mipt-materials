@@ -7,9 +7,9 @@
 
 #include "thread_semaphore.h"
 
-class TestSemaphore : public testing::Test {
+class CTestSemaphore : public testing::Test {
 public:
-    TestSemaphore() = default;
+    CTestSemaphore() = default;
 
 protected:
     void SetUp() {
@@ -23,7 +23,7 @@ protected:
     std::shared_ptr<int> x;
 };
 
-TEST_F(TestSemaphore, WaitPost) {
+TEST_F(CTestSemaphore, WaitPost) {
     std::shared_ptr<std::mutex> mutex = nullptr;
     auto function = [this, &mutex] () {
         mutex = std::make_shared<std::mutex>();
@@ -46,7 +46,7 @@ TEST_F(TestSemaphore, WaitPost) {
     thread.join();
 }
 
-TEST_F(TestSemaphore, GetValue) {
+TEST_F(CTestSemaphore, GetValue) {
     EXPECT_EQ(semaphore->GetValue(), 0);
 
     for (int i = 1; i <= 3; ++i) {
@@ -60,7 +60,7 @@ TEST_F(TestSemaphore, GetValue) {
     }
 }
 
-TEST_F(TestSemaphore, TryWait) {
+TEST_F(CTestSemaphore, TryWait) {
     bool isOpen = semaphore->TryWait();
     EXPECT_EQ(isOpen, false);
 

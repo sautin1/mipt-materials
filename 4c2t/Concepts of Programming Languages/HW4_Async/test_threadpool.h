@@ -6,9 +6,9 @@
 #include "promise_future.h"
 #include "threadpool.h"
 
-class TestThreadPool : public testing::Test {
+class CTestThreadPool : public testing::Test {
 public:
-    TestThreadPool() {}
+    CTestThreadPool() {}
 
 protected:
     void SetUp() {
@@ -20,7 +20,7 @@ protected:
     std::shared_ptr<CThreadPool> threadPool;
 };
 
-TEST_F(TestThreadPool, AddTasks) {
+TEST_F(CTestThreadPool, AddTasks) {
     int size = 100;
     std::vector<std::shared_ptr<CFuture<int>>> futures;
     futures.reserve(size);

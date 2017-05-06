@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <string>
@@ -8,9 +7,9 @@
 #include "promise_future.h"
 #include "threadpool.h"
 
-class TestPromiseFuture : public testing::Test {
+class CTestPromiseFuture : public testing::Test {
 public:
-    TestPromiseFuture() = default;
+    CTestPromiseFuture() = default;
 
 protected:
     void SetUp() {
@@ -24,7 +23,7 @@ protected:
     std::shared_ptr<CFuture<int>> future;
 };
 
-TEST_F(TestPromiseFuture, WaitForResult) {
+TEST_F(CTestPromiseFuture, WaitForResult) {
     std::shared_ptr<std::mutex> mutex(new std::mutex());
     mutex->lock();
     auto work = [this, mutex]() {
@@ -43,6 +42,7 @@ TEST_F(TestPromiseFuture, WaitForResult) {
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(*result, 23);
 
+    EXPECT_EQ(future->IsFinished(), true);
     std::shared_ptr<int> resultNew = future->TryGet();
     EXPECT_NE(resultNew, nullptr);
     EXPECT_EQ(*result, *resultNew);
@@ -50,7 +50,7 @@ TEST_F(TestPromiseFuture, WaitForResult) {
     thread.join();
 }
 
-TEST_F(TestPromiseFuture, ExceptionInPromise) {
+TEST_F(CTestPromiseFuture, ExceptionInPromise) {
     std::string error_message = "It's a trap!";
     auto work = [this, &error_message]() {
         std::logic_error error(error_message);
@@ -70,7 +70,7 @@ TEST_F(TestPromiseFuture, ExceptionInPromise) {
     thread.join();
 }
 
-TEST_F(TestPromiseFuture, MultipleFutures) {
+TEST_F(CTestPromiseFuture, MultipleFutures) {
     std::shared_ptr<std::mutex> mutex(new std::mutex());
     mutex->lock();
     auto work = [this, mutex]() {
