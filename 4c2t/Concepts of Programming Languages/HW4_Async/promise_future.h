@@ -31,6 +31,7 @@ public:
         : asyncResult(new CAsyncResult<T>()),
           resultReadyMutex(new std::mutex()) {
         resultReadyMutex->lock();
+        future = std::make_shared<CFuture<T>>(asyncResult, resultReadyMutex);
     }
 
     void SetValue(const T& _value);
@@ -40,6 +41,7 @@ public:
 private:
     std::shared_ptr<CAsyncResult<T>> asyncResult;
     std::shared_ptr<std::mutex> resultReadyMutex;
+    std::shared_ptr<CFuture<T>> future;
 };
 
 template <typename T>
@@ -56,7 +58,7 @@ void CPromise<T>::SetException(const std::exception& _exception) {
 
 template <typename T>
 std::shared_ptr<CFuture<T>> CPromise<T>::GetFuture() const {
-    return std::make_shared<CFuture<T>>(asyncResult, resultReadyMutex);
+    return std::shared_ptr<CFuture<T>>(future);
 }
 
 
