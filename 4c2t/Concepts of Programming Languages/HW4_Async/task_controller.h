@@ -9,68 +9,61 @@
 #include "threadpool.h"
 
 
-template <typename TResultType>
-class ITaskController {
-public:
-    virtual void Start() = 0;
-    virtual void Delegate() = 0;
-    virtual bool IsCompleted() = 0;
-    virtual void WaitCompleted() = 0;
-};
-
-
-template <typename TResultType>
-class CTaskController : public ITaskController<TResultType> {
+template <typename TResult>
+class CTaskController {
 public:
     CTaskController(std::shared_ptr<CThreadPool> _threadPool,
-                    const std::function<TResultType()>& _function)
+                    const std::function<TResult()>& _function)
         : threadPool(_threadPool), function(_function) {}
 
-    virtual void Start() override;
-    virtual void Delegate() override;
-    virtual bool IsCompleted() override;
-    virtual void WaitCompleted() override;
+    void Start();
+    void Delegate();
+    bool IsCompleted();
+    void WaitCompleted();
 
-    std::shared_ptr<CFuture<TResultType>> GetFuture() const;
-    const std::function<TResultType()>& GetFunction() const;
+    std::shared_ptr<CFuture<TResult>> GetFuture() const;
+    const std::function<TResult()>& GetFunction() const;
 
     CProcedure BuildProcedure();
 
+    template <typename TResultNew>
+    std::shared_ptr<CTaskController<TResultNew>> Then(const std::function<TResultNew(TResult)>& functionOther) const;
+
 private:
     std::shared_ptr<CThreadPool> threadPool;
-    std::function<TResultType()> function;
-    std::shared_ptr<CFuture<TResultType>> future;
+    std::function<TResult()> function;
+    std::shared_ptr<CFuture<TResult>> future;
 };
 
-template <typename TResultType>
-void CTaskController<TResultType>::Start() {
+template <typename TResult>
+void CTaskController<TResult>::Start() {
     if (!IsCompleted()) {
         CProcedure procedure = BuildProcedure();
         procedure();
     }
 }
 
-template <typename TResultType>
-void CTaskController<TResultType>::Delegate() {
+template <typename TResult>
+void CTaskController<TResult>::Delegate() {
     if (!IsCompleted()) {
         CProcedure procedure = BuildProcedure();
         threadPool->AddTask(procedure);
     }
 }
 
-template <typename TResultType>
-bool CTaskController<TResultType>::IsCompleted() {
+template <typename TResult>
+bool CTaskController<TResult>::IsCompleted() {
     return future != nullptr && future->IsFinished();
 }
 
-template <typename TResultType>
-void CTaskController<TResultType>::WaitCompleted() {
+template <typename TResult>
+void CTaskController<TResult>::WaitCompleted() {
     future->Wait();
 }
 
-template <typename TResultType>
-CProcedure CTaskController<TResultType>::BuildProcedure() {
-    std::shared_ptr<CPromise<TResultType>> promise(new CPromise<TResultType>());
+template <typename TResult>
+CProcedure CTaskController<TResult>::BuildProcedure() {
+    std::shared_ptr<CPromise<TResult>> promise(new CPromise<TResult>());
     future = promise->GetFuture();
     CProcedure procedure = [this, promise]() {
         try {
@@ -82,26 +75,25 @@ CProcedure CTaskController<TResultType>::BuildProcedure() {
     return procedure;
 }
 
-template <typename TResultType>
-std::shared_ptr<CFuture<TResultType>> CTaskController<TResultType>::GetFuture() const {
+template <typename TResult>
+std::shared_ptr<CFuture<TResult>> CTaskController<TResult>::GetFuture() const {
     return future;
 }
 
-template <typename TResultType>
-const std::function<TResultType()>& CTaskController<TResultType>::GetFunction() const {
+template <typename TResult>
+const std::function<TResult()>& CTaskController<TResult>::GetFunction() const {
     return function;
 }
 
-
-//template <typename TResultType>
-//class CTaskChainController : public ITaskController<TResultType> {
-//public:
-//    virtual void Start() override;
-//    virtual void Delegate() override;
-//    virtual std::shared_ptr<CFuture<TResultType>> GetFuture() override;
-//    virtual bool IsCompleted() override;
-//    virtual void WaitCompleted() override;
-
-//private:
-
-//};
+template <typename TResult>
+template <typename TResultNew>
+std::shared_ptr<CTaskController<TResultNew>> CTaskController<TResult>::Then(
+        const std::function<TResultNew(TResult)>& functionOther) const {
+    std::function<TResultNew> functionNew = [this, functionOther]() {
+        Start();
+        std::shared_ptr<CFuture<TResult>> thisFuture = GetFuture();
+        std::shared_ptr<TResult> thisResult = thisFuture->Get();
+        return functionOther(thisResult);
+    };
+    return std::make_shared<CTaskController<TResultNew>>(threadPool, functionNew);
+}
