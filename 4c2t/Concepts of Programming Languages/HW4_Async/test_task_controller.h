@@ -129,28 +129,64 @@ TEST_F(CTestTaskController, ThenChainLineLength) {
         return line.size();
     };
 
-    CTaskController<std::string> taskPangram(threadPool, functionPangram);
-    CTaskController<int> taskLength = taskPangram.Then<int>(functionLength);
+    std::shared_ptr<CTaskController<std::string>> taskPangram(
+        new CTaskController<std::string>(threadPool, functionPangram)
+    );
+    std::shared_ptr<CTaskController<int>> taskLength = Then<std::string, int>(taskPangram, functionLength);
 
-    taskLength.Delegate();
-    std::shared_ptr<int> result = taskLength.GetFuture()->Get();
+    EXPECT_NE(taskLength, nullptr);
+    taskLength->Delegate();
+    std::shared_ptr<int> result = taskLength->GetFuture()->Get();
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(*result, line.length());
 }
 
+TEST_F(CTestTaskController, ThenChainInc) {
+    std::shared_ptr<CTaskController<int>> taskZero(
+        new CTaskController<int>(threadPool, []() { return 0; })
+    );
+    std::function<int(int)> functionIncrement = [](int x) { return x + 1; };
+    std::shared_ptr<CTaskController<int>> taskInc = Then<int, int>(
+        Then<int, int>(taskZero, functionIncrement),
+        functionIncrement
+    );
+    EXPECT_NE(taskInc, nullptr);
+
+    taskInc->Delegate();
+    std::shared_ptr<int> result = taskInc->GetFuture()->Get();
+    EXPECT_NE(result, nullptr);
+    EXPECT_EQ(*result, 2);
+}
+
 TEST_F(CTestTaskController, ThenChainLongestWordLength) {
     createFunctions();
-    CTaskController<std::string> taskQuote(threadPool, functionQuote);
-    CTaskController<int> taskWordMaxLength = taskQuote
-            .Then<std::vector<std::string>>(functionSplit)
-            .Then<std::vector<std::string>>(functionFilterEmpty)
-            .Then<std::vector<int>>(functionLineLengths)
-            .Then<std::vector<int>>(functionSort)
-            .Then<std::vector<int>>(functionReverse)
-            .Then<int>(functionTakeFront);
+    std::shared_ptr<CTaskController<std::string>> taskQuote(
+        new CTaskController<std::string>(threadPool, functionQuote)
+    );
+    std::shared_ptr<CTaskController<int>> taskWordMaxLength;
+    taskWordMaxLength = Then<std::vector<int>, int>(
+        Then<std::vector<int>, std::vector<int>>(
+            Then<std::vector<int>, std::vector<int>>(
+                Then<std::vector<std::string>, std::vector<int>>(
+                    Then<std::vector<std::string>, std::vector<std::string>>(
+                        Then<std::string, std::vector<std::string>>(
+                            taskQuote,
+                            functionSplit
+                        ),
+                        functionFilterEmpty
+                    ),
+                    functionLineLengths
+                ),
+                functionSort
+            ),
+            functionReverse
+        ),
+        functionTakeFront
+    );
+    EXPECT_NE(taskWordMaxLength, nullptr);
 
-    taskWordMaxLength.Delegate();
-    std::shared_ptr<int> result = taskWordMaxLength.GetFuture()->Get();
+    taskWordMaxLength->Delegate();
+    std::shared_ptr<int> result = taskWordMaxLength->GetFuture()->Get();
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(*result, std::string("languages").size());
 }
