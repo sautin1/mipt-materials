@@ -1,16 +1,14 @@
 #pragma once
 
-#include "async.h"
-#include "async_exception.h"
-#include "task_mode.h"
-#include "threadpool.h"
-
 #include <atomic>
 #include <functional>
 #include <exception>
 #include <memory>
 #include <mutex>
 #include <thread>
+
+#include "async_exception.h"
+#include "threadpool.h"
 
 
 template <typename T>
