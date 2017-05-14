@@ -51,9 +51,9 @@ TEST_F(CTestPromiseFuture, WaitForResult) {
 }
 
 TEST_F(CTestPromiseFuture, ExceptionInPromise) {
-    std::string error_message = "It's a trap!";
-    auto work = [this, &error_message]() {
-        std::logic_error error(error_message);
+    std::string errorMessage = "It's a trap!";
+    auto work = [this, &errorMessage]() {
+        std::logic_error error(errorMessage);
         promise->SetException(error);
     };
     std::thread thread(work);
@@ -62,7 +62,7 @@ TEST_F(CTestPromiseFuture, ExceptionInPromise) {
         future->Get();
         FAIL() << "CAsyncException expected";
     } catch (const CAsyncException& err) {
-        EXPECT_EQ(err.what(), error_message);
+        EXPECT_EQ(err.what(), errorMessage);
     } catch (...) {
         FAIL() << "CAsyncException expected";
     }

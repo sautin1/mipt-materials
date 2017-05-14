@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <stdexcept>
 #include <sstream>
 #include <vector>
 
@@ -18,14 +19,18 @@ public:
 protected:
     void SetUp() {
         threadPool = std::make_shared<CThreadPool>();
+        createStringFunctions();
+        createArithmeticFunctions();
     }
 
     void TearDown() {}
 
     std::shared_ptr<CThreadPool> threadPool;
 
-    // functions
+    // string functions
+    std::function<std::string()> functionPangram;
     std::function<std::string()> functionQuote;
+    std::function<int(const std::string&)> functionLength;
     std::function<std::vector<std::string>(const std::string&)> functionSplit;
     std::function<std::vector<std::string>(const std::vector<std::string>)> functionFilterEmpty;
     std::function<std::vector<int>(const std::vector<std::string>&)> functionLineLengths;
@@ -33,13 +38,35 @@ protected:
     std::function<std::vector<int>(std::vector<int>)> functionReverse;
     std::function<int(const std::vector<int>&)> functionTakeFront;
 
-    void createFunctions();
+    // id functions
+    std::function<int()> functionZero;
+    std::function<int(int)> functionIncrement;
+    std::function<int(int)> functionIdWithCounter;
+    std::function<int(int)> functionIdWithExceptionThrown;
+
+    std::string exceptionMessage;
+    std::string pangram;
+    std::string quote;
+    std::shared_ptr<int> functionCallCounter;
+
+    void createStringFunctions();
+    void createArithmeticFunctions();
 };
 
-void CTestTaskController::createFunctions() {
-    functionQuote = []() {
-            return "There are only two kinds of languages : the ones people complain about and the ones nobody uses.";
-        };
+void CTestTaskController::createStringFunctions() {
+    pangram = "The quick brown fox jumps over the lazy dog";
+    functionPangram = [this]() {
+        return pangram;
+    };
+
+    quote = "There are only two kinds of languages : the ones people complain about and the ones nobody uses.";
+    functionQuote = [this]() {
+        return quote;
+    };
+
+    functionLength = [](const std::string& line) {
+        return line.size();
+    };
 
     functionSplit = [](const std::string& line) {
         std::stringstream sstream(line);
@@ -84,6 +111,22 @@ void CTestTaskController::createFunctions() {
     };
 }
 
+void CTestTaskController::createArithmeticFunctions() {
+    functionCallCounter = std::make_shared<int>(0);
+
+    functionZero = []() { return 0; };
+    functionIncrement = [](int x) { return x + 1; };
+    functionIdWithCounter = [this](int x) {
+        (*functionCallCounter)++;
+        return x;
+    };
+    exceptionMessage = "Test";
+    functionIdWithExceptionThrown = [this](int x) {
+        throw std::logic_error(exceptionMessage);
+        return x;
+    };
+}
+
 TEST_F(CTestTaskController, Start) {
     std::function<int()> function = []() {
         for (int i = 0; i < 1000000; ++i);
@@ -120,15 +163,6 @@ TEST_F(CTestTaskController, Delegate) {
 }
 
 TEST_F(CTestTaskController, ThenChainLineLength) {
-    std::string line = "The quick brown fox jumps over the lazy dog";
-    std::function<std::string()> functionPangram = [line]() {
-        return line;
-    };
-
-    std::function<int(std::string)> functionLength = [](const std::string& line) {
-        return line.size();
-    };
-
     std::shared_ptr<CTaskController<std::string>> taskPangram(
         new CTaskController<std::string>(threadPool, functionPangram)
     );
@@ -138,14 +172,14 @@ TEST_F(CTestTaskController, ThenChainLineLength) {
     taskLength->Delegate();
     std::shared_ptr<int> result = taskLength->GetFuture()->Get();
     EXPECT_NE(result, nullptr);
-    EXPECT_EQ(*result, line.length());
+    EXPECT_EQ(*result, pangram.length());
 }
 
 TEST_F(CTestTaskController, ThenChainInc) {
     std::shared_ptr<CTaskController<int>> taskZero(
-        new CTaskController<int>(threadPool, []() { return 0; })
+        new CTaskController<int>(threadPool, functionZero)
     );
-    std::function<int(int)> functionIncrement = [](int x) { return x + 1; };
+
     std::shared_ptr<CTaskController<int>> taskInc = Then<int, int>(
         Then<int, int>(taskZero, functionIncrement),
         functionIncrement
@@ -159,7 +193,6 @@ TEST_F(CTestTaskController, ThenChainInc) {
 }
 
 TEST_F(CTestTaskController, ThenChainLongestWordLength) {
-    createFunctions();
     std::shared_ptr<CTaskController<std::string>> taskQuote(
         new CTaskController<std::string>(threadPool, functionQuote)
     );
@@ -189,4 +222,65 @@ TEST_F(CTestTaskController, ThenChainLongestWordLength) {
     std::shared_ptr<int> result = taskWordMaxLength->GetFuture()->Get();
     EXPECT_NE(result, nullptr);
     EXPECT_EQ(*result, std::string("languages").size());
+}
+
+TEST_F(CTestTaskController, ThenChainWithException) {
+    std::shared_ptr<CTaskController<int>> taskFunctionCallCounter(
+        new CTaskController<int>(threadPool, functionZero)
+    );
+    taskFunctionCallCounter = Then<int, int>(
+        Then<int, int>(
+            Then<int, int>(
+                taskFunctionCallCounter,
+                functionIdWithCounter
+            ),
+            functionIdWithExceptionThrown
+        ),
+        functionIdWithCounter
+    );
+
+    taskFunctionCallCounter->Start();
+
+    try {
+        taskFunctionCallCounter->GetFuture()->Get();
+        FAIL() << "CAsyncException expected";
+    } catch (const CAsyncException& err) {
+        EXPECT_EQ(err.what(), exceptionMessage);
+    } catch (...) {
+        FAIL() << "CAsyncException expected";
+    }
+
+    // check that functionIncrement was called only once
+    EXPECT_EQ(*functionCallCounter, 1);
+}
+
+TEST_F(CTestTaskController, ThenChainAddChainLinkAfterStart) {
+    std::shared_ptr<CTaskController<int>> taskFunctionCallCounter(
+        new CTaskController<int>(threadPool, functionZero)
+    );
+    taskFunctionCallCounter = Then<int, int>(
+        Then<int, int>(
+            Then<int, int>(
+                taskFunctionCallCounter,
+                functionIdWithCounter
+            ),
+            functionIdWithCounter
+        ),
+        functionIdWithCounter
+    );
+
+    taskFunctionCallCounter->Start();
+    EXPECT_EQ(*functionCallCounter, 3);
+
+    std::shared_ptr<CTaskController<int>> taskFunctionCallCounterExtended = Then<int, int>(
+        taskFunctionCallCounter,
+        functionIdWithCounter
+    );
+
+    taskFunctionCallCounterExtended->Start();
+    // check that first three functionIdWithCounter are not called once more
+    EXPECT_EQ(*functionCallCounter, 4);
+
+    // check that the intermediate result is still accessible
+    EXPECT_EQ(*(taskFunctionCallCounter->GetFuture()->TryGet()), 0);
 }
