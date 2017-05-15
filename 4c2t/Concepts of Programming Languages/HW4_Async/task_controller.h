@@ -29,10 +29,6 @@ public:
 
     CProcedure BuildProcedure() const;
 
-//    template <typename TResultNew>
-//    std::shared_ptr<CTaskController<TResultNew>> Then(
-//            std::function<TResultNew(TResult)> functionOther) const;
-
 private:
     std::shared_ptr<CThreadPool> threadPool;
     std::function<TResult()> function;
@@ -68,11 +64,15 @@ void CTaskController<TResult>::WaitCompleted() const {
 
 template <typename TResult>
 CProcedure CTaskController<TResult>::BuildProcedure() const {
-    CProcedure procedure = [this]() {
+    // make copies in case task is destroyed
+    std::shared_ptr<CPromise<TResult>> promiseCopy = promise;
+    std::function<TResult()> functionCopy = function;
+
+    CProcedure procedure = [promiseCopy, functionCopy]() {
         try {
-            promise->SetValue(function());
+            promiseCopy->SetValue(functionCopy());
         } catch (const std::exception& error) {
-            promise->SetException(error);
+            promiseCopy->SetException(error);
         }
     };
     return procedure;
@@ -92,19 +92,6 @@ template <typename TResult>
 std::shared_ptr<CThreadPool> CTaskController<TResult>::GetThreadPool() const {
     return threadPool;
 }
-
-//template <typename TResult>
-//template <typename TResultNew>
-//std::shared_ptr<CTaskController<CTaskController::TResultNew>> CTaskController<TResult>::Then(
-//        std::function<TResultNew(TResult)> functionOther) const {
-//    std::function<TResultNew()> functionNew = [this, functionOther]() {
-//        Start();
-//        std::shared_ptr<CFuture<TResult>> thisFuture = GetFuture();
-//        std::shared_ptr<TResult> thisResult = thisFuture->Get();
-//        return functionOther(*thisResult);
-//    };
-//    return std::make_shared<CTaskController<TResultNew>>(threadPool, functionNew);
-//}
 
 template <typename TResultLeft, typename TResultRight>
 std::shared_ptr<CTaskController<TResultRight>> Then(

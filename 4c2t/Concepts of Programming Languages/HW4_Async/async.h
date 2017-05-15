@@ -1,7 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 
+#include "promise_future.h"
 #include "task_controller.h"
 #include "threadpool.h"
 
@@ -9,13 +11,12 @@
 enum class TTaskLaunchMode : char {
     SYNC,       // synchronously
     ASYNC,      // asynchronously, start at once
-    DEFERRED,   // asynchronously, start deferred
     CHOOSE      // let function decide between ASYNC and SYNC
 };
 
 
 template <class TReturnType, class... TArgTypes>
-std::shared_ptr<CTaskController> Async(std::shared_ptr<CThreadPool> threadPool,
+std::shared_ptr<CFuture<TReturnType>> Async(std::shared_ptr<CThreadPool> threadPool,
            std::function<TReturnType(TArgTypes...)> function,
            TArgTypes... args,
            TTaskLaunchMode mode) {
@@ -28,9 +29,9 @@ std::shared_ptr<CTaskController> Async(std::shared_ptr<CThreadPool> threadPool,
 
     if (mode == TTaskLaunchMode::SYNC || (mode == TTaskLaunchMode::CHOOSE && isThreadPoolBusy)) {
         task->Start();
-    } else if (mode == TTaskLaunchMode::ASYNC || mode == TTaskLaunchMode::CHOOSE) {
+    } else {
         task->Delegate();
     }
 
-    return task;
+    return task->GetFuture();
 }
