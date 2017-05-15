@@ -54,7 +54,7 @@ void CTaskController<TResult>::Delegate() const {
 
 template <typename TResult>
 bool CTaskController<TResult>::IsCompleted() const {
-    return future != nullptr && future->IsFinished();
+    return future->IsFinished();
 }
 
 template <typename TResult>
