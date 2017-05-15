@@ -17,6 +17,7 @@ CThreadPool::~CThreadPool() {
     shouldFinish = true;
     for (unsigned int i = 0; i < semaphores.size(); ++i) {
         semaphores[i].Post();
+        mutexes[i].unlock();
         threads[i].join();
     }
 }
