@@ -43,5 +43,5 @@ void CCompiler::Run() {
 
     CAssemblyGenerationPhase assemblyGeneration( &tilingFormation.Commands() );
     assemblyGeneration.Run();
-    assemblyGeneration.PrintResults( JoinPath( pathOutputDir, "code" ), ".txt" );
+    assemblyGeneration.PrintResults( JoinPath( pathOutputDir, "asmCode" ), ".txt" );
 }
