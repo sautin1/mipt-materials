@@ -11,17 +11,20 @@ def Exceptions      [ [ {tooth}     "+N" "+Pl"  .x. {teeth}     ] |
                       [ {woman}     "+N" "+Pl"  .x. {women}     ] |
                       [ {ox}        "+N" "+Pl"  .x. {oxen}      ] ];
 
-def VOWEL       [ a | e | i | o | u ];
-def CONSONANT   [ b | c | d | f | g | h | j | k | l | m | n | p | q | r | s | t | v | w | x | y | z ];
-
+def Vowel           [ a | e | i | o | u ];
+def Consonant       [ b | c | d | f | g | h | j | k | l | m | n | p | q | r | s | t | v | w | x | y | z ];
+def Letter          [ Vowel | Consonant ];
+def Word            Letter+;
+def WordWithTags    Word "+N" ["+Sg" | "+Pl"];
 
 def TagRemoval      "+N" "+Sg"  -> "$"      || _ ,,
                     "+N" "+Pl"  -> "$" s    || _ ;
-def YReplacement    y           -> i e      || CONSONANT _ "$" s ;
+def YReplacement    y           -> i e      || Consonant _ "$" s ;
 def EInsertion      [..]        -> e        || s | s s | c h | s h | x | z _ "$" s ;
 def Cleanup         "$"         -> 0        || _ ;
 
-def Grammar TagRemoval      .o.
+def Grammar WordWithTags    .o.
+            TagRemoval      .o.
             YReplacement    .o.
             EInsertion      .o.
             Cleanup;
