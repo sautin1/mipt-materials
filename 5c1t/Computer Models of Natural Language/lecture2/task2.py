@@ -1,6 +1,7 @@
 from os.path import join
 from utils.tokenization import split_into_words
 from utils.trie import Trie
+from utils.fuzzy_search import FuzzySearcher
 
 
 with open(join('..', 'data', 'wp.txt')) as fin:
@@ -8,7 +9,10 @@ with open(join('..', 'data', 'wp.txt')) as fin:
 
 words = split_into_words(text)
 
+# words = ['мама', 'папа']
 trie = Trie(words)
+searcher = FuzzySearcher(trie, 2)
 
-result = trie.find_closest_words('иль', 2, verbose=True)
+needle = 'ашипка'  # 'ама'
+result = searcher.search(needle, verbose=True)
 print(result)
