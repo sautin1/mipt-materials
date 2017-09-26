@@ -1,3 +1,19 @@
-foma
-source english.txt
-down
+$ foma
+
+foma[0]: source english.foma
+
+foma[1]: down
+apply down> cat+N+Pl
+cats
+apply down> [Ctrl+D]
+
+foma[1]: up
+apply up> cats
+cat+N+Pl
+cats+N+Sg
+apply up> [Ctrl+D]
+
+foma[1]: print dot > scheme.dot
+foma[1]: [Ctrl+C]
+
+$ ./generate_scheme.sh
