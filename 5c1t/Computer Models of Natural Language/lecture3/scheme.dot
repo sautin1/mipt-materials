@@ -1,0 +1,538 @@
+digraph A {
+rankdir = LR;
+node [shape=doublecircle,style=filled] 0
+node [shape=doublecircle,style=filled] 1
+node [shape=doublecircle,style=filled] 2
+node [shape=circle,style=filled] 3
+node [shape=circle,style=filled] 4
+node [shape=circle,style=filled] 5
+node [shape=circle,style=filled] 6
+node [shape=doublecircle,style=filled] 7
+node [shape=doublecircle,style=filled] 8
+node [shape=circle,style=filled] 9
+node [shape=doublecircle,style=filled] 10
+node [shape=doublecircle,style=filled] 11
+node [shape=circle,style=filled] 12
+node [shape=circle,style=filled] 13
+node [shape=circle,style=filled] 14
+node [shape=doublecircle,style=filled] 15
+node [shape=doublecircle,style=filled] 16
+node [shape=doublecircle,style=filled] 17
+node [shape=doublecircle,style=filled] 18
+node [shape=doublecircle,style=filled] 19
+node [shape=doublecircle,style=filled] 20
+node [shape=circle,style=filled] 21
+node [shape=circle,style=filled] 22
+node [shape=circle,style=filled] 23
+node [shape=circle,style=filled] 24
+node [shape=doublecircle,style=filled] 25
+node [shape=doublecircle,style=filled] 26
+node [shape=doublecircle,style=filled] 27
+node [shape=doublecircle,style=filled] 28
+node [shape=circle,style=filled] 29
+node [shape=doublecircle,style=filled] 30
+node [shape=doublecircle,style=filled] 31
+node [shape=circle,style=filled] 32
+node [shape=circle,style=filled] 33
+node [shape=doublecircle,style=filled] 34
+node [shape=doublecircle,style=filled] 35
+node [shape=doublecircle,style=filled] 36
+node [shape=doublecircle,style=filled] 37
+node [shape=doublecircle,style=filled] 38
+node [shape=doublecircle,style=filled] 39
+node [shape=doublecircle,style=filled] 40
+node [shape=doublecircle,style=filled] 41
+node [shape=doublecircle,style=filled] 42
+node [shape=circle,style=filled] 43
+node [shape=doublecircle,style=filled] 44
+node [shape=doublecircle,style=filled] 45
+node [shape=doublecircle,style=filled] 46
+node [shape=doublecircle,style=filled] 47
+node [shape=doublecircle,style=filled] 48
+node [shape=doublecircle,style=filled] 49
+node [shape=doublecircle,style=filled] 50
+node [shape=circle,style=filled] 51
+node [shape=doublecircle,style=filled] 52
+node [shape=doublecircle,style=filled] 53
+node [shape=doublecircle,style=filled] 54
+node [shape=doublecircle,style=filled] 55
+node [shape=circle,style=filled] 56
+node [shape=doublecircle,style=filled] 57
+node [shape=doublecircle,style=filled] 58
+node [shape=doublecircle,style=filled] 59
+node [shape=doublecircle,style=filled] 60
+node [shape=circle,style=filled] 61
+node [shape=doublecircle,style=filled] 62
+node [shape=circle,style=filled] 63
+node [shape=circle,style=filled] 64
+node [shape=circle,style=filled] 65
+node [shape=doublecircle,style=filled] 66
+node [shape=doublecircle,style=filled] 67
+node [shape=doublecircle,style=filled] 68
+0 -> 62 [label="t "];
+0 -> 59 [label="m "];
+0 -> 57 [label="w "];
+0 -> 54 [label="o "];
+0 -> 53 [label="x z "];
+0 -> 52 [label="n h b g j k l q r v y "];
+0 -> 51 [label="<+N:0> "];
+0 -> 50 [label="@ <$:0> +Sg e i u +Pl\n"];
+0 -> 46 [label="c "];
+0 -> 40 [label="d "];
+0 -> 25 [label="f "];
+0 -> 19 [label="p "];
+0 -> 18 [label="s "];
+0 -> 17 [label="+N "];
+0 -> 1 [label="a "];
+1 -> 52 [label="t m w n h b d f g j k p q\nr v y "];
+1 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+1 -> 53 [label="x z "];
+1 -> 51 [label="<+N:0> "];
+1 -> 16 [label="c "];
+1 -> 2 [label="l "];
+1 -> 18 [label="s "];
+1 -> 17 [label="+N "];
+2 -> 52 [label="t m w n h b d f j k l p q\nr v "];
+2 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+2 -> 53 [label="x z "];
+2 -> 51 [label="<+N:0> "];
+2 -> 16 [label="c "];
+2 -> 10 [label="g "];
+2 -> 18 [label="s "];
+2 -> 7 [label="y "];
+2 -> 17 [label="+N "];
+2 -> 3 [label="<y:i> "];
+3 -> 4 [label="<0:e> "];
+4 -> 6 [label="<+N:0> "];
+4 -> 5 [label="<$:0> "];
+5 -> 18 [label="s "];
+6 -> 5 [label="<+Sg:0> "];
+6 -> 18 [label="<+Pl:s> "];
+7 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+7 -> 50 [label="o @ +Sg e i u +Pl a "];
+7 -> 53 [label="x z "];
+7 -> 9 [label="<+N:0> "];
+7 -> 8 [label="<$:0> "];
+7 -> 16 [label="c "];
+7 -> 18 [label="s "];
+7 -> 7 [label="y "];
+7 -> 17 [label="+N "];
+7 -> 3 [label="<y:i> "];
+8 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+8 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+8 -> 53 [label="x z "];
+8 -> 51 [label="<+N:0> "];
+8 -> 16 [label="c "];
+8 -> 17 [label="+N "];
+9 -> 8 [label="<+Sg:0> "];
+10 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+10 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl "];
+10 -> 53 [label="x z "];
+10 -> 51 [label="<+N:0> "];
+10 -> 16 [label="c "];
+10 -> 18 [label="s "];
+10 -> 7 [label="y "];
+10 -> 17 [label="+N "];
+10 -> 11 [label="a "];
+10 -> 3 [label="<y:i> "];
+11 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+11 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+11 -> 53 [label="x z "];
+11 -> 14 [label="<+N:e> "];
+11 -> 12 [label="<+N:0> "];
+11 -> 16 [label="c "];
+11 -> 18 [label="s "];
+11 -> 17 [label="+N "];
+12 -> 50 [label="<+Sg:0> "];
+12 -> 13 [label="<+Pl:s> "];
+13 -> 52 [label="t m w n b d f g j k l p q\nr v "];
+13 -> 50 [label="o @ +Sg e i u +Pl a "];
+13 -> 53 [label="x h z "];
+13 -> 9 [label="<+N:0> "];
+13 -> 8 [label="<$:0> "];
+13 -> 16 [label="c "];
+13 -> 18 [label="s "];
+13 -> 7 [label="y "];
+13 -> 17 [label="+N "];
+13 -> 3 [label="<y:i> "];
+13 -> 4 [label="<0:e> "];
+14 -> 15 [label="<+Pl:0> "];
+16 -> 52 [label="t m w n b d f g j k l p q\nr v "];
+16 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+16 -> 53 [label="x h z "];
+16 -> 51 [label="<+N:0> "];
+16 -> 16 [label="c "];
+16 -> 18 [label="s "];
+16 -> 7 [label="y "];
+16 -> 17 [label="+N "];
+16 -> 3 [label="<y:i> "];
+17 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+17 -> 50 [label="o @ <$:0> e i u a "];
+17 -> 53 [label="x z "];
+17 -> 51 [label="<+N:0> "];
+17 -> 16 [label="c "];
+17 -> 18 [label="s "];
+17 -> 17 [label="+N "];
+18 -> 52 [label="t m w n b d f g j k l p q\nr v "];
+18 -> 50 [label="o @ +Sg e i u +Pl a "];
+18 -> 53 [label="x h z "];
+18 -> 9 [label="<+N:0> "];
+18 -> 8 [label="<$:0> "];
+18 -> 16 [label="c "];
+18 -> 18 [label="s "];
+18 -> 7 [label="y "];
+18 -> 17 [label="+N "];
+18 -> 3 [label="<y:i> "];
+18 -> 4 [label="<0:e> "];
+19 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+19 -> 50 [label="o @ <$:0> +Sg i u +Pl\na "];
+19 -> 53 [label="x z "];
+19 -> 51 [label="<+N:0> "];
+19 -> 16 [label="c "];
+19 -> 20 [label="e "];
+19 -> 18 [label="s "];
+19 -> 7 [label="y "];
+19 -> 17 [label="+N "];
+19 -> 3 [label="<y:i> "];
+20 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+20 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+20 -> 53 [label="x z "];
+20 -> 51 [label="<+N:0> "];
+20 -> 16 [label="c "];
+20 -> 18 [label="s "];
+20 -> 17 [label="+N "];
+20 -> 21 [label="<r:o> "];
+21 -> 22 [label="<s:p> "];
+22 -> 23 [label="<o:l> "];
+23 -> 24 [label="<n:e> "];
+24 -> 14 [label="<+N:0> "];
+25 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+25 -> 34 [label="o "];
+25 -> 53 [label="x z "];
+25 -> 51 [label="<+N:0> "];
+25 -> 50 [label="@ <$:0> +Sg e i +Pl\na "];
+25 -> 16 [label="c "];
+25 -> 18 [label="s "];
+25 -> 26 [label="u "];
+25 -> 7 [label="y "];
+25 -> 17 [label="+N "];
+25 -> 3 [label="<y:i> "];
+26 -> 52 [label="t m w h b d f g j k l p q\nr v y "];
+26 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+26 -> 53 [label="x z "];
+26 -> 27 [label="n "];
+26 -> 51 [label="<+N:0> "];
+26 -> 16 [label="c "];
+26 -> 18 [label="s "];
+26 -> 17 [label="+N "];
+27 -> 52 [label="t m w n h b d f j k l p q\nr v "];
+27 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+27 -> 53 [label="x z "];
+27 -> 51 [label="<+N:0> "];
+27 -> 16 [label="c "];
+27 -> 28 [label="g "];
+27 -> 18 [label="s "];
+27 -> 7 [label="y "];
+27 -> 17 [label="+N "];
+27 -> 3 [label="<y:i> "];
+28 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+28 -> 50 [label="o @ <$:0> +Sg e i +Pl\na "];
+28 -> 53 [label="x z "];
+28 -> 51 [label="<+N:0> "];
+28 -> 16 [label="c "];
+28 -> 18 [label="s "];
+28 -> 30 [label="u "];
+28 -> 7 [label="y "];
+28 -> 17 [label="+N "];
+28 -> 3 [label="<y:i> "];
+28 -> 29 [label="<u:i> "];
+29 -> 24 [label="<s:0> "];
+30 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+30 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+30 -> 53 [label="x z "];
+30 -> 51 [label="<+N:0> "];
+30 -> 16 [label="c "];
+30 -> 31 [label="s "];
+30 -> 17 [label="+N "];
+31 -> 52 [label="t m w n b d f g j k l p q\nr v "];
+31 -> 50 [label="o @ +Sg e i u +Pl a "];
+31 -> 53 [label="x h z "];
+31 -> 9 [label="<+N:0> "];
+31 -> 8 [label="<$:0> "];
+31 -> 16 [label="c "];
+31 -> 18 [label="s "];
+31 -> 7 [label="y "];
+31 -> 17 [label="+N "];
+31 -> 3 [label="<y:i> "];
+31 -> 32 [label="<0:e> "];
+32 -> 33 [label="<+N:0> "];
+32 -> 5 [label="<$:0> "];
+33 -> 5 [label="<+Sg:0> "];
+33 -> 13 [label="<+Pl:s> "];
+34 -> 52 [label="t m w n h b d f g j k l p\nq v y "];
+34 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+34 -> 53 [label="x z "];
+34 -> 51 [label="<+N:0> "];
+34 -> 16 [label="c "];
+34 -> 35 [label="r "];
+34 -> 18 [label="s "];
+34 -> 17 [label="+N "];
+35 -> 52 [label="t w n h b d f g j k l p q\nr v "];
+35 -> 36 [label="m "];
+35 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+35 -> 53 [label="x z "];
+35 -> 51 [label="<+N:0> "];
+35 -> 16 [label="c "];
+35 -> 18 [label="s "];
+35 -> 7 [label="y "];
+35 -> 17 [label="+N "];
+35 -> 3 [label="<y:i> "];
+36 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+36 -> 50 [label="o @ <$:0> +Sg e i +Pl\na "];
+36 -> 53 [label="x z "];
+36 -> 51 [label="<+N:0> "];
+36 -> 16 [label="c "];
+36 -> 18 [label="s "];
+36 -> 37 [label="u "];
+36 -> 7 [label="y "];
+36 -> 17 [label="+N "];
+36 -> 3 [label="<y:i> "];
+37 -> 52 [label="t m w n h b d f g j k p q\nr v y "];
+37 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+37 -> 53 [label="x z "];
+37 -> 51 [label="<+N:0> "];
+37 -> 16 [label="c "];
+37 -> 38 [label="l "];
+37 -> 18 [label="s "];
+37 -> 17 [label="+N "];
+38 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+38 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl "];
+38 -> 53 [label="x z "];
+38 -> 51 [label="<+N:0> "];
+38 -> 16 [label="c "];
+38 -> 18 [label="s "];
+38 -> 7 [label="y "];
+38 -> 17 [label="+N "];
+38 -> 39 [label="a "];
+38 -> 3 [label="<y:i> "];
+39 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+39 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+39 -> 53 [label="x z "];
+39 -> 14 [label="<+N:e> "];
+39 -> 51 [label="<+N:0> "];
+39 -> 16 [label="c "];
+39 -> 18 [label="s "];
+39 -> 17 [label="+N "];
+40 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+40 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl "];
+40 -> 53 [label="x z "];
+40 -> 51 [label="<+N:0> "];
+40 -> 16 [label="c "];
+40 -> 18 [label="s "];
+40 -> 7 [label="y "];
+40 -> 17 [label="+N "];
+40 -> 41 [label="a "];
+40 -> 3 [label="<y:i> "];
+41 -> 42 [label="t "];
+41 -> 52 [label="m w n h b d f g j k l p q\nr v y "];
+41 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+41 -> 53 [label="x z "];
+41 -> 51 [label="<+N:0> "];
+41 -> 16 [label="c "];
+41 -> 18 [label="s "];
+41 -> 17 [label="+N "];
+42 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+42 -> 50 [label="o @ <$:0> +Sg e i +Pl\na "];
+42 -> 53 [label="x z "];
+42 -> 51 [label="<+N:0> "];
+42 -> 16 [label="c "];
+42 -> 18 [label="s "];
+42 -> 44 [label="u "];
+42 -> 7 [label="y "];
+42 -> 17 [label="+N "];
+42 -> 3 [label="<y:i> "];
+42 -> 43 [label="<u:a> "];
+43 -> 24 [label="<m:0> "];
+44 -> 52 [label="t w n h b d f g j k l p q\nr v y "];
+44 -> 45 [label="m "];
+44 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+44 -> 53 [label="x z "];
+44 -> 51 [label="<+N:0> "];
+44 -> 16 [label="c "];
+44 -> 18 [label="s "];
+44 -> 17 [label="+N "];
+45 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+45 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+45 -> 53 [label="x z "];
+45 -> 12 [label="<+N:0> "];
+45 -> 16 [label="c "];
+45 -> 18 [label="s "];
+45 -> 7 [label="y "];
+45 -> 17 [label="+N "];
+45 -> 3 [label="<y:i> "];
+46 -> 52 [label="t m w n b d f g j k l p q\nr v "];
+46 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl "];
+46 -> 53 [label="x h z "];
+46 -> 51 [label="<+N:0> "];
+46 -> 16 [label="c "];
+46 -> 18 [label="s "];
+46 -> 7 [label="y "];
+46 -> 17 [label="+N "];
+46 -> 47 [label="a "];
+46 -> 3 [label="<y:i> "];
+47 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+47 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+47 -> 53 [label="x z "];
+47 -> 51 [label="<+N:0> "];
+47 -> 48 [label="c "];
+47 -> 18 [label="s "];
+47 -> 17 [label="+N "];
+48 -> 49 [label="t "];
+48 -> 52 [label="m w n b d f g j k l p q r\nv "];
+48 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+48 -> 53 [label="x h z "];
+48 -> 51 [label="<+N:0> "];
+48 -> 16 [label="c "];
+48 -> 18 [label="s "];
+48 -> 7 [label="y "];
+48 -> 17 [label="+N "];
+48 -> 3 [label="<y:i> "];
+49 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+49 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+49 -> 53 [label="x z "];
+49 -> 51 [label="<+N:0> "];
+49 -> 16 [label="c "];
+49 -> 18 [label="s "];
+49 -> 7 [label="y "];
+49 -> 17 [label="+N "];
+49 -> 3 [label="<y:i> "];
+49 -> 29 [label="<u:i> "];
+50 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+50 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+50 -> 53 [label="x z "];
+50 -> 51 [label="<+N:0> "];
+50 -> 16 [label="c "];
+50 -> 18 [label="s "];
+50 -> 17 [label="+N "];
+51 -> 50 [label="<+Sg:0> "];
+51 -> 18 [label="<+Pl:s> "];
+52 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+52 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+52 -> 53 [label="x z "];
+52 -> 51 [label="<+N:0> "];
+52 -> 16 [label="c "];
+52 -> 18 [label="s "];
+52 -> 7 [label="y "];
+52 -> 17 [label="+N "];
+52 -> 3 [label="<y:i> "];
+53 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+53 -> 50 [label="o @ +Sg e i u +Pl a "];
+53 -> 53 [label="x z "];
+53 -> 9 [label="<+N:0> "];
+53 -> 8 [label="<$:0> "];
+53 -> 16 [label="c "];
+53 -> 18 [label="s "];
+53 -> 7 [label="y "];
+53 -> 17 [label="+N "];
+53 -> 3 [label="<y:i> "];
+53 -> 4 [label="<0:e> "];
+54 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+54 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+54 -> 55 [label="x "];
+54 -> 51 [label="<+N:0> "];
+54 -> 16 [label="c "];
+54 -> 18 [label="s "];
+54 -> 53 [label="z "];
+54 -> 17 [label="+N "];
+55 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+55 -> 50 [label="o @ +Sg e i u +Pl a "];
+55 -> 53 [label="x z "];
+55 -> 56 [label="<+N:e> "];
+55 -> 9 [label="<+N:0> "];
+55 -> 8 [label="<$:0> "];
+55 -> 16 [label="c "];
+55 -> 18 [label="s "];
+55 -> 7 [label="y "];
+55 -> 17 [label="+N "];
+55 -> 3 [label="<y:i> "];
+55 -> 32 [label="<0:e> "];
+56 -> 15 [label="<+Pl:n> "];
+57 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+57 -> 58 [label="o "];
+57 -> 53 [label="x z "];
+57 -> 51 [label="<+N:0> "];
+57 -> 50 [label="@ <$:0> +Sg e i u +Pl\na "];
+57 -> 16 [label="c "];
+57 -> 18 [label="s "];
+57 -> 7 [label="y "];
+57 -> 17 [label="+N "];
+57 -> 3 [label="<y:i> "];
+58 -> 52 [label="t w n h b d f g j k l p q\nr v y "];
+58 -> 59 [label="m "];
+58 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+58 -> 53 [label="x z "];
+58 -> 51 [label="<+N:0> "];
+58 -> 16 [label="c "];
+58 -> 18 [label="s "];
+58 -> 17 [label="+N "];
+59 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+59 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl "];
+59 -> 53 [label="x z "];
+59 -> 61 [label="<a:e> "];
+59 -> 51 [label="<+N:0> "];
+59 -> 16 [label="c "];
+59 -> 18 [label="s "];
+59 -> 7 [label="y "];
+59 -> 17 [label="+N "];
+59 -> 60 [label="a "];
+59 -> 3 [label="<y:i> "];
+60 -> 52 [label="t m w h b d f g j k l p q\nr v y "];
+60 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+60 -> 53 [label="x z "];
+60 -> 45 [label="n "];
+60 -> 51 [label="<+N:0> "];
+60 -> 16 [label="c "];
+60 -> 18 [label="s "];
+60 -> 17 [label="+N "];
+61 -> 24 [label="n "];
+62 -> 52 [label="t m w n h b d f g j k l p\nq r v "];
+62 -> 66 [label="o "];
+62 -> 53 [label="x z "];
+62 -> 63 [label="<o:e> "];
+62 -> 51 [label="<+N:0> "];
+62 -> 50 [label="@ <$:0> +Sg e i u +Pl\na "];
+62 -> 16 [label="c "];
+62 -> 18 [label="s "];
+62 -> 7 [label="y "];
+62 -> 17 [label="+N "];
+62 -> 3 [label="<y:i> "];
+63 -> 64 [label="<o:e> "];
+64 -> 65 [label="t "];
+65 -> 24 [label="h "];
+66 -> 52 [label="t m w n h b d f g j k l p\nq r v y "];
+66 -> 67 [label="o "];
+66 -> 53 [label="x z "];
+66 -> 51 [label="<+N:0> "];
+66 -> 50 [label="@ <$:0> +Sg e i u +Pl\na "];
+66 -> 16 [label="c "];
+66 -> 18 [label="s "];
+66 -> 17 [label="+N "];
+67 -> 68 [label="t "];
+67 -> 52 [label="m w n h b d f g j k l p q\nr v y "];
+67 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+67 -> 53 [label="x z "];
+67 -> 51 [label="<+N:0> "];
+67 -> 16 [label="c "];
+67 -> 18 [label="s "];
+67 -> 17 [label="+N "];
+68 -> 52 [label="t m w n b d f g j k l p q\nr v "];
+68 -> 50 [label="o @ <$:0> +Sg e i u\n+Pl a "];
+68 -> 53 [label="x z "];
+68 -> 45 [label="h "];
+68 -> 51 [label="<+N:0> "];
+68 -> 16 [label="c "];
+68 -> 18 [label="s "];
+68 -> 7 [label="y "];
+68 -> 17 [label="+N "];
+68 -> 3 [label="<y:i> "];
+}

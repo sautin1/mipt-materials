@@ -1,0 +1,29 @@
+def ParallelForms   [ [ {cactus}    "+N" "+Pl"  .x. {cacti}     ] |
+                      [ {formula}   "+N" "+Pl"  .x. {formulae}  ] |
+                      [ {person}    "+N" "+Pl"  .x. {people}    ] ];
+
+def Latin           [ [ {alga}      "+N" "+Pl"  .x. {algae}     ] |
+                      [ {fungus}    "+N" "+Pl"  .x. {fungi}     ] |
+                      [ {datum}     "+N" "+Pl"  .x. {data}      ] ];
+
+def Exceptions      [ [ {tooth}     "+N" "+Pl"  .x. {teeth}     ] |
+                      [ {man}       "+N" "+Pl"  .x. {men}       ] |
+                      [ {woman}     "+N" "+Pl"  .x. {women}     ] |
+                      [ {ox}        "+N" "+Pl"  .x. {oxen}      ] ];
+
+def VOWEL       [ a | e | i | o | u ];
+def CONSONANT   [ b | c | d | f | g | h | j | k | l | m | n | p | q | r | s | t | v | w | x | y | z ];
+
+
+def TagRemoval      "+N" "+Sg"  -> "$"      || _ ,,
+                    "+N" "+Pl"  -> "$" s    || _ ;
+def YReplacement    y           -> i e      || CONSONANT _ "$" s ;
+def EInsertion      [..]        -> e        || s | s s | c h | s h | x | z _ "$" s ;
+def Cleanup         "$"         -> 0        || _ ;
+
+def Grammar TagRemoval      .o.
+            YReplacement    .o.
+            EInsertion      .o.
+            Cleanup;
+
+regex Exceptions .P. [ Latin .P. [ Grammar | ParallelForms ] ];
