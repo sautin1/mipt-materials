@@ -4,16 +4,15 @@ from collections import Counter
 
 
 def text_to_wordlist(sentence):
-	regexp = "[^а-яА-Яё]"
-	sentence = re.sub(regexp, " ", sentence)
-	result = sentence.lower().split()
-	return result
+    regexp = "[^а-яА-Яё]"
+    sentence = re.sub(regexp, " ", sentence)
+    result = sentence.lower().split()
+    return result
 
 
 print('Война и мир')
-text = None
-with open('wp.txt', 'r') as fin:
-	text = fin.read()
+with open('../data/wp.txt', 'r') as fin:
+    text = fin.read()
 
 print('1. посчитайте количество слов')
 words = text_to_wordlist(text)

@@ -22,9 +22,9 @@ print()
 print('4. лексему леммы “стать” - в виде набора слов и их оценок.')
 ps = morph.parse('стать')
 for p in ps:
-	result = '\n'.join(map(lambda gr: f'{gr.word} -- {gr.score}', p.lexeme))
-	print(result)
-	print('-' * 10)
+    result = '\n'.join(map(lambda gr: f'{gr.word} -- {gr.score}', p.lexeme))
+    print(result)
+    print('-' * 10)
 print()
 
 print('5. множественное число, творительный падеж от леммы “турок”.')

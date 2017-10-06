@@ -4,16 +4,15 @@ from collections import Counter
 
 
 def text_to_wordlist(sentence):
-	regexp = "[^а-яА-Яё]"
-	sentence = re.sub(regexp, " ", sentence)
-	result = sentence.lower().split()
-	return result
+    regexp = "[^а-яА-Яё]"
+    sentence = re.sub(regexp, " ", sentence)
+    result = sentence.lower().split()
+    return result
 
 
 print('Трудно быть Богом')
-text = None
 with open('htbg.txt', 'r') as fin:
-	text = fin.read()
+    text = fin.read()
 
 print('1. посчитайте количество слов')
 words = text_to_wordlist(text)
