@@ -1,3 +1,4 @@
 *.npy
 *.json
 rupos.py
+*.csv
