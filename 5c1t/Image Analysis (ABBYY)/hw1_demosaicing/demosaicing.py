@@ -7,7 +7,7 @@ from bayer import detect_config, shift_config, get_channel
 
 def _get_pixel_by_offset(matrix, config, offset):
     channel = get_channel(config, offset[0], offset[1])
-    return matrix[offset[0], offset[1], channel].astype(np.int)
+    return int(matrix[offset[0], offset[1], channel])
 
 
 class DemosaicingVNG:
@@ -37,12 +37,17 @@ class DemosaicingVNG:
         image_extended[-2:, 2:-2, :] = image[-2:, :, :]
         image_extended[2:-2, :2, :] = image[:, :2, :]
         image_extended[2:-2, -2:, :] = image[:, -2:, :]
+
+        image_extended[:2, :2, :] = image[:2, :2, :]
+        image_extended[:2, -2:, :] = image[:2, -2:, :]
+        image_extended[-2:, :2, :] = image[-2:, :2, :]
+        image_extended[-2:, -2:, :] = image[-2:, -2:, :]
         return image_extended
 
     def _interpolate_central_pixel(self, matrix, config):
         gradients = GradientCalculator().calculate(matrix, config)
         threshold = self._calc_threshold(gradients)
-        directions = [np.array(key) for key, value in gradients.items() if value < threshold]
+        directions = [np.array(key) for key, value in gradients.items() if value <= threshold]
         return self._interpolate_pixel_by_directions(matrix, config, directions)
 
     def _calc_threshold(self, gradients):
@@ -106,6 +111,8 @@ class DemosaicingVNG:
 
 
 class GradientCalculator:
+    center = np.array([2, 2])
+
     def calculate(self, matrix, config):
         if config[0, 0] == 1:
             calc_diagonal = self._calc_diagonal_for_green_center
@@ -125,7 +132,7 @@ class GradientCalculator:
 
     @staticmethod
     def _calc_straight(matrix, config, direction):
-        c, d = np.array([2, 2]), np.array(direction)  # center, direction
+        c, d = GradientCalculator.center, np.array(direction)  # center, direction
         get_pixel = partial(_get_pixel_by_offset, matrix, config)
 
         is_hor = direction[0] == 0  # is horizontal
@@ -143,7 +150,7 @@ class GradientCalculator:
 
     @staticmethod
     def _calc_diagonal_for_green_center(matrix, config, direction):
-        c, d = np.array([2, 2]), np.array(direction)  # center, direction
+        c, d = GradientCalculator.center, np.array(direction)  # center, direction
         get_pixel = partial(_get_pixel_by_offset, matrix, config)
 
         m3 = c + ((0, -1) if d[1] == 1 else (0, 1))  # aux for component#3
@@ -159,7 +166,7 @@ class GradientCalculator:
 
     @staticmethod
     def _calc_diagonal_for_non_green_center(matrix, config, direction):
-        c, d = np.array([2, 2]), np.array(direction)  # center, direction
+        c, d = GradientCalculator.center, np.array(direction)  # center, direction
         get_pixel = partial(_get_pixel_by_offset, matrix, config)
 
         m5 = c + (-1, 0)  # aux for component#5
@@ -179,7 +186,9 @@ if __name__ == '__main__':
     import cv2
     from os.path import join
 
-    image = cv2.imread(join('images', 'RGB_CFA.bmp'), cv2.IMREAD_COLOR)
+    image = cv2.imread(join('images', 'RGB_CFA_300.bmp'), cv2.IMREAD_COLOR)
+    # image_interpolated = image[1300:1600, 1800:2100, :]
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image_interpolated = DemosaicingVNG().demosaic(image)
-    cv2.imwrite(join('images', 'result.bmp'), image_interpolated)
+    image_interpolated = cv2.cvtColor(image_interpolated, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(join('images', 'result_300.bmp'), image_interpolated)
