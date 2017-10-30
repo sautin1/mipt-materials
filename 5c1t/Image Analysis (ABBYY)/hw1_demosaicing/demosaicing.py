@@ -1,12 +1,13 @@
 import numpy as np
 from functools import partial
+from tqdm import tqdm
 
 from bayer import detect_config, shift_config, get_channel
 
 
 def _get_pixel_by_offset(matrix, config, offset):
     channel = get_channel(config, offset[0], offset[1])
-    return matrix[offset[0], offset[1], channel]
+    return matrix[offset[0], offset[1], channel].astype(np.int)
 
 
 class DemosaicingVNG:
@@ -16,18 +17,32 @@ class DemosaicingVNG:
 
     def demosaic(self, image):
         bayer_config = detect_config(image)
-        result = np.zeros(image.shape)
-        for row in range(image.shape[0] - 4):
-            for col in range(image.shape[1] - 4):
-                matrix = image[row:row + 5, col:col + 5]
-                config = shift_config(bayer_config, (row, col))
-                result[row, col] = self._interpolate_central_pixel(matrix, config)
+        result = np.zeros(image.shape, dtype=np.uint8)
+        image = self._extend_image(image)
+        with tqdm(total=(image.shape[0] - 4) * (image.shape[1] - 4)) as progress_bar:
+            for row in range(image.shape[0] - 4):
+                for col in range(image.shape[1] - 4):
+                    matrix = image[row:row + 5, col:col + 5]
+                    config = shift_config(bayer_config, (row, col))
+                    pixel = self._interpolate_central_pixel(matrix, config)
+                    result[row, col] = np.round(np.clip(pixel, 0, 255)).astype(np.uint8)
+                    progress_bar.update(1)
         return result
+
+    @staticmethod
+    def _extend_image(image):
+        image_extended = np.zeros(np.array(image.shape) + (4, 4, 0))
+        image_extended[2:-2, 2:-2, :] = image
+        image_extended[:2, 2:-2, :] = image[:2, :, :]
+        image_extended[-2:, 2:-2, :] = image[-2:, :, :]
+        image_extended[2:-2, :2, :] = image[:, :2, :]
+        image_extended[2:-2, -2:, :] = image[:, -2:, :]
+        return image_extended
 
     def _interpolate_central_pixel(self, matrix, config):
         gradients = GradientCalculator().calculate(matrix, config)
         threshold = self._calc_threshold(gradients)
-        directions = {key: value for key, value in gradients.items() if value < threshold}
+        directions = [np.array(key) for key, value in gradients.items() if value < threshold]
         return self._interpolate_pixel_by_directions(matrix, config, directions)
 
     def _calc_threshold(self, gradients):
@@ -46,7 +61,7 @@ class DemosaicingVNG:
         c = np.array([2, 2])  # center
         get_pixel = partial(_get_pixel_by_offset, matrix, config)
         sums = np.array([0, 0, 0])  # red sum, green sum, blue sum
-        for d in map(np.array, directions.keys()):
+        for d in directions:
             if d[0] == 0 or d[1] == 0:
                 channel_in_direction = get_channel(config, *(c + d))
                 channel_orthogonal = 2 - channel_in_direction
@@ -74,7 +89,7 @@ class DemosaicingVNG:
         channel_diagonal = 2 - channel_center
         get_pixel = partial(_get_pixel_by_offset, matrix, config)
         sums = np.array([0, 0, 0])  # red sum, green sum, blue sum
-        for d in map(np.array, directions.keys()):
+        for d in directions:
             if d[0] == 0 or d[1] == 0:
                 d_orth = d[::-1]  # orthogonal direction
                 sums[channel_center] += (get_pixel(c + 2 * d) + get_pixel(c)) / 2
@@ -115,12 +130,12 @@ class GradientCalculator:
 
         is_hor = direction[0] == 0  # is horizontal
         m5 = c + ((-1, 0) if is_hor else (0, -1))  # aux for component#5
-        m6 = c + ((0, 1) if is_hor else (1, 0))  # aux for component#6
+        m6 = c + ((1, 0) if is_hor else (0, 1))  # aux for component#6
         components = np.abs(np.array([
             get_pixel(c + d) - get_pixel(c - d),
             get_pixel(c + 2 * d) - get_pixel(c),
-            np.sum(d) * (get_pixel(c + ((-1, 1) if is_hor else (1, -1))) - get_pixel(c + (-1, -1))),
-            np.sum(d) * (get_pixel(c + (1, 1)) - get_pixel(c + ((1, -1) if is_hor else (-1, 1)))),
+            get_pixel(c + ((-1, 1) if is_hor else (1, -1))) - get_pixel(c + (-1, -1)),
+            get_pixel(c + (1, 1)) - get_pixel(c + ((1, -1) if is_hor else (-1, 1))),
             get_pixel(m5 + 2 * d) - get_pixel(m5),
             get_pixel(m6 + 2 * d) - get_pixel(m6)
         ]))
@@ -153,8 +168,8 @@ class GradientCalculator:
         components = np.abs(np.array([
             get_pixel(c + d) - get_pixel(c - d),
             get_pixel(c + 2 * d) - get_pixel(c),
-            d[0] * (get_pixel(c + (0, d[0] * d[1])) - get_pixel(c + (-1, 0))),
-            d[0] * (get_pixel(c + (1, 0)) - get_pixel(c + (0, -d[0] * d[1]))),
+            get_pixel(c + (0, d[0] * d[1])) - get_pixel(c + (-1, 0)),
+            get_pixel(c + (1, 0)) - get_pixel(c + (0, -d[0] * d[1])),
             get_pixel(m5 + d * (2 if d[0] == 1 else 1)) - get_pixel(m5 + d * (1 if d[0] == 1 else 0)),
             get_pixel(m6 + d * (2 if d[0] == -1 else 1)) - get_pixel(m6 + d * (1 if d[0] == -1 else 0)),
         ]))
@@ -164,6 +179,7 @@ if __name__ == '__main__':
     import cv2
     from os.path import join
 
-    image = cv2.imread(join('images', 'RGB_CFA_cropped.bmp'), cv2.IMREAD_COLOR)
+    image = cv2.imread(join('images', 'RGB_CFA.bmp'), cv2.IMREAD_COLOR)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image_interpolated = DemosaicingVNG().demosaic(image)
+    cv2.imwrite(join('images', 'result.bmp'), image_interpolated)
