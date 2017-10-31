@@ -194,9 +194,10 @@ if __name__ == '__main__':
     import cv2
     from os.path import join
 
-    image = cv2.imread(join('images', 'RGB_CFA_300.bmp'), cv2.IMREAD_COLOR)
+    filename = 'RGB_CFA.bmp'
+    image = cv2.imread(join('images', 'source', filename), cv2.IMREAD_COLOR)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     image_interpolated = DemosaicingVNG().demosaic(image)
     image_interpolated = cv2.cvtColor(image_interpolated, cv2.COLOR_RGB2BGR)
-    cv2.imwrite(join('images', 'result_300.bmp'), image_interpolated)
+    cv2.imwrite(join('images', 'results', filename), image_interpolated)
