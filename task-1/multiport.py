@@ -58,22 +58,34 @@ class Multiport3Inputs:
         self._build()
 
     def _build(self):
-        # add inputs
+        input_node_ids = self._add_inputs()
+        # add input negations
+        self._add_negations(input_node_ids)
+        # add and's
+        nodes_single_one = self._add_conjunctions(list(self.nodes.keys()))
+        # add or's
+        self._add_disjunctions(nodes_single_one)
+
+    def _add_inputs(self):
         input_function_ids = [0b11110000, 0b11001100, 0b10101010]
         input_node_ids = []
         for i, function_id in enumerate(input_function_ids):
             input_node_id = self._add_node(InputNode(), function_id)
             input_node_ids.append(input_node_id)
+        return input_node_ids
 
-        # add input negations
-        for input_node_id in input_node_ids:
+    def _add_negations(self, node_ids):
+        not_node_ids = []
+        for node_id in node_ids:
             not_node = NotNode(Multiport3Inputs.MAX_FUNCTION_ID)
-            not_node_function_id = not_node.execute(self.node_id_to_function_id[input_node_id])
+            not_node_function_id = not_node.execute(self.node_id_to_function_id[node_id])
             not_node_id = self._add_node(not_node, not_node_function_id)
-            self.edges.append(Multiport3Inputs.Edge(input_node_id, not_node_id))
-        
-        # add and's
-        layer = list(self.nodes.keys())
+            not_node_ids.append(not_node_id)
+            self.edges.append(Multiport3Inputs.Edge(node_id, not_node_id))
+        return not_node_ids
+
+    def _add_conjunctions(self, node_ids):
+        layer = node_ids
         for _ in range(Multiport3Inputs.INPUT_COUNT - 1):
             layer_new = set()
             for idx, node_id_first in enumerate(layer[:-1]):
@@ -88,9 +100,9 @@ class Multiport3Inputs:
                         if function_id > 0:
                             layer_new.add(and_node_id)
             layer = list(layer_new)
-        nodes_single_one = layer
+        return layer
 
-        # add or's
+    def _add_disjunctions(self, nodes_single_one):
         layer = set(nodes_single_one)
         for one_count in range(1, Multiport3Inputs.FUNCTION_ID_LENGTH):
             layer_new = set()
@@ -108,6 +120,7 @@ class Multiport3Inputs:
                         self.edges.append(Multiport3Inputs.Edge(node_id_single_one, or_node_id))
                     layer_new.add(self.function_id_to_node_id[function_id])
             layer = layer_new
+        return layer
 
     def _add_node(self, node, function_id):
         node_id = len(self.nodes)
