@@ -17,13 +17,13 @@ def build_incidence_matrix(edges):
 
 
 if __name__ == '__main__':
-    CHECK_COUNT = 1
+    CHECK_COUNT = 100
 
     edge_count = int(input())
     edges = [tuple(map(int, input().split())) for _ in range(edge_count)]
     incidence_matrix = build_incidence_matrix(edges)
 
     answer = 'no'
-    if any([has_perfect_matching(incidence_matrix) for _ in range(CHECK_COUNT)]):
+    if any(has_perfect_matching(incidence_matrix) for _ in range(CHECK_COUNT)):
         answer = 'yes'
     print(answer)
