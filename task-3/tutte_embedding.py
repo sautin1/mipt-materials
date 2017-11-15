@@ -68,5 +68,5 @@ if __name__ == '__main__':
         node_coordinates = coordinates[node]
         print('{} {} {}'.format(node, *node_coordinates))
 
-    from visualization import plot_planar_graph
-    plot_planar_graph(coordinates, neighbors)
+    # from visualization import plot_planar_graph
+    # plot_planar_graph(coordinates, neighbors)
