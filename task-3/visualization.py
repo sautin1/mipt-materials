@@ -16,4 +16,5 @@ def plot_planar_graph(coordinates, graph):
             draw_edge(coordinates[node], coordinates[neighbor])
     for node in range(len(graph)):
         draw_node(*coordinates[node])
+    plt.axes().set_aspect('equal')
     plt.show()

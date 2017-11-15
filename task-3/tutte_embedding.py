@@ -43,10 +43,9 @@ class TutteEmbedding:
 
 
 def find_external_face_length(graph):
-    # find first node that is not connected to (node + 1)
-    max_face_node = next(node for node in range(len(graph)) if (node + 1) not in graph[node])
-    # search back for the node that is connected to node 0
-    last_face_node = next(node for node in range(max_face_node, 1, -1) if 0 in graph[node])
+    # find first node that is not connected to (node + 1) or is connected to 0
+    # nodes 0, 1, 2 have to be in the external face
+    last_face_node = next(node for node in range(2, len(graph)) if 0 in graph[node])
     return last_face_node + 1
 
 
