@@ -1,3 +1,7 @@
+"""Based on the article by Peter Norvig:
+http://norvig.com/spell-correct.html
+"""
+
 import re
 from string import ascii_lowercase as LETTERS_LOWERCASE
 from collections import Counter
