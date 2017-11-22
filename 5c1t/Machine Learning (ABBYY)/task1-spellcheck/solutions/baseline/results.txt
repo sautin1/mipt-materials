@@ -1,10 +1,10 @@
 base: data/spell-testset1.txt
 words count: 270
 accuracy: 0.7481481481481481
-time: 16.471431016921997
+time: 15.07153844833374
 -----
 base: data/spell-testset2.txt
 words count: 400
 accuracy: 0.675
-time: 30.45341658592224
+time: 25.942602157592773
 -----

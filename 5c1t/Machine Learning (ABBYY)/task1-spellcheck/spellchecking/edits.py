@@ -2,23 +2,18 @@
 http://norvig.com/spell-correct.html
 """
 
-import re
 from string import ascii_lowercase as LETTERS_LOWERCASE
-from collections import Counter
 
 
 class SpellCheckerSimpleEdits:
-    def __init__(self, vocabulary_path):
-        with open(vocabulary_path, 'r') as fin:
-            words = re.findall(r'\w+', fin.read().lower())
-        word_counter = Counter(words)
-        self.frequencies = {word: word_counter[word] / len(words) for word in word_counter}
+    def __init__(self, vocabulary):
+        self.vocabulary = {word: vocabulary[word] / len(vocabulary) for word in vocabulary}
 
     def filter_words_by_vocabulary(self, words):
-        return set(word for word in words if word in self.frequencies)
+        return set(word for word in words if word in self.vocabulary)
 
     def generate_spelling_candidates(self, word):
-        if word in self.frequencies:
+        if word in self.vocabulary:
             return {word}
         edits = self.generate_edits(word)
         result = self.filter_words_by_vocabulary(edits)
@@ -38,19 +33,4 @@ class SpellCheckerSimpleEdits:
 
     def correct(self, word):
         candidates = self.generate_spelling_candidates(word)
-        return max(candidates, key=lambda candidate: self.frequencies[candidate], default=word)
-
-
-if __name__ == '__main__':
-    from utils.database import BirkbeckCorpusReader
-    from utils.tester import SpellcheckTester
-
-    spellchecker = SpellCheckerSimpleEdits('data/big.txt')
-    for path in ['data/spell-testset1.txt', 'data/spell-testset2.txt']:
-        database = BirkbeckCorpusReader(path)
-        results = SpellcheckTester().test(spellchecker, database)
-        print(f'base: {path}')
-        print(f'words count: {len(database)}')
-        for key, value in results.items():
-            print(f'{key}: {value}')
-        print('-' * 5)
+        return max(candidates, key=lambda candidate: self.vocabulary[candidate], default=word)

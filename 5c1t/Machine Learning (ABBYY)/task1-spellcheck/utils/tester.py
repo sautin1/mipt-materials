@@ -1,4 +1,16 @@
 from utils.timer import Timer
+from utils.database import BirkbeckCorpusReader
+
+
+def test_on_datasets(spellchecker, datasets):
+    for path in datasets:
+        database = BirkbeckCorpusReader(path)
+        results = SpellcheckTester().test(spellchecker, database)
+        print(f'base: {path}')
+        print(f'words count: {len(database)}')
+        for key, value in results.items():
+            print(f'{key}: {value}')
+        print('-' * 5)
 
 
 class SpellcheckTester:

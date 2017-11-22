@@ -1,4 +1,12 @@
 import itertools
+import re
+from collections import Counter
+
+
+def read_vocabulary(path):
+    with open(path, 'r') as fin:
+        words = re.findall(r'\w+', fin.read().lower())
+    return Counter(words)
 
 
 class BirkbeckCorpusReader:
