@@ -1,0 +1,10 @@
+base: spell-testset1.txt
+words count: 270
+accuracy: 0.7
+time: 1.6726031303405762
+-----
+base: spell-testset2.txt
+words count: 400
+accuracy: 0.695
+time: 3.9852240085601807
+-----
