@@ -27,7 +27,6 @@ PATH_VOCABULARY = join(PATH_PROJECT, 'data/big.txt')
 PATHS_DATASETS = list(map(lambda suffix: join(PATH_PROJECT, suffix),
                           ['data/spell-testset1.txt', 'data/spell-testset2.txt']))
 
-
 model = KeyedVectors.load_word2vec_format(PATH_MODEL, limit=999999)
 vocabulary = read_vocabulary(PATH_VOCABULARY)
 spellchecker = SpellCheckerFastTextSimilarity(model, vocabulary, 20)
