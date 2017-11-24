@@ -1,0 +1,10 @@
+base: D:\My Docs\Studying\mipt-materials\5c1t\Machine Learning (ABBYY)\task1-spellcheck\data/spell-testset1.txt
+words count: 270
+accuracy: 0.7888888888888889
+time: 7.768977403640747
+-----
+base: D:\My Docs\Studying\mipt-materials\5c1t\Machine Learning (ABBYY)\task1-spellcheck\data/spell-testset2.txt
+words count: 400
+accuracy: 0.6925
+time: 13.415457010269165
+-----

@@ -5,13 +5,13 @@ http://norvig.com/spell-correct.html
 from string import ascii_lowercase as LETTERS_LOWERCASE
 
 
-class SpellCheckerSimpleEditsWithFastTextLangModel:
-    def __init__(self, model):
-        words = model.index2word
-        self.vocabulary = {word: idx for idx, word in enumerate(words)}
+class SpellCheckerEditsWithFastTextSimilarity:
+    def __init__(self, vocabulary, model):
+        self._vocabulary = {word: vocabulary[word] / len(vocabulary) for word in vocabulary}
+        self._model = model
 
     def filter_words_by_vocabulary(self, words):
-        return set(word for word in words if word in self.vocabulary)
+        return set(word for word in words if word in self._vocabulary)
 
     def generate_spelling_candidates(self, word):
         edits = self.generate_edits(word)
@@ -30,6 +30,18 @@ class SpellCheckerSimpleEditsWithFastTextLangModel:
         inserts = {prefix + letter + suffix for prefix, suffix in splits for letter in LETTERS_LOWERCASE}
         return deletes | transposes | replaces | inserts
 
+    def get_word_similarity(self, word_base, word_similar):
+        result = 0
+        if word_similar in self._model.vocab:
+            result = self._model.similarity(word_base, word_similar)
+        return result
+
     def correct(self, word):
         candidates = self.generate_spelling_candidates(word)
-        return max(candidates, key=lambda candidate: -self.vocabulary.get(candidate, 0), default=word)
+        result = None
+        if word in self._model.vocab:
+            result = max(candidates, key=lambda candidate: self.get_word_similarity(word, candidate), default=None)
+
+        if result is None:
+            result = max(candidates, key=lambda candidate: self._vocabulary[candidate], default=word)
+        return result
