@@ -15,7 +15,7 @@ class SpellCheckerWithFastTextRanking(SpellChecker):
 
     def correct(self, word):
         candidates = self.generate_spelling_candidates(word, False)
-        return max(candidates, key=lambda candidate: 1-self._vocabulary.get(candidate, 0), default=word)
+        return max(candidates, key=lambda candidate: 1 - self._vocabulary.get(candidate, 0), default=word)
 
 
 PATH_MODEL = join(PATH_PROJECT, 'models/wiki-news-300d-1M-subword.vec')
