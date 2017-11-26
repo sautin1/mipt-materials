@@ -36,6 +36,15 @@ class MatrixMath:
         return result
 
     @staticmethod
+    def _embed_into_eye(matrix, target_size):
+        size = matrix.shape[0]
+        size_eye = target_size - size
+        return MatrixMath._collect_matrix(matrix,
+                                          np.zeros((size, size_eye), dtype=matrix.dtype),
+                                          np.zeros((size_eye, size), dtype=matrix.dtype),
+                                          np.eye(size_eye, dtype=matrix.dtype))
+
+    @staticmethod
     def _split_into_submatrices(matrix):
         size = matrix.shape[0] // 2
         return matrix[:size, :size], matrix[:size, size:], matrix[size:, :size], matrix[size:, size:]
@@ -128,38 +137,69 @@ class MatrixMath:
         """Works only for lower/upper-triangular matrices"""
         size = matrix.shape[0]
         size_embedded = MatrixMath._calc_nearest_greater_power_of_2(size)
-        size_eye = size_embedded - size
-        matrix_embedded = MatrixMath._collect_matrix(matrix,
-                                                     np.zeros((size, size_eye), dtype=matrix.dtype),
-                                                     np.zeros((size_eye, size), dtype=matrix.dtype),
-                                                     np.eye(size_eye, dtype=matrix.dtype))
+        matrix_embedded = MatrixMath._embed_into_eye(matrix, size_embedded)
         result = MatrixMath._invert(matrix_embedded, modulus)
         return result[:size, :size]
 
-    # @staticmethod
-    # def _decompose_lup(matrix_a, modulus=None):
-    #     size = matrix_a.shape[0]
-    #     if size == 1:
-    #         lower = np.array([[1]])
-    #         permutation = np.eye(matrix_a.shape[1])
-    #         col_non_zero = next((idx for idx, number in enumerate(matrix_a[0]) if number != 0), 0)
-    #         permutation[[0, col_non_zero]] = permutation[[col_non_zero, 0]]
-    #         upper = matrix_a.copy()
-    #         upper[:, [0, col_non_zero]] = upper[:, [col_non_zero, 0]]
-    #     else:
-    #         matrix_b, matrix_c = matrix_a[:size // 2, :], matrix_a[size // 2:, :]
-    #         lower_b, upper_b, permutation_b = SquareMatrixMath._decompose_lup(matrix_b, modulus)
-    #         matrix_d = SquareMatrixMath.multiply()
-    #
-    #         # lower = matrix_a
-    #         # permutation = []
-    #         # upper = []
-    #     return lower, upper, permutation
+    @staticmethod
+    def _apply_permutation(matrix, permutation):
+        """Result of np.dot(matrix, permutation)"""
+        result = np.zeros(matrix.shape, dtype=matrix.dtype)
+        for col_idx, col in enumerate(permutation.T):
+            col_non_zero = next(idx for idx in range(col.shape[0]) if col[idx] != 0)
+            result[:, col_idx] = matrix[:, col_non_zero]
+        return result
 
-    # @staticmethod
-    # def decompose_lup(matrix, modulus=None):
-    #     # pad
-    #     return SquareMatrixMath._decompose_lup(matrix, modulo)
+    @staticmethod
+    def _invert_permutation(permutation):
+        return permutation.T
+
+    @staticmethod
+    def _decompose_lup(a, modulus=None):
+        height, width = a.shape[0]
+        if height == 1:
+            lower = np.array([[1]])
+            permutation = np.eye(a.shape[1])
+            upper = MatrixMath._apply_permutation(a, permutation)
+            return lower, upper, permutation
+
+        sum = partial(MatrixMath.sum, modulus=modulus)
+        negate = partial(MatrixMath.negate, modulus=modulus)
+        mult = partial(MatrixMath.multiply, modulus=modulus)
+        invert = partial(MatrixMath.invert, modulus=modulus)
+
+        b, c = a[:height // 2, :], a[height // 2:, :]
+        lower_b, upper_b, permutation_b = MatrixMath._decompose_lup(b, modulus)
+        d = MatrixMath._apply_permutation(c, MatrixMath._invert_permutation(permutation_b))
+        e, f = upper_b[:, :height // 2], d[:, :height // 2]
+        f_e_inverse = mult(f, invert(e))
+        g = sum(d, negate(mult(f_e_inverse, upper_b)))
+        g_prime = g[:, :-(width - height // 2)]
+
+        lower_g_prime, upper_g_prime, permutation_g_prime = MatrixMath._decompose_lup(g_prime, modulus)
+        permutation_3 = MatrixMath._collect_matrix(np.eye(height // 2, dtype=matrix.dtype),
+                                                   np.zeros((height // 2, permutation_g_prime.shape[1]),
+                                                            dtype=matrix.dtype),
+                                                   np.zeros((permutation_g_prime.shape[0], height // 2),
+                                                            dtype=matrix.dtype),
+                                                   permutation_g_prime)
+        h = MatrixMath._apply_permutation(upper_b, MatrixMath._invert_permutation(permutation_3))
+        lower = MatrixMath._collect_matrix(lower_b, np.zeros((height // 2, height // 2), dtype=matrix.dtype),
+                                           f_e_inverse, lower_g_prime)
+        upper = MatrixMath._collect_matrix(h[:, :height // 2],
+                                           h[:, height // 2:],
+                                           np.zeros((height // 2, height // 2), dtype=matrix.dtype),
+                                           upper_g_prime)
+        permutation = MatrixMath._apply_permutation(permutation_3, permutation_b)
+        return lower, upper, permutation
+
+    @staticmethod
+    def decompose_lup(matrix, modulus=None):
+        size = matrix.shape[0]
+        size_embedded = MatrixMath._calc_nearest_greater_power_of_2(size)
+        matrix_embedded = MatrixMath._embed_into_eye(matrix, size_embedded)
+        result = MatrixMath._decompose_lup(matrix_embedded, modulus)
+        return result[:size, :size]
 
 
 def stringify_matrix(matrix):
