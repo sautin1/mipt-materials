@@ -2,8 +2,19 @@ from decomposition import MatrixMath
 import numpy as np
 
 
-def make_random_matrix(size, bounds=(1, 10)):
-    return np.random.randint(bounds[0], bounds[1], (size, size), dtype=np.int)
+def make_random_invertible_matrix(size, bounds=(1, 10), modulus=None, is_triangular=False):
+    bounds = (bounds[0], modulus or bounds[1])
+    while True:
+        a = np.random.randint(bounds[0], bounds[1], (size, size))
+        if is_triangular:
+            # make either lower triangular or upper triangular matrix
+            a = np.tril(a) if np.random.rand() < 0.5 else np.triu(a)
+        det = np.linalg.det(a).astype(np.int).item()
+        if modulus is not None:
+            det %= modulus
+        if det != 0:
+            break
+    return a
 
 
 class Tester:
@@ -25,26 +36,42 @@ class Tester:
 
 def test_multiplication():
     matrix_size = np.random.randint(1, 10)
-    a, b = make_random_matrix(matrix_size), make_random_matrix(matrix_size)
+    modulus = None
+    dtype = np.float
+    if np.random.rand() < 0.5:
+        modulus = np.random.choice([3, 5, 7, 11])
+        dtype = np.int
+
+    a = make_random_invertible_matrix(matrix_size, modulus=modulus).astype(dtype)
+    b = make_random_invertible_matrix(matrix_size, modulus=modulus).astype(dtype)
     result_correct = np.dot(a, b)
-    result_tested = MatrixMath.multiply(a, b)
-    return np.allclose(result_correct, result_tested), {'a': a, 'b': b}
+    if modulus is not None:
+        result_correct %= modulus
+    result_tested = MatrixMath.multiply(a, b, modulus)
+    return np.allclose(result_correct, result_tested), {'a': a, 'b': b, 'modulus': modulus}
 
 
 def test_inversion():
     matrix_size = np.random.randint(1, 10)
-    a = make_random_matrix(matrix_size)
-    # make either lower triangular or upper triangular matrix
-    a = np.tril(a) if np.random.rand() < 0.5 else np.triu(a)
+    modulus = None
+    dtype = np.float
+    if np.random.rand() < 0.5:
+        modulus = np.random.choice([2, 3, 5, 7])
+        dtype = np.int
 
-    a_inverse = MatrixMath.invert(a)
-    return np.allclose(np.dot(a, a_inverse), np.eye(matrix_size)), {'a': a}
+    a = make_random_invertible_matrix(matrix_size, modulus=modulus, is_triangular=True).astype(dtype)
+
+    a_inverse = MatrixMath.invert(a, modulus)
+    product = np.dot(a, a_inverse)
+    if modulus is not None:
+        product %= modulus
+    return np.allclose(product, np.eye(matrix_size)), {'a': a, 'modulus': modulus}
 
 
 def test_lup_decomposition(test_count=10):
     for test in range(test_count):
         matrix_size = np.random.randint(1, 10)
-        matrix = make_random_matrix(matrix_size)
+        matrix = make_random_invertible_matrix(matrix_size)
         decomposed = MatrixMath.decompose_lup(matrix)
         result = np.linalg.multi_dot(decomposed)
         if np.all(matrix == result):
@@ -55,7 +82,7 @@ def test_lup_decomposition(test_count=10):
             break
 
 if __name__ == '__main__':
-    tester = Tester(10)
+    tester = Tester(20)
     for test, test_name in zip([test_multiplication, test_inversion],
                                ['Multiplication', 'Inversion']):
         tester.run(test, test_name)

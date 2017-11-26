@@ -21,7 +21,7 @@ class MatrixMath:
         for row in range(a.shape[0]):
             for col in range(a.shape[1]):
                 result[row, col] = -a[row, col]
-                if modulus is not None:
+                if modulus is not None and a[row, col] != 0:
                     result[row, col] += modulus
         return result
 
@@ -82,8 +82,8 @@ class MatrixMath:
         return MatrixMath._collect_matrix(*result_parts)
 
     @staticmethod
-    def is_zero_matrix(matrix):
-        return all(x == 0 for row in matrix for x in row)
+    def is_zero_matrix(matrix, modulus=None):
+        return all(modulus is not None and x % modulus == 0 or x == 0 for row in matrix for x in row)
 
     @staticmethod
     def multiply(a, b, modulus=None):
@@ -103,7 +103,7 @@ class MatrixMath:
         if a.shape[0] == 1:
             result = 1 / a[0, 0]
             if modulus is not None:
-                result = pow(a[0, 0].item(), modulus - 2, modulus)
+                result = pow(a[0, 0].item(), modulus - 2, modulus) % modulus
             return np.array([[result]])
 
         negate = partial(MatrixMath.negate, modulus=modulus)
@@ -112,7 +112,7 @@ class MatrixMath:
         a11, a12, a21, a22 = MatrixMath._split_into_submatrices(a)
         a11_inverse = MatrixMath._invert(a11, modulus)
         a22_inverse = MatrixMath._invert(a22, modulus)
-        is_upper_triangular = MatrixMath.is_zero_matrix(a21)
+        is_upper_triangular = MatrixMath.is_zero_matrix(a21, modulus)
 
         result_parts = [
             a11_inverse,
@@ -127,8 +127,8 @@ class MatrixMath:
     def invert(matrix, modulus=None):
         """Works only for lower/upper-triangular matrices"""
         size = matrix.shape[0]
-        size_padded = MatrixMath._calc_nearest_greater_power_of_2(size)
-        size_eye = size_padded - size
+        size_embedded = MatrixMath._calc_nearest_greater_power_of_2(size)
+        size_eye = size_embedded - size
         matrix_embedded = MatrixMath._collect_matrix(matrix,
                                                      np.zeros((size, size_eye), dtype=matrix.dtype),
                                                      np.zeros((size_eye, size), dtype=matrix.dtype),
