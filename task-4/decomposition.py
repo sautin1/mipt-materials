@@ -53,7 +53,7 @@ class MatrixMath:
     def _collect_matrix(upper_left, upper_right, lower_left, lower_right):
         height = upper_left.shape[0] + lower_left.shape[0]
         width = upper_left.shape[1] + upper_right.shape[1]
-        result = np.zeros((width, height), dtype=upper_left.dtype)
+        result = np.zeros((height, width), dtype=upper_left.dtype)
         result[:upper_left.shape[0], :upper_left.shape[1]] = upper_left
         result[:upper_left.shape[0], upper_left.shape[1]:] = upper_right
         result[upper_left.shape[0]:, :upper_left.shape[1]] = lower_left
@@ -96,11 +96,6 @@ class MatrixMath:
 
     @staticmethod
     def multiply(a, b, modulus=None):
-        if a.shape[0] != a.shape[1]:
-            raise ValueError('One of matrices is not square')
-        if a.shape != b.shape:
-            raise ValueError('Shapes of matrices are not equal')
-
         size = a.shape[0]
         size_padded = MatrixMath._calc_nearest_greater_power_of_2(size)
         a, b = MatrixMath._pad(a, size_padded), MatrixMath._pad(b, size_padded)
@@ -156,10 +151,12 @@ class MatrixMath:
 
     @staticmethod
     def _decompose_lup(a, modulus=None):
-        height, width = a.shape[0]
+        height, width = a.shape
         if height == 1:
             lower = np.array([[1]])
             permutation = np.eye(a.shape[1])
+            col_non_zero = next((idx for idx, number in enumerate(a[0]) if number != 0))
+            permutation[[0, col_non_zero]] = permutation[[col_non_zero, 0]]
             upper = MatrixMath._apply_permutation(a, permutation)
             return lower, upper, permutation
 
@@ -173,22 +170,31 @@ class MatrixMath:
         d = MatrixMath._apply_permutation(c, MatrixMath._invert_permutation(permutation_b))
         e, f = upper_b[:, :height // 2], d[:, :height // 2]
         f_e_inverse = mult(f, invert(e))
-        g = sum(d, negate(mult(f_e_inverse, upper_b)))
-        g_prime = g[:, :-(width - height // 2)]
+
+        product_width = upper_b.shape[1]
+        if product_width % (height // 2) != 0:
+            product_width += height // 2 - (upper_b.shape[1] % (height // 2))
+        product = np.zeros((upper_b.shape[0], product_width), dtype=a.dtype)
+        for begin in range(0, product_width, height // 2):
+            product[:, begin:begin + height // 2] = mult(f_e_inverse, upper_b[:, begin:begin + height // 2])
+        product = product[:, :upper_b.shape[1]]
+
+        g = sum(d, negate(product))
+        g_prime = g[:, -(width - height // 2):]
 
         lower_g_prime, upper_g_prime, permutation_g_prime = MatrixMath._decompose_lup(g_prime, modulus)
-        permutation_3 = MatrixMath._collect_matrix(np.eye(height // 2, dtype=matrix.dtype),
+        permutation_3 = MatrixMath._collect_matrix(np.eye(height // 2, dtype=a.dtype),
                                                    np.zeros((height // 2, permutation_g_prime.shape[1]),
-                                                            dtype=matrix.dtype),
+                                                            dtype=a.dtype),
                                                    np.zeros((permutation_g_prime.shape[0], height // 2),
-                                                            dtype=matrix.dtype),
+                                                            dtype=a.dtype),
                                                    permutation_g_prime)
         h = MatrixMath._apply_permutation(upper_b, MatrixMath._invert_permutation(permutation_3))
-        lower = MatrixMath._collect_matrix(lower_b, np.zeros((height // 2, height // 2), dtype=matrix.dtype),
+        lower = MatrixMath._collect_matrix(lower_b, np.zeros((height // 2, height // 2), dtype=a.dtype),
                                            f_e_inverse, lower_g_prime)
         upper = MatrixMath._collect_matrix(h[:, :height // 2],
                                            h[:, height // 2:],
-                                           np.zeros((height // 2, height // 2), dtype=matrix.dtype),
+                                           np.zeros((height // 2, height // 2), dtype=a.dtype),
                                            upper_g_prime)
         permutation = MatrixMath._apply_permutation(permutation_3, permutation_b)
         return lower, upper, permutation
@@ -198,8 +204,8 @@ class MatrixMath:
         size = matrix.shape[0]
         size_embedded = MatrixMath._calc_nearest_greater_power_of_2(size)
         matrix_embedded = MatrixMath._embed_into_eye(matrix, size_embedded)
-        result = MatrixMath._decompose_lup(matrix_embedded, modulus)
-        return result[:size, :size]
+        lower, upper, permutation = MatrixMath._decompose_lup(matrix_embedded, modulus)
+        return lower[:size, :size], upper[:size, :size], permutation[:size, :size]
 
 
 def stringify_matrix(matrix):
@@ -211,6 +217,6 @@ if __name__ == '__main__':
     matrix_size = len(first_row)
     matrix = [first_row] + [list(map(int, input().split(' '))) for _ in range(matrix_size - 1)]
     matrix = np.array(matrix)
-    decomposition = MatrixMath.decompose_lup(matrix)
+    decomposition = MatrixMath.decompose_lup(matrix, modulus=2)
     for factor in decomposition:
         print(stringify_matrix(factor))
