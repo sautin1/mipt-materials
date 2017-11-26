@@ -68,19 +68,6 @@ def test_inversion():
     return np.allclose(product, np.eye(matrix_size)), {'a': a, 'modulus': modulus}
 
 
-def test_lup_decomposition(test_count=10):
-    for test in range(test_count):
-        matrix_size = np.random.randint(1, 10)
-        matrix = make_random_invertible_matrix(matrix_size)
-        decomposed = MatrixMath.decompose_lup(matrix)
-        result = np.linalg.multi_dot(decomposed)
-        if np.all(matrix == result):
-            print(f'Test {test + 1} PASSED!')
-        else:
-            print(f'Test {test + 1} FAILED:')
-            print(matrix)
-            break
-
 if __name__ == '__main__':
     tester = Tester(20)
     for test, test_name in zip([test_multiplication, test_inversion],
