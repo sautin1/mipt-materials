@@ -24,13 +24,14 @@ class SauvolaBinarizer(Binarizer):
             std = stats.calc_std(*window_bounds)
             threshold = mean * (1 + self._k * (std / self._r - 1))
             result[row, col] = image[row, col] >= threshold
-        return result
+        return result * 255
 
 
 if __name__ == '__main__':
-    path_input = next(list_files(PATH_DATA))
-    image = read_image(path_input)
-    image_binarized = SauvolaBinarizer().binarize(image)
+    for path_input in list_files(PATH_DATA):
+        print(basename(path_input))
+        image = read_image(path_input)
+        image_binarized = SauvolaBinarizer().binarize(image)
 
-    path_result = join(PATH_RESULTS, 'sauvola', basename(path_input))
-    save_image(image_binarized, path_result)
+        path_result = join(PATH_RESULTS, 'sauvola', basename(path_input))
+        save_image(image_binarized, path_result)

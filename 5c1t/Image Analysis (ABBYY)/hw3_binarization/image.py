@@ -73,34 +73,4 @@ class ImageStatsCalculator:
         return sqr_mean - np.power(mean, 2)
 
     def calc_std(self, row_begin, row_end, col_begin, col_end):
-        var = self.calc_var(row_begin, row_end, col_begin, col_end)
-        if var < 0:
-            print(var, np.var(self._image[row_begin:row_end, col_begin:col_end]), row_begin, row_end, col_begin, col_end)
-            raise ValueError('Fail')
-        return np.sqrt(var)
-
-
-if __name__ == '__main__':
-    counter = 0
-    TEST_COUNT = 10
-    counter = 0
-    for counter in range(TEST_COUNT):
-        size = 1000
-        a = np.random.randint(0, 256, (size, size))
-        row_start = np.random.randint(0, size)
-        row_end = np.random.randint(row_start + 1, size + 1)
-        col_start = np.random.randint(0, size)
-        col_end = np.random.randint(col_start + 1, size + 1)
-
-        stats = ImageStatsCalculator(a)
-        var_my = stats.calc_var(row_start, row_end, col_start, col_end)
-
-        var_correct = np.var(a[row_start:row_end, col_start:col_end])
-        if (var_my - var_correct) > 1e-6 or var_my < 0:
-            print('FAIL')
-            print(a)
-            print(row_start, row_end, col_start, col_end)
-            print(f'{var_my} != {var_correct}')
-            break
-    if counter == TEST_COUNT - 1:
-        print('All tests passed!')
+        return np.sqrt(self.calc_var(row_begin, row_end, col_begin, col_end))
