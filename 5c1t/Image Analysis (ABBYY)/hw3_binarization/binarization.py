@@ -1,8 +1,6 @@
 import numpy as np
-from os.path import join, basename
 
-from image import read_image, save_image, sliding_window_centered, ImageStatsCalculator
-from paths import list_files, PATH_DATA, PATH_RESULTS
+from image import sliding_window_centered, ImageStatsCalculator
 
 
 class Binarizer:
@@ -27,15 +25,40 @@ class SauvolaBinarizer(Binarizer):
         return result * 255
 
 
-if __name__ == '__main__':
-    import time
+class OtsuBinarizer(Binarizer):
+    def __init__(self, window_size=(64, 64)):
+        self._window_size = window_size
 
-    start = time.time()
-    for path_input in list_files(PATH_DATA):
-        print(basename(path_input))
-        image = read_image(path_input)
-        image_binarized = SauvolaBinarizer().binarize(image)
+    def _calc_threshold_in_window(self, window):
+        histogram = np.histogram(window, 256, (0, 255))[0]
+        count_back, count_front = 0, np.prod(window.shape)
+        sum_back, sum_front = 0, np.sum(window)
 
-        path_result = join(PATH_RESULTS, 'sauvola', basename(path_input))
-        save_image(image_binarized, path_result)
-    print(time.time() - start)
+        threshold_best = None
+        sigma_max = -1
+        for threshold in range(1, 256):
+            count_back += histogram[threshold - 1]
+            count_front -= histogram[threshold - 1]
+            sum_current = (threshold - 1) * histogram[threshold - 1]
+            sum_back += sum_current
+            sum_front -= sum_current
+            if count_back == 0:
+                continue
+            if count_front == 0:
+                break
+
+            mean_back, mean_front = sum_back / count_back, sum_front / count_front
+            sigma_between = count_back * count_front * (mean_back - mean_front) ** 2
+            if sigma_max < sigma_between:
+                sigma_max = sigma_between
+                threshold_best = threshold
+        if threshold_best is None:
+            raise ValueError('Image has only one unique intensity value')
+        return threshold_best
+
+    def binarize(self, image):
+        result = np.zeros(image.shape, dtype=np.uint8)
+        for row, col, window, _ in sliding_window_centered(image, *self._window_size):
+            threshold = self._calc_threshold_in_window(window)
+            result[row, col] = image[row, col] >= threshold
+        return result * 255
