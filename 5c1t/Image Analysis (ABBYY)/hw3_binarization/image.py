@@ -14,6 +14,12 @@ def save_image(image, path):
     cv2.imwrite(path, image)
 
 
+def sliding_window(image, height, width, stride=(1, 1)):
+    for row in range(0, image.shape[0] - height, stride[0]):
+        for col in range(0, image.shape[1] - width, stride[1]):
+            yield row, col, image[row:row + height, col:col + width]
+
+
 def sliding_window_centered(image, height, width, stride=(1, 1)):
     for row in range(0, image.shape[0], stride[0]):
         for col in range(0, image.shape[1], stride[1]):

@@ -1,6 +1,6 @@
 import numpy as np
 
-from image import sliding_window_centered, ImageStatsCalculator
+from image import sliding_window, sliding_window_centered, ImageStatsCalculator
 
 
 class Binarizer:
@@ -8,8 +8,28 @@ class Binarizer:
         raise NotImplementedError()
 
 
-class SauvolaBinarizer(Binarizer):
+class SauvolaBlockBinarizer(Binarizer):
     def __init__(self, k=0.5, r=128, window_size=(64, 64)):
+        self._k = k
+        self._r = r
+        self._window_size = window_size
+
+    def binarize(self, image):
+        stats = ImageStatsCalculator(image)
+        result = np.zeros(image.shape, dtype=np.uint8)
+        for row, col, window in sliding_window(image, *self._window_size,
+                                               stride=(self._window_size[0], self._window_size[1])):
+            row_end = min(row + self._window_size[0], image.shape[0])
+            col_end = min(col + self._window_size[1], image.shape[1])
+            mean = stats.calc_mean(row, row_end, col, col_end)
+            std = stats.calc_std(row, row_end, col, col_end)
+            threshold = mean * (1 + self._k * (std / self._r - 1))
+            result[row:row_end, col:col_end] = window >= threshold
+        return result * 255
+
+
+class SauvolaPixByBlockBinarizer(Binarizer):
+    def __init__(self, k=0.5, r=128, window_size=(65, 65)):
         self._k = k
         self._r = r
         self._window_size = window_size
@@ -29,7 +49,8 @@ class OtsuBinarizer(Binarizer):
     def __init__(self, window_size=(64, 64)):
         self._window_size = window_size
 
-    def _calc_threshold_in_window(self, window):
+    @staticmethod
+    def _calc_threshold_in_window(window):
         histogram = np.histogram(window, 256, (0, 255))[0]
         count_back, count_front = 0, np.prod(window.shape)
         sum_back, sum_front = 0, np.sum(window)
