@@ -28,6 +28,9 @@ class SauvolaBinarizer(Binarizer):
 
 
 if __name__ == '__main__':
+    import time
+
+    start = time.time()
     for path_input in list_files(PATH_DATA):
         print(basename(path_input))
         image = read_image(path_input)
@@ -35,3 +38,4 @@ if __name__ == '__main__':
 
         path_result = join(PATH_RESULTS, 'sauvola', basename(path_input))
         save_image(image_binarized, path_result)
+    print(time.time() - start)
