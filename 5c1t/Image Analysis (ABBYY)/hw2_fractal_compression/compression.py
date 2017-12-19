@@ -18,13 +18,10 @@ class ImageFractalCompressor:
     DTYPE_INTENSITY_PARAMS = np.uint8
     DTYPE_COORDINATES = np.uint16
 
-    def __init__(self, pattern_size=4, variance_threshold=5):
+    def __init__(self, pattern_size=4):
         self._pattern_size = pattern_size
-        # self._variance_lower_bound = variance_threshold
 
         # auxiliary fields for fitting
-        self._sums_sqr = None
-        self._sums = None
         self._image = None
         self._pattern_to_block = None
 
@@ -32,14 +29,18 @@ class ImageFractalCompressor:
     def _calc_compression_parameters(pattern, block):
         dtype = ImageFractalCompressor.DTYPE_INTENSITY_PARAMS
         scale = np.floor((np.minimum((np.std(pattern) / np.std(block)), 1)) * 255).astype(dtype)
-        shift = (np.floor(np.mean(pattern) - np.mean(block)) + 255).astype(dtype)
+        # np.mean(pattern) - np.mean(block) is a float in interval [-255, 255]
+        # convert it into np.uint8
+        shift = (np.floor((np.mean(pattern) - np.mean(block) + 255) / 2)).astype(dtype)
         return np.array([scale, shift])
 
     @staticmethod
     def _compress_block(block, parameters):
         scale, shift = parameters
+        scale = scale.astype(np.float) / 255
+        shift = shift.astype(np.float) * 2 - 255
         block_resized = cv2.resize(block, None, fx=0.5, fy=0.5)
-        return np.floor(block_resized * (scale / 255)) + (shift - 255)
+        return np.clip(np.floor(block_resized * scale + shift), 0, 255).astype(np.uint8)
 
     @staticmethod
     def _calc_distance(pattern1, pattern2):
@@ -60,8 +61,6 @@ class ImageFractalCompressor:
 
     def fit(self, image):
         self._image = image
-        self._sums = np.cumsum(image).resize(image.shape)
-        self._sums_sqr = np.cumsum(np.power(image, 2)).resize(image.shape)
         self._pattern_to_block = {}
         for pattern_row, pattern_col, pattern in sliding_window(image,
                                                                 self._pattern_size,
@@ -97,9 +96,17 @@ class ImageFractalCompressor:
     def uncompress(self, image):
         if self._pattern_to_block is None:
             raise ValueError('uncompress cannot be called before fit or load')
+        pattern_size = self._pattern_size
+        block_size = 2 * self._pattern_size
+        result = np.zeros(image.shape)
         for pattern_row, pattern_col, pattern in sliding_window(image, self._pattern_size, self._pattern_size,
                                                                 (self._pattern_size, self._pattern_size)):
-            block_row, block_col, _ = self._pattern_to_block[(pattern_row, pattern_col)]
+            block_row, block_col, params = self._pattern_to_block[(pattern_row, pattern_col)]
+            block = image[block_row:block_row + block_size, block_col:block_col + block_size]
+
+            result[pattern_row:pattern_row + pattern_size,
+                   pattern_col:pattern_col + pattern_size] = self._compress_block(block, params)
+        return result
 
 
 if __name__ == '__main__':
@@ -126,6 +133,23 @@ if __name__ == '__main__':
         compressor = ImageFractalCompressor()
         compressor.fit(image_original)
         compressor.save(path_compressed)
+
+        ###
+        from matplotlib import pyplot as plt
+
+        pattern_size = compressor._pattern_size
+        block_size = pattern_size * 2
+        for pattern_row, pattern_col, pattern in sliding_window(image_original, pattern_size, pattern_size,
+                                                                (pattern_size, pattern_size)):
+                params = compressor._pattern_to_block[(pattern_row, pattern_col)]
+                block = image_original[params.row:params.row + block_size, params.col:params.col + block_size]
+                fig, (left, right) = plt.subplots(1, 2)
+                left.imshow(pattern, cmap='Greys')
+                right.imshow(block, cmap='Greys')
+                plt.show()
+                print(pattern)
+                print(block)
+        ###
 
         image_restored = np.full(image_original.shape, 0.5)
         psnrs = []
