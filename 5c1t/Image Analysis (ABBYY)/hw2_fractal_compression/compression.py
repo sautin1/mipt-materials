@@ -48,10 +48,10 @@ class ImageFractalCompressor:
     def _find_similar_block(self, pattern):
         block_size = 2 * self._pattern_size
         compression_params = [self.BlockCompressParams(row, col, self._calc_compression_parameters(pattern, block))
-                              for row, col, block in sliding_window(image, block_size, block_size,
+                              for row, col, block in sliding_window(image_original, block_size, block_size,
                                                                     (block_size, block_size))]
         blocks_compressed = (self._compress_block(block, params.intensity_params)
-                             for (_, _, block), params in zip(sliding_window(image, block_size, block_size,
+                             for (_, _, block), params in zip(sliding_window(image_original, block_size, block_size,
                                                                              (block_size, block_size)),
                                                               compression_params))
         # find block with lexicographically minimal pair: (distance to pattern, -variance)
@@ -104,21 +104,37 @@ class ImageFractalCompressor:
 
 if __name__ == '__main__':
     from os.path import join, splitext
+    from os import makedirs
+    from tqdm import tqdm
 
-    image_name = 'Boat64.bmp'
-    path_image = join('data', image_name)
-    image = cv2.imread(path_image, cv2.IMREAD_GRAYSCALE)
+    from image import save_image, read_image
+    from metrics import peak_signal_to_noise_ratio
 
-    compressor = ImageFractalCompressor()
-    print('Fit')
-    compressor.fit(image)
+    PSNR_THRESHOLD = 20
+    MAX_ITER_COUNT = 100
 
-    path_result = join('data_compressed', splitext(image_name)[0])
-    print('Save')
-    compressor.save(path_result)
-    a = compressor._pattern_to_block
-    print('Load')
-    compressor.load(path_result)
-    b = compressor._pattern_to_block
-    print(a)
-    print(b)
+    images_names = ['Boat64.bmp']
+    for image_name in tqdm(images_names):
+        path_image = join('data', image_name)
+        path_compressed = join('results', splitext(image_name)[0], 'compressed')
+        path_restored = join('results', splitext(image_name)[0], 'restored')
+        path_metrics = join('results', 'psnr.txt')
+        makedirs(path_restored, exist_ok=True)
+
+        image_original = read_image(path_image, cv2.IMREAD_GRAYSCALE)
+
+        compressor = ImageFractalCompressor()
+        compressor.fit(image_original)
+        compressor.save(path_compressed)
+
+        image_restored = np.full(image_original.shape, 0.5)
+        psnrs = []
+        for i in range(MAX_ITER_COUNT):
+            image_restored = compressor.uncompress(image_restored)
+            psnr = peak_signal_to_noise_ratio(image_original, image_restored)
+            save_image(image_restored, join(path_restored, str(i)))
+            psnrs.append(psnr)
+            if psnr >= PSNR_THRESHOLD:
+                break
+        with open(path_metrics, 'w') as fout:
+            fout.write('\n'.join(map(str, psnrs)))
