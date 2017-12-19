@@ -134,23 +134,6 @@ if __name__ == '__main__':
         compressor.fit(image_original)
         compressor.save(path_compressed)
 
-        ###
-        from matplotlib import pyplot as plt
-
-        pattern_size = compressor._pattern_size
-        block_size = pattern_size * 2
-        for pattern_row, pattern_col, pattern in sliding_window(image_original, pattern_size, pattern_size,
-                                                                (pattern_size, pattern_size)):
-                params = compressor._pattern_to_block[(pattern_row, pattern_col)]
-                block = image_original[params.row:params.row + block_size, params.col:params.col + block_size]
-                fig, (left, right) = plt.subplots(1, 2)
-                left.imshow(pattern, cmap='Greys')
-                right.imshow(block, cmap='Greys')
-                plt.show()
-                print(pattern)
-                print(block)
-        ###
-
         image_restored = np.full(image_original.shape, 0.5)
         psnrs = []
         for i in range(MAX_ITER_COUNT):
