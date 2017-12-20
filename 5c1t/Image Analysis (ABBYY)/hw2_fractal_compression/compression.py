@@ -98,12 +98,9 @@ class ImageFractalCompressor:
             raise ValueError('uncompress cannot be called before fit or load')
         pattern_size = self._pattern_size
         block_size = 2 * self._pattern_size
-        result = np.zeros(image.shape)
-        for pattern_row, pattern_col, pattern in sliding_window(image, self._pattern_size, self._pattern_size,
-                                                                (self._pattern_size, self._pattern_size)):
-            block_row, block_col, params = self._pattern_to_block[(pattern_row, pattern_col)]
+        result = np.zeros(image.shape, dtype=np.uint8)
+        for (pattern_row, pattern_col), (block_row, block_col, params) in self._pattern_to_block.items():
             block = image[block_row:block_row + block_size, block_col:block_col + block_size]
-
             result[pattern_row:pattern_row + pattern_size,
                    pattern_col:pattern_col + pattern_size] = self._compress_block(block, params)
         return result
@@ -113,35 +110,41 @@ if __name__ == '__main__':
     from os.path import join, splitext
     from os import makedirs
     from tqdm import tqdm
+    from matplotlib import pyplot as plt
 
     from image import save_image, read_image
     from metrics import peak_signal_to_noise_ratio
 
-    PSNR_THRESHOLD = 20
-    MAX_ITER_COUNT = 100
 
-    images_names = ['Boat64.bmp']
+    PSNR_THRESHOLD = 40
+    MAX_ITER_COUNT = 40
+
+    images_names = ['Boat100.bmp']
     for image_name in tqdm(images_names):
         path_image = join('data', image_name)
-        path_compressed = join('results', splitext(image_name)[0], 'compressed')
-        path_restored = join('results', splitext(image_name)[0], 'restored')
-        path_metrics = join('results', 'psnr.txt')
+        path_results = join('results', splitext(image_name)[0])
+        path_compressed = join(path_results, 'compressed')
+        path_restored = join(path_results, 'restored')
+        path_metrics = join(path_results, 'psnr')
         makedirs(path_restored, exist_ok=True)
 
         image_original = read_image(path_image, cv2.IMREAD_GRAYSCALE)
 
-        compressor = ImageFractalCompressor()
+        compressor = ImageFractalCompressor(4)
         compressor.fit(image_original)
         compressor.save(path_compressed)
 
-        image_restored = np.full(image_original.shape, 0.5)
+        image_restored = np.full(image_original.shape, 128, dtype=np.uint8)
         psnrs = []
         for i in range(MAX_ITER_COUNT):
             image_restored = compressor.uncompress(image_restored)
             psnr = peak_signal_to_noise_ratio(image_original, image_restored)
-            save_image(image_restored, join(path_restored, str(i)))
+            save_image(image_restored, join(path_restored, str(i) + '.png'))
             psnrs.append(psnr)
             if psnr >= PSNR_THRESHOLD:
                 break
-        with open(path_metrics, 'w') as fout:
+        with open(path_metrics + '.txt', 'w') as fout:
             fout.write('\n'.join(map(str, psnrs)))
+        fig = plt.figure()
+        plt.plot(psnrs)
+        fig.savefig(path_metrics + '.png')
