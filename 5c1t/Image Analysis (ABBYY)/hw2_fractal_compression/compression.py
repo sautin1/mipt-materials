@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
 
     PSNR_THRESHOLD = 40
-    MAX_ITER_COUNT = 40
+    MAX_ITER_COUNT = 50
 
     images_names = ['Boat100.bmp']
     for image_name in tqdm(images_names):
