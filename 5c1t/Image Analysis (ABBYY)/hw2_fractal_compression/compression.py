@@ -108,7 +108,7 @@ class ImageFractalCompressor:
 
 if __name__ == '__main__':
     from os.path import join, splitext
-    from os import makedirs
+    from os import makedirs, listdir
     from tqdm import tqdm
     from matplotlib import pyplot as plt
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     PSNR_THRESHOLD = 40
     MAX_ITER_COUNT = 50
 
-    images_names = ['Boat100.bmp']
+    images_names = listdir('data')
     for image_name in tqdm(images_names):
         path_image = join('data', image_name)
         path_results = join('results', splitext(image_name)[0])
