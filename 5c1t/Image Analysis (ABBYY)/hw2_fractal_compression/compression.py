@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     PSNR_THRESHOLD = 40
     MAX_ITER_COUNT = 50
-    PATTERN_SIZE = 4
+    PATTERN_SIZE = 2
 
     images_names = listdir('data')
     for image_name in tqdm(images_names):
