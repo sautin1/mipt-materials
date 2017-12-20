@@ -115,14 +115,14 @@ if __name__ == '__main__':
     from image import save_image, read_image
     from metrics import peak_signal_to_noise_ratio
 
-
     PSNR_THRESHOLD = 40
     MAX_ITER_COUNT = 50
+    PATTERN_SIZE = 4
 
     images_names = listdir('data')
     for image_name in tqdm(images_names):
         path_image = join('data', image_name)
-        path_results = join('results', splitext(image_name)[0])
+        path_results = join('results', f'{PATTERN_SIZE}x{PATTERN_SIZE}', splitext(image_name)[0])
         path_compressed = join(path_results, 'compressed')
         path_restored = join(path_results, 'restored')
         path_metrics = join(path_results, 'psnr')
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
         image_original = read_image(path_image, cv2.IMREAD_GRAYSCALE)
 
-        compressor = ImageFractalCompressor(4)
+        compressor = ImageFractalCompressor(PATTERN_SIZE)
         compressor.fit(image_original)
         compressor.save(path_compressed)
 
