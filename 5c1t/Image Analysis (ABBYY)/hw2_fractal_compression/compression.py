@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 from collections import namedtuple, OrderedDict
+
 from image import ImageStatsCalculator
+from metrics import calc_mse
 
 
 def sliding_window(image, height, width=None, stride=(1, 1)):
@@ -59,7 +61,7 @@ class ImageFractalCompressor:
 
     @staticmethod
     def _calc_distance(pattern1, pattern2):
-        return np.linalg.norm(pattern1 - pattern2)
+        return calc_mse(pattern1, pattern2)
 
     def _find_similar_block(self, image, stats, pattern, pattern_start):
         compression_params = [self.BlockCompressParams(row, col,
@@ -124,7 +126,7 @@ if __name__ == '__main__':
     from matplotlib import pyplot as plt
 
     from image import save_image, read_image
-    from metrics import peak_signal_to_noise_ratio
+    from metrics import calc_peak_signal_to_noise_ratio
 
     PSNR_THRESHOLD = 40
     MAX_ITER_COUNT = 50
@@ -152,7 +154,7 @@ if __name__ == '__main__':
         print('Restoring')
         for i in tqdm(range(MAX_ITER_COUNT)):
             image_restored_new = compressor.uncompress(image_restored) if i > 0 else image_restored
-            psnr = peak_signal_to_noise_ratio(image_original, image_restored_new)
+            psnr = calc_peak_signal_to_noise_ratio(image_original, image_restored_new)
             save_image(image_restored_new, join(path_restored, str(i) + '.png'))
             psnrs.append(psnr)
             if i > 0 and psnr >= PSNR_THRESHOLD:
