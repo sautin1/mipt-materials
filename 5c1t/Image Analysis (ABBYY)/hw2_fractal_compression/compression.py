@@ -45,13 +45,15 @@ class ImageFractalCompressor:
         shift = (np.floor((shift + 255) / 2)).astype(dtype)
         return scale, shift
 
-    def _compress_block(self, image, block_start, parameters):
-        block = image[block_start[0]:block_start[0] + self._block_size,
-                      block_start[1]:block_start[1] + self._block_size]
+    def _compress_block(self, block, parameters):
         scale, shift = parameters
         scale = scale.astype(np.float) / 255
         shift = shift.astype(np.float) * 2 - 255
-        block_resized = cv2.resize(block, None, fx=0.5, fy=0.5)
+
+        # resize by taking mean of all 2x2 non-overlapping subblocks
+        block_resized = np.zeros((self._block_size // 2, self._block_size // 2), dtype=np.uint8)
+        for offset_row, offset_col, subblock in sliding_window(block, 2, stride=2):
+            block_resized[offset_row // 2, offset_col // 2] = np.mean(subblock)
         return np.clip(np.floor(block_resized * scale + shift), 0, 255).astype(np.uint8)
 
     @staticmethod
@@ -63,8 +65,8 @@ class ImageFractalCompressor:
                                                        self._calc_compression_parameters(stats, pattern_start,
                                                                                          (row, col)))
                               for row, col, block in sliding_window(image, self._block_size, stride=self._block_size)]
-        blocks_compressed = (self._compress_block(image, (row, col), params.intensity_params)
-                             for (row, col, _), params in zip(sliding_window(image, self._block_size,
+        blocks_compressed = (self._compress_block(block, params.intensity_params)
+                             for (_, _, block), params in zip(sliding_window(image, self._block_size,
                                                                              stride=self._block_size),
                                                               compression_params))
         return min(zip(blocks_compressed, compression_params),
@@ -107,8 +109,10 @@ class ImageFractalCompressor:
         pattern_size = self._pattern_size
         result = np.zeros(image.shape, dtype=np.uint8)
         for (pattern_row, pattern_col), (block_row, block_col, params) in self._pattern_to_block.items():
+            block = image[block_row:block_row + self._block_size, block_col:block_col + self._block_size]
             result[pattern_row:pattern_row + pattern_size,
-                   pattern_col:pattern_col + pattern_size] = self._compress_block(image, (block_row, block_col), params)
+                   pattern_col:pattern_col + pattern_size] = self._compress_block(block,
+                                                                                  params)
         return result
 
 
