@@ -1,9 +1,13 @@
 import cv2
 import numpy as np
 from collections import namedtuple
+from image import ImageStatsCalculator
 
 
-def sliding_window(image, height, width, stride=(1, 1)):
+def sliding_window(image, height, width=None, stride=(1, 1)):
+    width = width or height
+    if isinstance(stride, int):
+        stride = (stride, stride)
     for row in range(0, image.shape[0] - height, stride[0]):
         for col in range(0, image.shape[1] - width, stride[1]):
             yield row, col, image[row:row + height, col:col + width]
@@ -14,28 +18,36 @@ class ImageFractalCompressor:
     Block is a subimage of shape (pattern_size * 2, pattern_size * 2),
     pattern in a compressed representation of block with shape (pattern_size, pattern_size)
     """
-    BlockCompressParams = namedtuple('BlockDecompressParameters', ['row', 'col', 'intensity_params'])
+    BlockCompressParams = namedtuple('BlockCompressParameters', ['row', 'col', 'intensity_params'])
     DTYPE_INTENSITY_PARAMS = np.uint8
     DTYPE_COORDINATES = np.uint16
 
     def __init__(self, pattern_size=4):
         self._pattern_size = pattern_size
+        self._block_size = self._pattern_size * 2
 
-        # auxiliary fields for fitting
-        self._image = None
         self._pattern_to_block = None
 
-    @staticmethod
-    def _calc_compression_parameters(pattern, block):
-        dtype = ImageFractalCompressor.DTYPE_INTENSITY_PARAMS
-        scale = np.floor((np.minimum((np.std(pattern) / np.std(block)), 1)) * 255).astype(dtype)
-        # np.mean(pattern) - np.mean(block) is a float in interval [-255, 255]
-        # convert it into np.uint8
-        shift = (np.floor((np.mean(pattern) - np.mean(block) + 255) / 2)).astype(dtype)
-        return np.array([scale, shift])
+    def _calc_compression_parameters(self, stats, pattern_start, block_start):
+        pattern_coords = (pattern_start[0], pattern_start[0] + self._pattern_size,
+                          pattern_start[1], pattern_start[1] + self._pattern_size)
+        block_coords = (block_start[0], block_start[0] + self._block_size,
+                        block_start[1], block_start[1] + self._block_size)
 
-    @staticmethod
-    def _compress_block(block, parameters):
+        dtype = ImageFractalCompressor.DTYPE_INTENSITY_PARAMS
+        scale = np.minimum(stats.calc_std(*pattern_coords) / stats.calc_std(*block_coords), 1)
+        # fit into {0, ..., 255}
+        scale = np.floor(scale * 255).astype(dtype)
+
+        shift = stats.calc_mean(*pattern_coords) - stats.calc_mean(*block_coords)
+        # now shift is a float in interval [-255, 255]
+        # fit it into {0, ..., 255}
+        shift = (np.floor((shift + 255) / 2)).astype(dtype)
+        return scale, shift
+
+    def _compress_block(self, image, block_start, parameters):
+        block = image[block_start[0]:block_start[0] + self._block_size,
+                      block_start[1]:block_start[1] + self._block_size]
         scale, shift = parameters
         scale = scale.astype(np.float) / 255
         shift = shift.astype(np.float) * 2 - 255
@@ -46,50 +58,45 @@ class ImageFractalCompressor:
     def _calc_distance(pattern1, pattern2):
         return np.linalg.norm(pattern1 - pattern2)
 
-    def _find_similar_block(self, pattern):
-        block_size = 2 * self._pattern_size
-        compression_params = [self.BlockCompressParams(row, col, self._calc_compression_parameters(pattern, block))
-                              for row, col, block in sliding_window(image_original, block_size, block_size,
-                                                                    (block_size, block_size))]
-        blocks_compressed = (self._compress_block(block, params.intensity_params)
-                             for (_, _, block), params in zip(sliding_window(image_original, block_size, block_size,
-                                                                             (block_size, block_size)),
+    def _find_similar_block(self, image, stats, pattern, pattern_start):
+        compression_params = [self.BlockCompressParams(row, col,
+                                                       self._calc_compression_parameters(stats, pattern_start,
+                                                                                         (row, col)))
+                              for row, col, block in sliding_window(image, self._block_size, stride=self._block_size)]
+        blocks_compressed = (self._compress_block(image, (row, col), params.intensity_params)
+                             for (row, col, _), params in zip(sliding_window(image, self._block_size,
+                                                                             stride=self._block_size),
                                                               compression_params))
-        # find block with lexicographically minimal pair: (distance to pattern, -variance)
         return min(zip(blocks_compressed, compression_params),
-                   key=lambda pair: (self._calc_distance(pattern, pair[0]), -np.var(pair[0])))[1]
+                   key=lambda pair: self._calc_distance(pattern, pair[0]))[1]
 
     def fit(self, image):
-        self._image = image
         self._pattern_to_block = {}
-        for pattern_row, pattern_col, pattern in sliding_window(image,
-                                                                self._pattern_size,
-                                                                self._pattern_size,
-                                                                (self._pattern_size, self._pattern_size)):
-            self._pattern_to_block[(pattern_row, pattern_col)] = self._find_similar_block(pattern)
+        stats = ImageStatsCalculator(image)
+        for pattern_row, pattern_col, pattern in sliding_window(image, self._pattern_size, stride=self._pattern_size):
+            pattern_start = (pattern_row, pattern_col)
+            self._pattern_to_block[pattern_start] = self._find_similar_block(image, stats, pattern, pattern_start)
         return self._pattern_to_block
 
-    def save(self, path):
+    def save(self, path, image):
         if self._pattern_to_block is None:
             raise ValueError('save_compressed cannot be called before fit or load')
         with open(path, 'wb') as fout:
-            for pattern_row, pattern_col, _ in sliding_window(self._image, self._pattern_size, self._pattern_size,
-                                                              (self._pattern_size, self._pattern_size)):
+            for pattern_row, pattern_col, _ in sliding_window(image, self._pattern_size, stride=self._pattern_size):
                 compression_params = self._pattern_to_block[(pattern_row, pattern_col)]
                 coordinates = np.array([compression_params.row, compression_params.col], dtype=self.DTYPE_COORDINATES)
-                intensity_params = compression_params.intensity_params
+                intensity_params = np.array(compression_params.intensity_params, dtype=self.DTYPE_INTENSITY_PARAMS)
                 # 2*2 bytes to store row and col of a block
                 coordinates.tofile(fout)
                 # 2*1 bytes to store intensity params
                 intensity_params.tofile(fout)
 
-    def load(self, path):
+    def load(self, path, image):
         self._pattern_to_block = {}
         with open(path, 'rb') as fin:
-            for pattern_row, pattern_col, _ in sliding_window(self._image, self._pattern_size, self._pattern_size,
-                                                              (self._pattern_size, self._pattern_size)):
+            for pattern_row, pattern_col, _ in sliding_window(image, self._pattern_size, stride=self._pattern_size):
                 coordinates = tuple(np.fromfile(fin, self.DTYPE_COORDINATES, 2))
-                intensity_params = np.fromfile(fin, self.DTYPE_INTENSITY_PARAMS, 2)
+                intensity_params = tuple(np.fromfile(fin, self.DTYPE_INTENSITY_PARAMS, 2))
                 self._pattern_to_block[(pattern_row, pattern_col)] = self.BlockCompressParams(*coordinates,
                                                                                               intensity_params)
 
@@ -97,12 +104,10 @@ class ImageFractalCompressor:
         if self._pattern_to_block is None:
             raise ValueError('uncompress cannot be called before fit or load')
         pattern_size = self._pattern_size
-        block_size = 2 * self._pattern_size
         result = np.zeros(image.shape, dtype=np.uint8)
         for (pattern_row, pattern_col), (block_row, block_col, params) in self._pattern_to_block.items():
-            block = image[block_row:block_row + block_size, block_col:block_col + block_size]
             result[pattern_row:pattern_row + pattern_size,
-                   pattern_col:pattern_col + pattern_size] = self._compress_block(block, params)
+                   pattern_col:pattern_col + pattern_size] = self._compress_block(image, (block_row, block_col), params)
         return result
 
 
@@ -132,7 +137,7 @@ if __name__ == '__main__':
 
         compressor = ImageFractalCompressor(PATTERN_SIZE)
         compressor.fit(image_original)
-        compressor.save(path_compressed)
+        compressor.save(path_compressed, image_original)
 
         image_restored = np.full(image_original.shape, 128, dtype=np.uint8)
         psnrs = []
