@@ -153,13 +153,12 @@ if __name__ == '__main__':
         psnrs = []
         print('Restoring')
         for i in tqdm(range(MAX_ITER_COUNT)):
-            image_restored_new = compressor.uncompress(image_restored) if i > 0 else image_restored
-            psnr = calc_peak_signal_to_noise_ratio(image_original, image_restored_new)
-            save_image(image_restored_new, join(path_restored, str(i) + '.png'))
+            image_restored = compressor.uncompress(image_restored) if i > 0 else image_restored
+            psnr = calc_peak_signal_to_noise_ratio(image_original, image_restored)
+            save_image(image_restored, join(path_restored, str(i) + '.png'))
             psnrs.append(psnr)
-            if i > 0 and psnr >= PSNR_THRESHOLD:
+            if psnr >= PSNR_THRESHOLD:
                 break
-            image_restored = image_restored_new
         with open(path_metrics + '.txt', 'w') as fout:
             fout.write('\n'.join(map(str, psnrs)))
         fig = plt.figure()
