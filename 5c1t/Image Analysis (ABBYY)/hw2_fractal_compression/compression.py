@@ -155,7 +155,7 @@ if __name__ == '__main__':
             psnr = peak_signal_to_noise_ratio(image_original, image_restored_new)
             save_image(image_restored_new, join(path_restored, str(i) + '.png'))
             psnrs.append(psnr)
-            if i > 0 and (psnr >= PSNR_THRESHOLD or np.all(image_restored == image_restored_new)):
+            if i > 0 and psnr >= PSNR_THRESHOLD:
                 break
             image_restored = image_restored_new
         with open(path_metrics + '.txt', 'w') as fout:
