@@ -132,7 +132,7 @@ if __name__ == '__main__':
     MAX_ITER_COUNT = 50
     PATTERN_SIZE = 4
 
-    images_names = ['Boat64.bmp']  # listdir('data')
+    images_names = listdir('data')
     for image_name in images_names:
         print(image_name)
         path_image = join('data', image_name)
