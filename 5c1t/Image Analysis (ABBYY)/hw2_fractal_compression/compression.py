@@ -8,8 +8,8 @@ def sliding_window(image, height, width=None, stride=(1, 1)):
     width = width or height
     if isinstance(stride, int):
         stride = (stride, stride)
-    for row in range(0, image.shape[0] - height, stride[0]):
-        for col in range(0, image.shape[1] - width, stride[1]):
+    for row in range(0, image.shape[0] - height + 1, stride[0]):
+        for col in range(0, image.shape[1] - width + 1, stride[1]):
             yield row, col, image[row:row + height, col:col + width]
 
 
@@ -41,17 +41,17 @@ class ImageFractalCompressor:
 
         shift = stats.calc_mean(*pattern_coords) - stats.calc_mean(*block_coords)
         # now shift is a float in interval [-255, 255]
-        # fit it into {0, ..., 255}
-        shift = (np.floor((shift + 255) / 2)).astype(dtype)
+        # fit it into {0, ..., 255} so that 0 maps to 128
+        shift = (np.floor(shift + 255) / 2 + 0.5).astype(dtype)
         return scale, shift
 
     def _compress_block(self, block, parameters):
         scale, shift = parameters
         scale = scale.astype(np.float) / 255
-        shift = shift.astype(np.float) * 2 - 255
+        shift = (shift.astype(np.float) - 0.5) * 2 - 255
 
         # resize by taking mean of all 2x2 non-overlapping subblocks
-        block_resized = np.zeros((self._block_size // 2, self._block_size // 2), dtype=np.uint8)
+        block_resized = np.zeros((self._block_size // 2, self._block_size // 2), dtype=np.float)
         for offset_row, offset_col, subblock in sliding_window(block, 2, stride=2):
             block_resized[offset_row // 2, offset_col // 2] = np.mean(subblock)
         return np.clip(np.floor(block_resized * scale + shift), 0, 255).astype(np.uint8)
@@ -64,10 +64,9 @@ class ImageFractalCompressor:
         compression_params = [self.BlockCompressParams(row, col,
                                                        self._calc_compression_parameters(stats, pattern_start,
                                                                                          (row, col)))
-                              for row, col, block in sliding_window(image, self._block_size, stride=self._block_size)]
+                              for row, col, block in sliding_window(image, self._block_size)]
         blocks_compressed = (self._compress_block(block, params.intensity_params)
-                             for (_, _, block), params in zip(sliding_window(image, self._block_size,
-                                                                             stride=self._block_size),
+                             for (_, _, block), params in zip(sliding_window(image, self._block_size),
                                                               compression_params))
         return min(zip(blocks_compressed, compression_params),
                    key=lambda pair: self._calc_distance(pattern, pair[0]))[1]
