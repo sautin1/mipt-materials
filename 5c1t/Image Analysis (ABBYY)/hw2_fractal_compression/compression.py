@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from image import ImageStatsCalculator
 
 
@@ -71,30 +71,31 @@ class ImageFractalCompressor:
                    key=lambda pair: self._calc_distance(pattern, pair[0]))[1]
 
     def fit(self, image):
-        self._pattern_to_block = {}
+        self._pattern_to_block = OrderedDict()
         stats = ImageStatsCalculator(image)
         for pattern_row, pattern_col, pattern in sliding_window(image, self._pattern_size, stride=self._pattern_size):
             pattern_start = (pattern_row, pattern_col)
             self._pattern_to_block[pattern_start] = self._find_similar_block(image, stats, pattern, pattern_start)
         return self._pattern_to_block
 
-    def save(self, path, image):
+    def save(self, path):
         if self._pattern_to_block is None:
             raise ValueError('save_compressed cannot be called before fit or load')
         with open(path, 'wb') as fout:
-            for pattern_row, pattern_col, _ in sliding_window(image, self._pattern_size, stride=self._pattern_size):
-                compression_params = self._pattern_to_block[(pattern_row, pattern_col)]
-                coordinates = np.array([compression_params.row, compression_params.col], dtype=self.DTYPE_COORDINATES)
-                intensity_params = np.array(compression_params.intensity_params, dtype=self.DTYPE_INTENSITY_PARAMS)
+            for block_row, block_col, params in self._pattern_to_block.values():
+                coordinates = np.array([block_row, block_col], dtype=self.DTYPE_COORDINATES)
+                intensity_params = np.array(params, dtype=self.DTYPE_INTENSITY_PARAMS)
                 # 2*2 bytes to store row and col of a block
                 coordinates.tofile(fout)
                 # 2*1 bytes to store intensity params
                 intensity_params.tofile(fout)
 
-    def load(self, path, image):
+    def load(self, path, image_shape):
         self._pattern_to_block = {}
+        image_dummy = np.zeros(image_shape, dtype=np.uint8)
         with open(path, 'rb') as fin:
-            for pattern_row, pattern_col, _ in sliding_window(image, self._pattern_size, stride=self._pattern_size):
+            for pattern_row, pattern_col, _ in sliding_window(image_dummy, self._pattern_size,
+                                                              stride=self._pattern_size):
                 coordinates = tuple(np.fromfile(fin, self.DTYPE_COORDINATES, 2))
                 intensity_params = tuple(np.fromfile(fin, self.DTYPE_INTENSITY_PARAMS, 2))
                 self._pattern_to_block[(pattern_row, pattern_col)] = self.BlockCompressParams(*coordinates,
@@ -137,7 +138,7 @@ if __name__ == '__main__':
 
         compressor = ImageFractalCompressor(PATTERN_SIZE)
         compressor.fit(image_original)
-        compressor.save(path_compressed, image_original)
+        compressor.save(path_compressed)
 
         image_restored = np.full(image_original.shape, 128, dtype=np.uint8)
         psnrs = []
