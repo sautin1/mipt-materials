@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from tqdm import tqdm
 from collections import namedtuple, OrderedDict
 from image import ImageStatsCalculator
 
@@ -74,7 +75,9 @@ class ImageFractalCompressor:
     def fit(self, image):
         self._pattern_to_block = OrderedDict()
         stats = ImageStatsCalculator(image)
-        for pattern_row, pattern_col, pattern in sliding_window(image, self._pattern_size, stride=self._pattern_size):
+        for pattern_row, pattern_col, pattern in tqdm(sliding_window(image, self._pattern_size,
+                                                                     stride=self._pattern_size),
+                                                      total=np.prod(image.shape) // np.power(self._pattern_size, 2)):
             pattern_start = (pattern_row, pattern_col)
             self._pattern_to_block[pattern_start] = self._find_similar_block(image, stats, pattern, pattern_start)
         return self._pattern_to_block
@@ -118,7 +121,6 @@ class ImageFractalCompressor:
 if __name__ == '__main__':
     from os.path import join, splitext
     from os import makedirs, listdir
-    from tqdm import tqdm
     from matplotlib import pyplot as plt
 
     from image import save_image, read_image
@@ -126,10 +128,11 @@ if __name__ == '__main__':
 
     PSNR_THRESHOLD = 40
     MAX_ITER_COUNT = 50
-    PATTERN_SIZE = 2
+    PATTERN_SIZE = 4
 
-    images_names = listdir('data')
-    for image_name in tqdm(images_names):
+    images_names = ['Boat64.bmp']  # listdir('data')
+    for image_name in images_names:
+        print(image_name)
         path_image = join('data', image_name)
         path_results = join('results', f'{PATTERN_SIZE}x{PATTERN_SIZE}', splitext(image_name)[0])
         path_compressed = join(path_results, 'compressed')
@@ -140,20 +143,24 @@ if __name__ == '__main__':
         image_original = read_image(path_image, cv2.IMREAD_GRAYSCALE)
 
         compressor = ImageFractalCompressor(PATTERN_SIZE)
+        print('Fitting')
         compressor.fit(image_original)
         compressor.save(path_compressed)
 
         image_restored = np.full(image_original.shape, 128, dtype=np.uint8)
         psnrs = []
-        for i in range(MAX_ITER_COUNT):
-            image_restored = compressor.uncompress(image_restored)
-            psnr = peak_signal_to_noise_ratio(image_original, image_restored)
-            save_image(image_restored, join(path_restored, str(i) + '.png'))
+        print('Restoring')
+        for i in tqdm(range(MAX_ITER_COUNT)):
+            image_restored_new = compressor.uncompress(image_restored) if i > 0 else image_restored
+            psnr = peak_signal_to_noise_ratio(image_original, image_restored_new)
+            save_image(image_restored_new, join(path_restored, str(i) + '.png'))
             psnrs.append(psnr)
-            if psnr >= PSNR_THRESHOLD:
+            if i > 0 and (psnr >= PSNR_THRESHOLD or np.all(image_restored == image_restored_new)):
                 break
+            image_restored = image_restored_new
         with open(path_metrics + '.txt', 'w') as fout:
             fout.write('\n'.join(map(str, psnrs)))
         fig = plt.figure()
         plt.plot(psnrs)
         fig.savefig(path_metrics + '.png')
+        print()
