@@ -9,6 +9,11 @@ class BranchingProgram:
     def __init__(self):
         pass
 
+    @staticmethod
+    def build_from_permuting_branching_program(pbp_program):
+        for var, perm_false, perm_true in pbp_program.instructions:
+            pass
+
 
 class PermutingBranchingProgram:
     Instruction = namedtuple('Instruction', ['var', 'perm_false', 'perm_true'])
@@ -56,8 +61,8 @@ class PermutingBranchingProgram:
             gamma = self._sigma.calc_conjugate(sigma_new)
             gamma_inverted = gamma.invert()
             instructions[0] = self.Instruction(self.instructions[0].var,
-                                               self.instructions[0].perm_false * gamma,
-                                               self.instructions[0].perm_true * gamma)
+                                               gamma * self.instructions[0].perm_false,
+                                               gamma * self.instructions[0].perm_true)
             instructions[1:-1] = self.instructions[1:-1]
             instructions[-1] = self.Instruction(self.instructions[-1].var,
                                                 self.instructions[-1].perm_false * gamma_inverted,
@@ -71,9 +76,15 @@ class PermutingBranchingProgram:
                                             instructions[-1].perm_true * self._sigma)
         return PermutingBranchingProgram(instructions, self._sigma)
 
-    def intersect(self, other, preserve_sigma=True):
+    def intersect(self, other, preserve_sigma=True, non_commuting_sigma=None):
         sigma_inverted = self._sigma.invert()
         other_sigma_inverted = other.get_sigma().invert()
+        if (self._sigma * other.get_sigma() * sigma_inverted * other_sigma_inverted).is_identity():
+            non_commuting_sigma = non_commuting_sigma or Permutation(np.array([2, 4, 1, 0, 3]))
+            other_sigma_inverted = non_commuting_sigma.invert()
+            if (self._sigma * non_commuting_sigma * sigma_inverted * other_sigma_inverted).is_identity():
+                raise ValueError('Commuting sigma provided')
+            other = other.change_sigma(non_commuting_sigma)
         instructions = [None] * (2 * (len(self.instructions) + len(other.instructions)))
         left, right = 0, len(self.instructions)
         instructions[left:right] = self.instructions
