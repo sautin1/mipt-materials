@@ -15,7 +15,7 @@ class BranchingProgram:
         node_labels = [None if node < node_count - len(sigma) else True for node in range(node_count)]
         node_output_false = len(pbp_program.instructions) * len(sigma) + node_input
         node_labels[node_output_false] = False
-        for layer_idx, (var, perm_false, perm_true) in enumerate(pbp_program.instructions):
+        for layer_idx, (var, perm_false, perm_true) in enumerate(pbp_program.instructions[::-1]):
             for node_idx_in_layer in range(len(sigma)):
                 node = layer_idx * len(sigma) + node_idx_in_layer
                 graph[node] = {
@@ -79,6 +79,12 @@ class BranchingProgram:
 
     def get_input(self):
         return self._node_input
+
+    def evaluate(self, var_values):
+        node = self._node_input
+        while not isinstance(self._node_labels[node], bool):
+            node = self._graph[node][var_values[self._node_labels[node]]]
+        return self._node_labels[node]
 
 
 class PermutingBranchingProgram:

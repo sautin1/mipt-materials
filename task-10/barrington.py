@@ -20,17 +20,21 @@ def parse_node(node_str):
     return node, inputs
 
 
+def solve(nodes, node_inputs):
+    circuit = LogicalCircuit(nodes, node_inputs, len(nodes) - 1, eliminate_or_nodes=True)
+    permuting_program = PermutingBranchingProgram.build_from_circuit(circuit)
+    return BranchingProgram.build_from_permuting_branching_program(permuting_program,
+                                                                   remove_unreachable=False,
+                                                                   reduce_outputs=False)
+
+
 if __name__ == '__main__':
     node_count = int(input())
-    nodes_inputs = [None] * node_count
+    node_inputs = [None] * node_count
     nodes = [None] * node_count
     for idx in range(node_count):
-        nodes[idx], nodes_inputs[idx] = parse_node(input())
-
-    circuit = LogicalCircuit(nodes, nodes_inputs, node_count - 1, eliminate_or_nodes=True)
-    permuting_program = PermutingBranchingProgram.build_from_circuit(circuit)
-    branching_program = BranchingProgram.build_from_permuting_branching_program(permuting_program)
-
+        nodes[idx], node_inputs[idx] = parse_node(input())
+    branching_program = solve(nodes, node_inputs)
     graph, labels = branching_program.get_graph(), branching_program.get_labels()
     for node in range(len(graph)):
         label = labels[node]
