@@ -23,9 +23,7 @@ def parse_node(node_str):
 def solve(nodes, node_inputs):
     circuit = LogicalCircuit(nodes, node_inputs, len(nodes) - 1, eliminate_or_nodes=True)
     permuting_program = PermutingBranchingProgram.build_from_circuit(circuit)
-    return BranchingProgram.build_from_permuting_branching_program(permuting_program,
-                                                                   remove_unreachable=False,
-                                                                   reduce_outputs=False)
+    return BranchingProgram.build_from_permuting_branching_program(permuting_program)
 
 
 if __name__ == '__main__':
