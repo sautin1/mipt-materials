@@ -6,13 +6,79 @@ from permutation import Permutation
 
 
 class BranchingProgram:
-    def __init__(self):
-        pass
-
     @staticmethod
-    def build_from_permuting_branching_program(pbp_program):
-        for var, perm_false, perm_true in pbp_program.instructions:
-            pass
+    def build_from_permuting_branching_program(pbp_program, remove_unreachable=True, reduce_outputs=True):
+        sigma = pbp_program.get_sigma()
+        node_input = next(node for node in range(len(sigma)) if node != sigma[node])
+        node_count = ((len(pbp_program.instructions) + 1) * len(sigma))
+        graph = [None] * node_count
+        node_labels = [None if node < node_count - len(sigma) else True for node in range(node_count)]
+        node_output_false = len(pbp_program.instructions) * len(sigma) + node_input
+        node_labels[node_output_false] = False
+        for layer_idx, (var, perm_false, perm_true) in enumerate(pbp_program.instructions):
+            for node_idx_in_layer in range(len(sigma)):
+                node = layer_idx * len(sigma) + node_idx_in_layer
+                graph[node] = {
+                    False: (layer_idx + 1) * len(sigma) + perm_false[node_idx_in_layer],
+                    True: (layer_idx + 1) * len(sigma) + perm_true[node_idx_in_layer]
+                }
+                node_labels[node] = var
+        graph[-len(sigma):] = [{False: None, True: None} for _ in range(len(sigma))]
+        return BranchingProgram(graph, node_labels, node_input, remove_unreachable, reduce_outputs)
+
+    def __init__(self, graph, labels, node_input=0, remove_unreachable=True, reduce_outputs=True):
+        self._graph = graph
+        self._node_labels = labels
+        self._node_input = node_input
+        if remove_unreachable:
+            self._remove_unreachable()
+        if reduce_outputs:
+            self._reduce_outputs()
+
+    def _remove_unreachable(self):
+        def traverse_dfs(node, visited):
+            visited[node] = True
+            for node_target in self._graph[node].values():
+                if node_target is not None and not visited[node_target]:
+                    traverse_dfs(node_target, visited)
+
+        is_reachable = [False] * len(self._graph)
+        traverse_dfs(self._node_input, is_reachable)
+        nodes_reachable = [node for node in range(len(self._graph)) if is_reachable[node]]
+        node_renumbering = {node: node_idx_new for node_idx_new, node in enumerate(nodes_reachable)}
+        graph = [{
+            False: node_renumbering[self._graph[node][False]] if self._graph[node][False] is not None else None,
+            True: node_renumbering[self._graph[node][True]] if self._graph[node][True] is not None else None,
+        } for node in nodes_reachable]
+        node_labels = [self._node_labels[node] for node in nodes_reachable]
+        self._graph = graph
+        self._node_labels = node_labels
+        self._node_input = 0
+
+    def _reduce_outputs(self):
+        outputs = {node for node in range(len(self._graph)) if isinstance(self._node_labels[node], bool)}
+        output_false = next(output for output in outputs if not self._node_labels[output])
+        outputs_true = outputs - {output_false}
+        output_false_new = min(outputs)
+        output_true_new = output_false_new + 1
+        self._graph = self._graph[:output_true_new + 1]
+        for node in range(len(self._graph)):
+            for edge_type in [False, True]:
+                if self._graph[node][edge_type] in outputs_true:
+                    self._graph[node][edge_type] = output_true_new
+                elif self._graph[node][edge_type] == output_false:
+                    self._graph[node][edge_type] = output_false_new
+        self._node_labels = self._node_labels[:len(self._graph)]
+        self._node_labels[output_false_new], self._node_labels[output_true_new] = False, True
+
+    def get_labels(self):
+        return self._node_labels
+
+    def get_graph(self):
+        return self._graph
+
+    def get_input(self):
+        return self._node_input
 
 
 class PermutingBranchingProgram:
@@ -22,7 +88,9 @@ class PermutingBranchingProgram:
     def build_from_circuit(circuit, sigma=None):
         node_to_program = {}
         sigma = sigma or Permutation(np.array([1, 2, 3, 4, 0]))
-        for node_idx, node in circuit.get_nodes().items():
+        topological_order = circuit.get_topological_order()
+        for node_idx in topological_order:
+            node = circuit.get_nodes()[node_idx]
             if isinstance(node, InputNode):
                 node_to_program[node_idx] = PermutingBranchingProgram([
                     PermutingBranchingProgram.Instruction(node.get_name(),

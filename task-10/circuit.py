@@ -33,11 +33,12 @@ class OrNode(Node):
 
 
 class LogicalCircuit:
-    def __init__(self, nodes, inputs, terminal_node=None):
+    def __init__(self, nodes, inputs, terminal_node=None, eliminate_or_nodes=False):
         self._nodes = nodes
-        self._max_node_idx = max(nodes.keys())
-        self.terminal_node = terminal_node or self._max_node_idx
+        self._terminal_node = terminal_node or (len(nodes) - 1)
         self._inputs = inputs
+        if eliminate_or_nodes:
+            self._eliminate_or_nodes()
 
     def get_nodes(self):
         return self._nodes
@@ -46,34 +47,41 @@ class LogicalCircuit:
         return self._inputs
 
     def get_terminal_node(self):
-        return self.terminal_node
+        return self._terminal_node
 
     def copy(self):
-        return LogicalCircuit(*map(deepcopy, [self._nodes, self._inputs, self.terminal_node]))
+        return LogicalCircuit(*map(deepcopy, [self._nodes, self._inputs, self._terminal_node]))
 
-    def add_node(self, node, inputs=None):
-        node_idx = len(self._nodes)
-        self._max_node_idx += 1
-        self._nodes[self._max_node_idx] = node
-        self._inputs[node_idx] = inputs
-        return node_idx
+    def get_topological_order(self):
+        def traverse_dfs(node, visited, nodes_black):
+            visited[node] = True
+            for node_input in self._inputs[node]:
+                if not visited[node_input]:
+                    traverse_dfs(node_input, visited, nodes_black)
+            nodes_black.append(node)
 
-    def remove_node(self, node_idx):
-        self._nodes.pop(node_idx)
-        self._inputs.pop(node_idx)
-        if node_idx == self.terminal_node:
-            self.terminal_node = None
+        topological_order = []
+        is_visited = [False] * len(self._nodes)
+        for node_idx in range(len(self._nodes)):
+            if not is_visited[node_idx]:
+                traverse_dfs(node_idx, is_visited, topological_order)
+        return topological_order
 
-    def eliminate_or_nodes(self):
-        circuit_new = self.copy()
-        for node_idx, node in self._nodes.items():
+    def _add_node(self, node, inputs=None):
+        inputs = inputs or []
+        self._nodes.append(node)
+        self._inputs.append(inputs)
+        return len(self._nodes) - 1
+
+    def _eliminate_or_nodes(self):
+        node_indices = list(range(len(self._nodes)))
+        for node_idx in node_indices:
+            node = self._nodes[node_idx]
             if isinstance(node, OrNode):
                 inputs = self._inputs[node_idx]
-                node_not_x_idx = circuit_new.add_node(NotNode(), [inputs[0]])
-                node_not_y_idx = circuit_new.add_node(NotNode(), [inputs[1]])
-                node_and_idx = circuit_new.add_node(AndNode(), [node_not_x_idx, node_not_y_idx])
-                node_final = circuit_new.add_node(NotNode(), [node_and_idx])
-                circuit_new.remove_node(node_idx)
-                if self.terminal_node is None:
-                    circuit_new.terminal_node = node_final
-        return circuit_new
+                node_not_x_idx = self._add_node(NotNode(), [inputs[0]])
+                node_not_y_idx = self._add_node(NotNode(), [inputs[1]])
+                node_and_idx = self._add_node(AndNode(), [node_not_x_idx, node_not_y_idx])
+                self._nodes[node_idx] = NotNode()
+                self._inputs[node_idx] = [node_and_idx]
+        return self

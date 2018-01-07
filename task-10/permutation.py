@@ -30,6 +30,9 @@ class Permutation:
     def __getitem__(self, item):
         return self._p[item]
 
+    def __len__(self):
+        return len(self._p)
+
     def is_identity(self):
         return self.identity(len(self._p)) == self
 
