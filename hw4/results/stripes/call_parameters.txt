@@ -1,0 +1,1 @@
+hough.py imgs/stripes.jpg results/stripes/ 0.01 1 20 10 0.5

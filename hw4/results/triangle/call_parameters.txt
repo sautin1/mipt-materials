@@ -1,0 +1,1 @@
+hough.py imgs/triangle.png results/triangle/ 0.01 1 3 10 0.5
