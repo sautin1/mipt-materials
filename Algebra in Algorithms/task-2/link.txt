@@ -1,0 +1,2 @@
+http://e-maxx.ru/algo/tutte_matrix
+http://e-maxx.ru/algo/determinant_gauss
