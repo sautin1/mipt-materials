@@ -1,0 +1,1 @@
+hough.py imgs/diamond.png results/diamond/ 0.01 1 4 10 0.5
