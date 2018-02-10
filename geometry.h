@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <vector>
 
-typedef long long Coord;
+typedef double Coord;
 
 const double kEpsilon = 1e-9;
 const double kPi = 3.1415926535897932384626433;
@@ -122,3 +122,5 @@ bool intersects(ConvexPolygon p1, const ConvexPolygon& p2);
 std::pair<int, int> intersection(const std::vector<Segment>& segs);
 
 std::vector<Line> getTangents(Circle c1, Circle c2);
+
+#endif // GEOMETRY_H
