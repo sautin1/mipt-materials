@@ -1,6 +1,6 @@
 #include "motion_estimator.h"
 
-Vector MotionEstimator::estimate_global(const Mat& image_current, const Mat& image_previous, bool show_vectors) const {
+Vec2i MotionEstimator::estimate_global(const Mat& image_current, const Mat& image_previous, bool show_vectors) const {
     Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
     double x_sum, y_sum;
 //    for (const Vector& motion_vector : local_motion_vectors) {
@@ -84,9 +84,9 @@ Point MotionEstimator::find_closest_block(const Mat& image_base,
     return point_best;
 }
 
-std::vector<Vector> MotionEstimator::filter_by_belief(const Mat& image_current, const std::vector<Vector>& motion_vectors) const {
+std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current, const std::vector<Vec2i>& motion_vectors) const {
     std::vector<double> beliefs(motion_vectors.size(), 0);
-    std::vector<Vector> res;
+    std::vector<Vec2i> res;
     res.reserve(motion_vectors.size());
     int vector_idx = 0;
     for (int row_start = 0; row_start < image_current.rows - block_size + 1; row_start += block_size) {
@@ -102,6 +102,6 @@ std::vector<Vector> MotionEstimator::filter_by_belief(const Mat& image_current, 
     return res;
 }
 
-double MotionEstimator::calc_belief_function(const Vector& vector, const Mat& block) const {
+double MotionEstimator::calc_belief_function(const Vec2i& vector, const Mat& block) const {
 
 }
