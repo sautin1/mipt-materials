@@ -22,7 +22,7 @@ int main() {
     }
 
     MotionEstimator estimator;
-    Vector motion_vector = estimator.estimate_global(image_base, image_next);
+    Vector motion_vector = estimator.estimate_global(image_base, image_next, true);
     std::cout << motion_vector.x << ' ' << motion_vector.y << std::endl;
     return 0;
 }
