@@ -1,14 +1,26 @@
 #include "motion_estimator.h"
 
+Vector MotionEstimator::estimate_global(const Mat& image_current, const Mat& image_previous) const {
+    std::vector<Vector> local_motion_vectors = estimate_local(image_current, image_previous);
+    double x_sum, y_sum;
+    for (const Vector& motion_vector : local_motion_vectors) {
+        x_sum += motion_vector.x;
+        y_sum += motion_vector.y;
+    }
+    x_sum /= local_motion_vectors.size();
+    y_sum /= local_motion_vectors.size();
+    return Vector(static_cast<int>(std::round(x_sum)), static_cast<int>(std::round(y_sum)));
+}
+
 std::vector<Vector> MotionEstimator::estimate_local(const Mat& image_current, const Mat& image_previous) const {
     std::vector<Vector> motion_vectors;
-    motion_vectors.reserve((image_previous.rows - block_size) * (image_previous.cols - block_size));
-    for (int row_start = 0; row_start < image_previous.rows - block_size; ++row_start) {
-        for (int col_start = 0; col_start < image_previous.cols - block_size; ++col_start) {
-            Pixel block_start(col_start, row_start);
-            Pixel block_closest_start = find_closest_block(image_previous, block_start, image_current);
-            motion_vectors.emplace_back(block_start.col - block_closest_start.col,
-                                        block_start.row - block_closest_start.row);
+    motion_vectors.reserve((image_current.rows - block_size) * (image_current.cols - block_size));
+    for (int row_start = 0; row_start < image_current.rows - block_size + 1; ++row_start) {
+        for (int col_start = 0; col_start < image_current.cols - block_size + 1; ++col_start) {
+            Pixel block_current_start(row_start, col_start);
+            Pixel block_previous_start = find_closest_block(image_current, block_current_start, image_previous);
+            motion_vectors.emplace_back(block_current_start.col - block_previous_start.col,
+                                        block_current_start.row - block_previous_start.row);
         }
     }
     return motion_vectors;
