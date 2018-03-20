@@ -11,13 +11,6 @@ struct Vector {
     int x, y;
 };
 
-struct Pixel {
-    Pixel(int _row, int _col) : row(_row), col(_col) {}
-    Pixel(const Pixel& other) : row(other.row), col(other.col) {}
-    bool operator ==(const Pixel& other) { return row == other.row && col == other.col; }
-
-    int row, col;
-};
 
 class MotionEstimator {
 public:
@@ -29,7 +22,7 @@ public:
                                        bool show_vectors = false) const;
 private:
     double calc_distance(const Mat& block_left, const Mat& block_right) const;
-    Pixel find_closest_block(const Mat& image_base, Pixel block_start, const Mat& image_to_search) const;
+    Point find_closest_block(const Mat& image_base, Point block_start, const Mat& image_to_search) const;
 
     int block_size;
     int initial_step_size;

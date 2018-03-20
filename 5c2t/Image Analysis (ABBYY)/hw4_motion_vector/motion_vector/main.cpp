@@ -9,20 +9,20 @@
 using namespace cv;
 
 int main() {
-    std::string path_base = "../data/01.tif";
-    std::string path_next = "../data/02.tif";
+    std::string path_previous = "../data/01.tif";
+    std::string path_current = "../data/02.tif";
 
-    Mat image_base = cv::imread(path_base, cv::IMREAD_GRAYSCALE);
-    if (image_base.data == NULL) {
-        throw std::runtime_error("Cannot read image by path: " + path_base);
+    Mat image_previous = cv::imread(path_previous, cv::IMREAD_GRAYSCALE);
+    if (image_previous.data == NULL) {
+        throw std::runtime_error("Cannot read image by path: " + path_previous);
     }
-    Mat image_next = cv::imread(path_next, cv::IMREAD_GRAYSCALE);
-    if (image_next.data == NULL) {
-        throw std::runtime_error("Cannot read image by path: " + path_next);
+    Mat image_current = cv::imread(path_current, cv::IMREAD_GRAYSCALE);
+    if (image_current.data == NULL) {
+        throw std::runtime_error("Cannot read image by path: " + path_current);
     }
 
     MotionEstimator estimator;
-    Vector motion_vector = estimator.estimate_global(image_base, image_next, true);
+    Vector motion_vector = estimator.estimate_global(image_current, image_previous, true);
     std::cout << motion_vector.x << ' ' << motion_vector.y << std::endl;
     return 0;
 }
