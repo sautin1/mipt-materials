@@ -2,18 +2,18 @@
 
 Vec2i MotionEstimator::estimate_global(const Mat& image_current, const Mat& image_previous, bool show_vectors) const {
     Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
-    double x_sum, y_sum;
-//    for (const Vector& motion_vector : local_motion_vectors) {
-//        x_sum += motion_vector.x;
-//        y_sum += motion_vector.y;
-//    }
-//    x_sum /= local_motion_vectors.size();
-//    y_sum /= local_motion_vectors.size();
-//    return Vector(static_cast<int>(std::round(x_sum)), static_cast<int>(std::round(y_sum)));
+    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors);
+    double x_mean, y_mean;
+    for (const Vec2i& motion_vector : motion_vectors_filtered) {
+        x_mean += motion_vector[0];
+        y_mean += motion_vector[1];
+    }
+    x_mean /= motion_vectors_filtered.size();
+    y_mean /= motion_vectors_filtered.size();
+    return Vec2i(static_cast<int>(std::round(x_mean)), static_cast<int>(std::round(y_mean)));
 }
 
-Mat MotionEstimator::estimate_local(const Mat& image_current, const Mat& image_previous,
-                                                    bool show_vectors) const {
+Mat MotionEstimator::estimate_local(const Mat& image_current, const Mat& image_previous, bool show_vectors) const {
     Mat motion_vectors(image_current.rows / block_size, image_current.cols / block_size, CV_8SC2, Vec2i(0, 0));
     Mat image_to_display = image_current.clone();
     for (int row_start = 0; row_start < image_current.rows - block_size + 1; row_start += block_size) {
@@ -84,17 +84,17 @@ Point MotionEstimator::find_closest_block(const Mat& image_base,
     return point_best;
 }
 
-std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current, const std::vector<Vec2i>& motion_vectors) const {
-    std::vector<double> beliefs(motion_vectors.size(), 0);
+std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current,
+                                                     const Mat& image_previous,
+                                                     const Mat& motion_vectors) const {
     std::vector<Vec2i> res;
-    res.reserve(motion_vectors.size());
     int vector_idx = 0;
     for (int row_start = 0; row_start < image_current.rows - block_size + 1; row_start += block_size) {
         for (int col_start = 0; col_start < image_current.cols - block_size + 1; col_start += block_size) {
-            Rect block_rect(col_start, row_start, block_size, block_size);
-            beliefs[vector_idx] = calc_belief_function(motion_vectors[vector_idx], image_current(block_rect));
-            if (beliefs[vector_idx] >= belief_threshold) {
-                res.push_back(motion_vectors[vector_idx]);
+            Point block_start(col_start, row_start);
+            double belief = calc_belief_function(motion_vectors, image_current, image_previous, block_start);
+            if (belief >= belief_threshold) {
+                res.push_back(motion_vectors.at<Vec2i>(block_start));
             }
             ++vector_idx;
         }
@@ -102,6 +102,34 @@ std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current, c
     return res;
 }
 
-double MotionEstimator::calc_belief_function(const Vec2i& vector, const Mat& block) const {
+double MotionEstimator::calc_belief_function(const Mat& vectors, const Mat& image_current, const Mat& image_previous,
+                                             const Point& block_current_start) const {
+    Point motion_vector_point(block_current_start.x / block_size, block_current_start.y / block_size);
+    Vec2i motion_vector = vectors.at<Vec2i>(motion_vector_point);
+    Rect block_current_rect(block_current_start.x, block_current_start.y, block_size, block_size);
+    Rect block_previous_rect(block_current_start.x - motion_vector[0], block_current_start.y - motion_vector[1],
+                             block_size, block_size);
+    Mat block_current = image_current(block_current_rect);
+    Mat block_previous = image_previous(block_previous_rect);
+    double error = calc_distance(block_previous, block_current, NORM_L1);
 
+    Scalar block_current_mean, block_current_dev;
+    meanStdDev(block_current, block_current_mean, block_current_dev);
+    double disp = block_current_dev[0];
+
+    double dev = 0;
+    for (int delta_row = -1; delta_row < 2; delta_row += 2) {
+        for (int delta_col = -1; delta_col < 2; delta_col += 2) {
+            if (motion_vector_point.x + delta_col >= 0 &&
+                    motion_vector_point.x + delta_col < image_current.cols / block_size &&
+                    motion_vector_point.y + delta_row >= 0 &&
+                    motion_vector_point.y + delta_row < image_current.cols / block_size) {
+                Vec2i motion_vector_neighbor = vectors.at<Vec2i>(Point(motion_vector_point.x + delta_col,
+                                                                       motion_vector_point.y + delta_row));
+                dev += calc_distance(Mat(motion_vector, true), Mat(motion_vector_neighbor, true), NORM_L2SQR) / 4;
+            }
+        }
+    }
+
+    return 1.0 / (error_weight * error + disp_weight / (disp * disp) + dev_weight * dev);
 }

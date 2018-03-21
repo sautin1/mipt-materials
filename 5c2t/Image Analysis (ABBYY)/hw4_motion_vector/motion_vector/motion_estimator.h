@@ -16,8 +16,10 @@ public:
 private:
     double calc_distance(const Mat& block_left, const Mat& block_right, NormTypes norm_type) const;
     Point find_closest_block(const Mat& image_base, Point block_start, const Mat& image_to_search) const;
-    std::vector<Vec2i> filter_by_belief(const Mat& image_current, const std::vector<Vec2i>& motion_vectors) const;
-    double calc_belief_function(const Vec2i& vector, const Mat& block) const;
+    std::vector<Vec2i> filter_by_belief(const Mat& image_current, const Mat& image_previous,
+                                        const Mat& motion_vectors) const;
+    double calc_belief_function(const Mat& vectors, const Mat& image_current, const Mat& image_previous,
+                                const Point& block_current_start) const;
 
     const int block_size;
     const int initial_step_size;
