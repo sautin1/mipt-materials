@@ -1,8 +1,9 @@
 #include "motion_estimator.h"
+#include <iostream>
 
 Vec2i MotionEstimator::estimate_global(const Mat& image_current, const Mat& image_previous, bool show_vectors) const {
     Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
-    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors);
+    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors, true);
     double x_mean, y_mean;
     for (const Vec2i& motion_vector : motion_vectors_filtered) {
         x_mean += motion_vector[0];
@@ -37,7 +38,7 @@ Mat MotionEstimator::estimate_local(const Mat& image_current, const Mat& image_p
         }
     }
     if (show_vectors) {
-        imshow("Image current", image_to_display);
+        imshow("Local vectors", image_to_display);
         waitKey(0);
     }
     return motion_vectors;
@@ -86,18 +87,36 @@ Point MotionEstimator::find_closest_block(const Mat& image_base,
 
 std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current,
                                                      const Mat& image_previous,
-                                                     const Mat& motion_vectors) const {
+                                                     const Mat& motion_vectors,
+                                                     bool show_vectors) const {
     std::vector<Vec2i> res;
-    int vector_idx = 0;
+    Mat image_to_display = image_current.clone();
     for (int row_start = 0; row_start < image_current.rows - block_size + 1; row_start += block_size) {
         for (int col_start = 0; col_start < image_current.cols - block_size + 1; col_start += block_size) {
             Point block_start(col_start, row_start);
+            std::cout << "belief( " << row_start << " , " << col_start << " ) = ";
             double belief = calc_belief_function(motion_vectors, image_current, image_previous, block_start);
+            std::cout << belief << std::endl;
             if (belief >= belief_threshold) {
                 res.push_back(motion_vectors.at<Vec2i>(block_start));
+                if (show_vectors) {
+                    rectangle(image_to_display,
+                              block_start,
+                              Point(block_start.x + block_size, block_start.y + block_size),
+                              255,
+                              2);
+//                    arrowedLine(image_to_display,
+//                                Point(block_start.x + block_size / 2, block_start.y + block_size / 2),
+//                                Point(block_previous_start.x + block_size / 2, block_previous_start.y + block_size / 2),
+//                                ((row_start + col_start) % 2 == 0) ? 255 : 0,
+//                                2);
+                }
             }
-            ++vector_idx;
         }
+    }
+    if (show_vectors) {
+        imshow("Filtered vectors", image_to_display);
+        waitKey(0);
     }
     return res;
 }

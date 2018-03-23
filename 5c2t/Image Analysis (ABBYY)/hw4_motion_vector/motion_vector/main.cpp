@@ -22,7 +22,8 @@ int main() {
     }
 
     MotionEstimator estimator;
-    Vec2i motion_vector = estimator.estimate_global(image_current, image_previous, true);
+    std::cout << image_current.size() << std::endl;
+    Vec2i motion_vector = estimator.estimate_global(image_current, image_previous, false);
     std::cout << motion_vector[0] << ' ' << motion_vector[1] << std::endl;
     return 0;
 }
