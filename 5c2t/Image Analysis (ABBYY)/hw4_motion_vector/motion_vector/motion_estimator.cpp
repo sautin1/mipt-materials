@@ -17,12 +17,12 @@ Vec2i MotionEstimator::estimate_global(const Mat& image_current, const Mat& imag
 Mat MotionEstimator::estimate_local(const Mat& image_current, const Mat& image_previous, bool show_vectors) const {
     Mat motion_vectors(image_current.rows / block_size, image_current.cols / block_size, CV_8SC2, Vec2i(0, 0));
     Mat image_to_display = image_current.clone();
-    for (int row_start = 0; row_start < image_current.rows - block_size + 1; row_start += block_size) {
-        for (int col_start = 0; col_start < image_current.cols - block_size + 1; col_start += block_size) {
-            Point block_current_start(col_start, row_start);
+    for (int block_start_row = 0; block_start_row < image_current.rows / block_size; block_start_row += 1) {
+        for (int block_start_col = 0; block_start_col < image_current.cols / block_size; block_start_col += 1) {
+            Point block_current_start(block_start_col * block_size, block_start_row * block_size);
             Point block_previous_start = find_closest_block(image_current, block_current_start, image_previous);
-            motion_vectors.at<Vec2i>(row_start, col_start) = Vec2i(block_current_start.x - block_previous_start.x,
-                                                                   block_current_start.y - block_previous_start.y);
+            motion_vectors.at<Vec2i>(block_start_row, block_start_col) = Vec2i(block_current_start.x - block_previous_start.x,
+                                                                               block_current_start.y - block_previous_start.y);
             if (show_vectors) {
                 rectangle(image_to_display,
                           block_current_start,
@@ -32,7 +32,7 @@ Mat MotionEstimator::estimate_local(const Mat& image_current, const Mat& image_p
                 arrowedLine(image_to_display,
                             Point(block_current_start.x + block_size / 2, block_current_start.y + block_size / 2),
                             Point(block_previous_start.x + block_size / 2, block_previous_start.y + block_size / 2),
-                            ((row_start + col_start) % 2 == 0) ? 255 : 0,
+                            ((block_start_row + block_start_col) % 2 == 0) ? 255 : 0,
                             2);
             }
         }
@@ -91,22 +91,23 @@ std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current,
                                                      bool show_vectors) const {
     std::vector<Vec2i> res;
     Mat image_to_display = image_current.clone();
-    for (int row_start = 0; row_start < image_current.rows - block_size + 1; row_start += block_size) {
-        for (int col_start = 0; col_start < image_current.cols - block_size + 1; col_start += block_size) {
-            Point block_start(col_start, row_start);
-            std::cout << "belief( " << row_start << " , " << col_start << " ) = ";
+    for (int block_start_row = 0; block_start_row < image_current.rows / block_size; block_start_row += 1) {
+        for (int block_start_col = 0; block_start_col < image_current.cols / block_size; block_start_col += 1) {
+            Point block_start(block_start_col, block_start_row);
+            Point block_start_pixels(block_start_col * block_size, block_start_row * block_size);
+            std::cout << "belief( " << block_start_row << " , " << block_start_col << " ) = ";
             double belief = calc_belief_function(motion_vectors, image_current, image_previous, block_start);
             std::cout << belief << std::endl;
             if (belief >= belief_threshold) {
                 res.push_back(motion_vectors.at<Vec2i>(block_start));
                 if (show_vectors) {
                     rectangle(image_to_display,
-                              block_start,
+                              block_start_pixels,
                               Point(block_start.x + block_size, block_start.y + block_size),
                               255,
                               2);
 //                    arrowedLine(image_to_display,
-//                                Point(block_start.x + block_size / 2, block_start.y + block_size / 2),
+//                                Point(block_start_pixels.x + block_size / 2, block_start_pixels.y + block_size / 2),
 //                                Point(block_previous_start.x + block_size / 2, block_previous_start.y + block_size / 2),
 //                                ((row_start + col_start) % 2 == 0) ? 255 : 0,
 //                                2);
@@ -123,10 +124,11 @@ std::vector<Vec2i> MotionEstimator::filter_by_belief(const Mat& image_current,
 
 double MotionEstimator::calc_belief_function(const Mat& vectors, const Mat& image_current, const Mat& image_previous,
                                              const Point& block_current_start) const {
-    Point motion_vector_point(block_current_start.x / block_size, block_current_start.y / block_size);
-    Vec2i motion_vector = vectors.at<Vec2i>(motion_vector_point);
-    Rect block_current_rect(block_current_start.x, block_current_start.y, block_size, block_size);
-    Rect block_previous_rect(block_current_start.x - motion_vector[0], block_current_start.y - motion_vector[1],
+    Point block_current_start_pixels(block_current_start.x * block_size, block_current_start.y * block_size);
+    Vec2i motion_vector = vectors.at<Vec2i>(block_current_start);
+    Rect block_current_rect(block_current_start_pixels.x, block_current_start_pixels.y, block_size, block_size);
+    Rect block_previous_rect(block_current_start_pixels.x - motion_vector[0],
+                             block_current_start_pixels.y - motion_vector[1],
                              block_size, block_size);
     Mat block_current = image_current(block_current_rect);
     Mat block_previous = image_previous(block_previous_rect);
@@ -139,12 +141,12 @@ double MotionEstimator::calc_belief_function(const Mat& vectors, const Mat& imag
     double dev = 0;
     for (int delta_row = -1; delta_row < 2; delta_row += 2) {
         for (int delta_col = -1; delta_col < 2; delta_col += 2) {
-            if (motion_vector_point.x + delta_col >= 0 &&
-                    motion_vector_point.x + delta_col < image_current.cols / block_size &&
-                    motion_vector_point.y + delta_row >= 0 &&
-                    motion_vector_point.y + delta_row < image_current.cols / block_size) {
-                Vec2i motion_vector_neighbor = vectors.at<Vec2i>(Point(motion_vector_point.x + delta_col,
-                                                                       motion_vector_point.y + delta_row));
+            if (block_current_start.x + delta_col >= 0 &&
+                    block_current_start.x + delta_col < vectors.cols &&
+                    block_current_start.y + delta_row >= 0 &&
+                    block_current_start.y + delta_row < vectors.rows) {
+                Vec2i motion_vector_neighbor = vectors.at<Vec2i>(Point(block_current_start.x + delta_col,
+                                                                       block_current_start.y + delta_row));
                 dev += calc_distance(Mat(motion_vector, true), Mat(motion_vector_neighbor, true), NORM_L2SQR) / 4;
             }
         }

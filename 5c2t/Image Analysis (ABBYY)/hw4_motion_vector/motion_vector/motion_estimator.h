@@ -8,7 +8,7 @@ using namespace cv;
 class MotionEstimator {
 public:
     MotionEstimator(int _block_size = 16, int step_size = 8, double _error_weight = 0.25,
-                    double _disp_weight = 32, double _dev_weight = 1, double _belief_threshold = 10)
+                    double _disp_weight = 32, double _dev_weight = 1, double _belief_threshold = 1e-3)
         : block_size(_block_size), initial_step_size(step_size), error_weight(_error_weight),
           disp_weight(_disp_weight), dev_weight(_dev_weight), belief_threshold(_belief_threshold) {}
     Vec2i estimate_global(const Mat& image_current, const Mat& image_previous, bool show_vectors = false) const;
