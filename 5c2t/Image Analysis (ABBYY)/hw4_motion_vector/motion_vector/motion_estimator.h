@@ -11,15 +11,13 @@ public:
                     double _disp_weight = 32, double _dev_weight = 1, double _belief_threshold = 1e-3)
         : block_size(_block_size), initial_step_size(step_size), error_weight(_error_weight),
           disp_weight(_disp_weight), dev_weight(_dev_weight), belief_threshold(_belief_threshold) {}
-    Vec2i estimate_global(const Mat& image_current, const Mat& image_previous, bool show_vectors = false) const;
-    Mat estimate_local(const Mat& image_current, const Mat& image_previous, bool show_vectors = false) const;
+    Vec2i estimate_global(Mat image_current, Mat image_previous, bool show_vectors = false) const;
+    Mat estimate_local(Mat image_current, Mat image_previous, bool show_vectors = false) const;
 private:
-    double calc_distance(const Mat& block_left, const Mat& block_right, NormTypes norm_type) const;
-    Point find_closest_block(const Mat& image_base, Point block_start, const Mat& image_to_search) const;
-    std::vector<Vec2i> filter_by_belief(const Mat& image_current, const Mat& image_previous,
-                                        const Mat& motion_vectors, bool show_vectors) const;
-    double calc_belief_function(const Mat& vectors, const Mat& image_current, const Mat& image_previous,
-                                const Point& block_current_start) const;
+    Point find_closest_block(Mat image_base, Point block_coords, Mat image_to_search) const;
+    std::vector<Vec2i> filter_by_belief(Mat image_current, Mat image_previous,
+                                        Mat motion_vectors, bool show_vectors) const;
+    double calc_belief_function(Mat motion_vectors, Mat image_current, Mat image_previous, Point current_block_indices) const;
 
     const int block_size;
     const int initial_step_size;

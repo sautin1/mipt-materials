@@ -12,17 +12,17 @@ int main() {
     std::string path_previous = "../data/01.tif";
     std::string path_current = "../data/02.tif";
 
-    Mat image_previous = cv::imread(path_previous, cv::IMREAD_GRAYSCALE);
-    if (image_previous.data == NULL) {
+    Mat image_previous = imread(path_previous, IMREAD_GRAYSCALE);
+    if (image_previous.empty()) {
         throw std::runtime_error("Cannot read image by path: " + path_previous);
     }
-    Mat image_current = cv::imread(path_current, cv::IMREAD_GRAYSCALE);
-    if (image_current.data == NULL) {
+    Mat image_current = imread(path_current, IMREAD_GRAYSCALE);
+    if (image_current.empty()) {
         throw std::runtime_error("Cannot read image by path: " + path_current);
     }
 
     MotionEstimator estimator;
-    std::cout << image_current.size() << std::endl;
+    std::cout << image_current.size << std::endl;
     Vec2i motion_vector = estimator.estimate_global(image_current, image_previous, false);
     std::cout << motion_vector[0] << ' ' << motion_vector[1] << std::endl;
     return 0;
