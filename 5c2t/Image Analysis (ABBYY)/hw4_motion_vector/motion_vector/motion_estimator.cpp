@@ -15,7 +15,7 @@ Vec2i MotionEstimator::estimate_global(Mat image_current, Mat image_previous, bo
 }
 
 Mat MotionEstimator::estimate_local(Mat image_current, Mat image_previous, bool show_vectors) const {
-    Mat motion_vectors(image_current.rows / block_size, image_current.cols / block_size, CV_8SC2, Vec2i(0, 0));
+    Mat motion_vectors(image_current.rows / block_size, image_current.cols / block_size, CV_32SC2, Vec2i(0, 0));
     Mat image_to_display = image_current.clone();
     for (int current_block_row = 0; current_block_row < image_current.rows / block_size; current_block_row += 1) {
         for (int current_block_col = 0; current_block_col < image_current.cols / block_size; current_block_col += 1) {
