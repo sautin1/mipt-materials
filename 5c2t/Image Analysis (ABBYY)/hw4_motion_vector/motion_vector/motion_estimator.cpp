@@ -3,8 +3,10 @@
 
 Vec2i MotionEstimator::estimate_global(Mat image_current, Mat image_previous, bool show_vectors) const {
     Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
-    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors, true);
-    double x_mean, y_mean;
+    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors,
+                                                                  show_vectors);
+    double x_mean = 0;
+    double y_mean = 0;
     for (const Vec2i& motion_vector : motion_vectors_filtered) {
         x_mean += motion_vector[0];
         y_mean += motion_vector[1];
