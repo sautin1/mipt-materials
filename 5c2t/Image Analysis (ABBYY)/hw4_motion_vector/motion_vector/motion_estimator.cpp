@@ -23,6 +23,9 @@ Vec2i MotionEstimator::estimate_global(Mat image_current, Mat image_previous, bo
 Mat MotionEstimator::estimate_local(Mat image_current, Mat image_previous, bool show_vectors) const {
     Mat motion_vectors(image_current.rows / block_size, image_current.cols / block_size, CV_32SC2, Vec2i(0, 0));
     Mat image_to_display = image_current.clone();
+    if (show_vectors) {
+        cvtColor(image_to_display, image_to_display, CV_GRAY2BGR);
+    }
     for (int current_block_row = 0; current_block_row < image_current.rows / block_size; current_block_row += 1) {
         for (int current_block_col = 0; current_block_col < image_current.cols / block_size; current_block_col += 1) {
             Point current_block_indices(current_block_col, current_block_row);
@@ -33,13 +36,13 @@ Mat MotionEstimator::estimate_local(Mat image_current, Mat image_previous, bool 
                 rectangle(image_to_display,
                           current_block_coords,
                           Point(current_block_coords.x + block_size, current_block_coords.y + block_size),
-                          0,
-                          2);
+                          CV_RGB(255, 255, 255),
+                          1);
                 arrowedLine(image_to_display,
                             Point(current_block_coords.x + block_size / 2, current_block_coords.y + block_size / 2),
                             Point(previous_block_coords.x + block_size / 2, previous_block_coords.y + block_size / 2),
-                            ((current_block_row + current_block_col) % 2 == 0) ? 255 : 0,
-                            2);
+                            ((current_block_row + current_block_col) % 2 == 0) ? CV_RGB(255, 0, 0) : CV_RGB(0, 255, 0),
+                            1);
             }
         }
     }
