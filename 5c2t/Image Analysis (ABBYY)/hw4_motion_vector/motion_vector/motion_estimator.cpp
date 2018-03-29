@@ -5,6 +5,10 @@ Vec2i MotionEstimator::estimate_global(Mat image_current, Mat image_previous, bo
     Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
     std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors,
                                                                   show_vectors);
+    if (motion_vectors_filtered.empty()) {
+        throw std::logic_error("No vectors left after filtration");
+    }
+    std::cout << Mat(motion_vectors_filtered) << std::endl;
     double x_mean = 0;
     double y_mean = 0;
     for (const Vec2i& motion_vector : motion_vectors_filtered) {
@@ -40,7 +44,7 @@ Mat MotionEstimator::estimate_local(Mat image_current, Mat image_previous, bool 
         }
     }
     if (show_vectors) {
-        imshow("Local vectors", image_to_display);
+        imshow("Local vectors (current image)", image_to_display);
         waitKey(0);
     }
     return motion_vectors;
@@ -97,24 +101,26 @@ std::vector<Vec2i> MotionEstimator::filter_by_belief(Mat image_current,
             double belief = calc_belief_function(motion_vectors, image_current, image_previous, current_block_indices);
             std::cout << belief << std::endl;
             if (belief >= belief_threshold) {
-                res.push_back(motion_vectors.at<Vec2i>(current_block_indices));
+                Vec2i motion_vector = motion_vectors.at<Vec2i>(current_block_indices);
+                res.push_back(motion_vector);
                 if (show_vectors) {
                     rectangle(image_to_display,
                               current_block_coords,
                               current_block_coords + Point(block_size, block_size),
                               255,
                               2);
-//                    arrowedLine(image_to_display,
-//                                Point(block_start_pixels.x + block_size / 2, block_start_pixels.y + block_size / 2),
-//                                Point(block_previous_start.x + block_size / 2, block_previous_start.y + block_size / 2),
-//                                ((row_start + col_start) % 2 == 0) ? 255 : 0,
-//                                2);
+                    Point previous_block_coords = current_block_coords - Point(motion_vector);
+                    arrowedLine(image_to_display,
+                                current_block_coords + Point(block_size / 2, block_size / 2),
+                                previous_block_coords + Point(block_size / 2, block_size / 2),
+                                255,
+                                1);
                 }
             }
         }
     }
     if (show_vectors) {
-        imshow("Filtered vectors", image_to_display);
+        imshow("Filtered vectors (current image)", image_to_display);
         waitKey(0);
     }
     return res;
@@ -151,5 +157,5 @@ double MotionEstimator::calc_belief_function(Mat motion_vectors, Mat image_curre
             }
         }
     }
-    return 1.0 / (error_weight * error + disp_weight / (disp * disp) + dev_weight * dev);
+    return 1.0 / (error_weight * error + disp_weight / (disp * disp) + dev_weight * sqrt(dev));
 }

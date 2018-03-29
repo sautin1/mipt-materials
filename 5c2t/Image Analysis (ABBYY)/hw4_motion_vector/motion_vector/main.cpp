@@ -21,8 +21,7 @@ int main() {
         throw std::runtime_error("Cannot read image by path: " + path_current);
     }
 
-    MotionEstimator estimator;
-    std::cout << image_current.size << std::endl;
+    MotionEstimator estimator(16, 8, 0, 64, 0.5, 0.5);
     Vec2i motion_vector = estimator.estimate_global(image_current, image_previous, true);
     std::cout << motion_vector[0] << ' ' << motion_vector[1] << std::endl;
 
