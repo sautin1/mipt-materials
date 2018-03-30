@@ -6,7 +6,9 @@ CONFIG += link_pkgconfig
 PKGCONFIG += opencv
 
 SOURCES += main.cpp \
-    motion_estimator.cpp
+    motion_estimator.cpp \
+    os.cpp
 
 HEADERS += \
-    motion_estimator.h
+    motion_estimator.h \
+    os.h

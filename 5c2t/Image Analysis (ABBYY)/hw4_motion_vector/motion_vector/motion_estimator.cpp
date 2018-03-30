@@ -1,14 +1,24 @@
 #include "motion_estimator.h"
 #include <iostream>
 
-Vec2i MotionEstimator::estimate_global(Mat image_current, Mat image_previous, bool show_vectors) const {
+Mat read_image(const std::string& path, ImreadModes mode) {
+    Mat image = imread(path, mode);
+    if (image.empty()) {
+        throw std::runtime_error("Cannot read image by path: " + path);
+    }
+    return image;
+}
+
+std::pair<Vec2i, std::vector<Vec2i>> MotionEstimator::estimate_global(Mat image_current,
+                                                                      Mat image_previous,
+                                                                      bool show_vectors) const {
     Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
-    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous, local_motion_vectors,
-                                                                  show_vectors);
+    std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous,
+                                                                  local_motion_vectors, show_vectors);
     if (motion_vectors_filtered.empty()) {
         throw std::logic_error("No vectors left after filtration");
     }
-    std::cout << Mat(motion_vectors_filtered) << std::endl;
+    std::cout << "Number of filtered vectors: " << motion_vectors_filtered.size() << std::endl;
     double x_mean = 0;
     double y_mean = 0;
     for (const Vec2i& motion_vector : motion_vectors_filtered) {
@@ -17,7 +27,8 @@ Vec2i MotionEstimator::estimate_global(Mat image_current, Mat image_previous, bo
     }
     x_mean /= motion_vectors_filtered.size();
     y_mean /= motion_vectors_filtered.size();
-    return Vec2i(static_cast<int>(std::round(x_mean)), static_cast<int>(std::round(y_mean)));
+    return std::make_pair(Vec2i(static_cast<int>(std::round(x_mean)), static_cast<int>(std::round(y_mean))),
+                          motion_vectors_filtered);
 }
 
 Mat MotionEstimator::estimate_local(Mat image_current, Mat image_previous, bool show_vectors) const {
@@ -90,34 +101,49 @@ Point MotionEstimator::find_closest_block(Mat image_base,
     return coords_best;
 }
 
+double MotionEstimator::calc_threshold(Mat beliefs) const {
+    double belief_min, belief_max;
+    cv::minMaxLoc(beliefs, &belief_min, &belief_max);
+    return belief_min + belief_top_percent / 100.0 * (belief_max - belief_min);
+}
+
 std::vector<Vec2i> MotionEstimator::filter_by_belief(Mat image_current,
                                                      Mat image_previous,
                                                      Mat motion_vectors,
                                                      bool show_vectors) const {
     std::vector<Vec2i> res;
     Mat image_to_display = image_current.clone();
-    for (int current_block_row = 0; current_block_row < image_current.rows / block_size; current_block_row += 1) {
-        for (int current_block_col = 0; current_block_col < image_current.cols / block_size; current_block_col += 1) {
+    Mat beliefs(motion_vectors.rows, motion_vectors.cols, CV_64F);
+    for (int current_block_row = 0; current_block_row < motion_vectors.rows; ++current_block_row) {
+        for (int current_block_col = 0; current_block_col < motion_vectors.cols; ++current_block_col) {
             Point current_block_indices(current_block_col, current_block_row);
-            Point current_block_coords = current_block_indices * block_size;
             std::cout << "belief( " << current_block_row << " , " << current_block_col << " ) = ";
             double belief = calc_belief_function(motion_vectors, image_current, image_previous, current_block_indices);
             std::cout << belief << std::endl;
-            if (belief >= belief_threshold) {
-                Vec2i motion_vector = motion_vectors.at<Vec2i>(current_block_indices);
+            beliefs.at<double>(current_block_indices) = belief;
+        }
+    }
+    double threshold = (belief_threshold >= 0) ? belief_threshold : calc_threshold(beliefs);
+    std::cout << "Threshold: " << threshold << std::endl;
+
+    for (int row = 0; row < beliefs.rows; ++row) {
+        for (int col = 0; col < beliefs.cols; ++col) {
+            Point indices(col, row);
+            if (beliefs.at<double>(indices) >= threshold) {
+                Vec2i motion_vector = motion_vectors.at<Vec2i>(indices);
                 res.push_back(motion_vector);
+
                 if (show_vectors) {
+                    Point coords_current = indices * block_size;
                     rectangle(image_to_display,
-                              current_block_coords,
-                              current_block_coords + Point(block_size, block_size),
-                              255,
-                              2);
-                    Point previous_block_coords = current_block_coords - Point(motion_vector);
+                              coords_current,
+                              coords_current + Point(block_size, block_size),
+                              255, 2);
+                    Point coords_previous = coords_current + Point(motion_vector);
                     arrowedLine(image_to_display,
-                                current_block_coords + Point(block_size / 2, block_size / 2),
-                                previous_block_coords + Point(block_size / 2, block_size / 2),
-                                255,
-                                1);
+                                coords_current + Point(block_size / 2, block_size / 2),
+                                coords_previous + Point(block_size / 2, block_size / 2),
+                                255, 1);
                 }
             }
         }
