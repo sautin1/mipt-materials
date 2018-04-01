@@ -9,29 +9,49 @@ Mat read_image(const std::string& path, ImreadModes mode) {
     return image;
 }
 
-std::pair<Vec2i, std::vector<Vec2i>> MotionEstimator::estimate_global(Mat image_current,
-                                                                      Mat image_previous,
-                                                                      bool show_vectors) const {
-    Mat local_motion_vectors = estimate_local(image_current, image_previous, show_vectors);
+Vec2i MotionEstimator::estimate_global_vector(Mat image_current, Mat image_previous, bool show_vectors) const {
+    std::vector<Vec2i> local_vectors = estimate_local_vectors(image_current, image_previous, show_vectors);
+    return calc_consensus_vector(local_vectors);
+}
+
+double MotionEstimator::calc_vector_deviation(const std::vector<Vec2i>& vectors) const {
+    std::vector<int> xs(vectors.size()), ys(vectors.size());
+    for (int i = 0; i < vectors.size(); ++i) {
+        xs[i] = vectors[i][0];
+        ys[i] = vectors[i][1];
+    }
+    Mat mat_xs(xs), mat_ys(ys);
+    Scalar xs_mean, ys_mean, xs_std, ys_std;
+    meanStdDev(mat_xs, xs_mean, xs_std);
+    meanStdDev(mat_ys, ys_mean, ys_std);
+    return xs_std[0] * xs_std[0] + ys_std[0] * ys_std[0];
+}
+
+Vec2i MotionEstimator::calc_consensus_vector(const std::vector<Vec2i>& motion_vectors) const {
+    double x_mean = 0;
+    double y_mean = 0;
+    for (const Vec2i& motion_vector : motion_vectors) {
+        x_mean += motion_vector[0];
+        y_mean += motion_vector[1];
+    }
+    x_mean /= motion_vectors.size();
+    y_mean /= motion_vectors.size();
+    return Vec2i(static_cast<int>(std::round(x_mean)), static_cast<int>(std::round(y_mean)));
+}
+
+std::vector<Vec2i> MotionEstimator::estimate_local_vectors(Mat image_current,
+                                                           Mat image_previous,
+                                                           bool show_vectors) const {
+    Mat local_motion_vectors = estimate_local_vector(image_current, image_previous, show_vectors);
     std::vector<Vec2i> motion_vectors_filtered = filter_by_belief(image_current, image_previous,
                                                                   local_motion_vectors, show_vectors);
     if (motion_vectors_filtered.empty()) {
         throw std::logic_error("No vectors left after filtration");
     }
-    std::cout << "Number of filtered vectors: " << motion_vectors_filtered.size() << std::endl;
-    double x_mean = 0;
-    double y_mean = 0;
-    for (const Vec2i& motion_vector : motion_vectors_filtered) {
-        x_mean += motion_vector[0];
-        y_mean += motion_vector[1];
-    }
-    x_mean /= motion_vectors_filtered.size();
-    y_mean /= motion_vectors_filtered.size();
-    return std::make_pair(Vec2i(static_cast<int>(std::round(x_mean)), static_cast<int>(std::round(y_mean))),
-                          motion_vectors_filtered);
+    return motion_vectors_filtered;
 }
 
-Mat MotionEstimator::estimate_local(Mat image_current, Mat image_previous, bool show_vectors) const {
+Mat MotionEstimator::estimate_local_vector(Mat image_current, Mat image_previous, bool show_vectors) const {
     Mat motion_vectors(image_current.rows / block_size, image_current.cols / block_size, CV_32SC2, Vec2i(0, 0));
     Mat image_to_display = image_current.clone();
     if (show_vectors) {
@@ -117,14 +137,11 @@ std::vector<Vec2i> MotionEstimator::filter_by_belief(Mat image_current,
     for (int current_block_row = 0; current_block_row < motion_vectors.rows; ++current_block_row) {
         for (int current_block_col = 0; current_block_col < motion_vectors.cols; ++current_block_col) {
             Point current_block_indices(current_block_col, current_block_row);
-            std::cout << "belief( " << current_block_row << " , " << current_block_col << " ) = ";
             double belief = calc_belief_function(motion_vectors, image_current, image_previous, current_block_indices);
-            std::cout << belief << std::endl;
             beliefs.at<double>(current_block_indices) = belief;
         }
     }
     double threshold = (belief_threshold >= 0) ? belief_threshold : calc_threshold(beliefs);
-    std::cout << "Threshold: " << threshold << std::endl;
 
     for (int row = 0; row < beliefs.rows; ++row) {
         for (int col = 0; col < beliefs.cols; ++col) {

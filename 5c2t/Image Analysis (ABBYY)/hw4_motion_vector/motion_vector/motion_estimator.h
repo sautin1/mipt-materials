@@ -17,10 +17,11 @@ public:
         : block_size(_block_size), initial_step_size(step_size), error_weight(_error_weight),
           disp_weight(_disp_weight), dev_weight(_dev_weight),
           belief_threshold(_belief_threshold), belief_top_percent(_belief_top_percent) {}
-    std::pair<Vec2i, std::vector<Vec2i> > estimate_global(Mat image_current,
-                                                          Mat image_previous,
-                                                          bool show_vectors = false) const;
-    Mat estimate_local(Mat image_current, Mat image_previous, bool show_vectors = false) const;
+    Vec2i estimate_global_vector(Mat image_current, Mat image_previous, bool show_vectors = false) const;
+    double calc_vector_deviation(const std::vector<Vec2i>& vectors) const;
+    Vec2i calc_consensus_vector(const std::vector<Vec2i>& motion_vectors) const;
+    std::vector<Vec2i> estimate_local_vectors(Mat image_current, Mat image_previous, bool show_vectors = false) const;
+    Mat estimate_local_vector(Mat image_current, Mat image_previous, bool show_vectors = false) const;
 private:
     Point find_closest_block(Mat image_base, Point block_coords, Mat image_to_search) const;
     double calc_threshold(Mat beliefs) const;
