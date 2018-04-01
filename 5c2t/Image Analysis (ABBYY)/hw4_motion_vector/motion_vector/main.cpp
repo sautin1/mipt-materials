@@ -6,12 +6,14 @@
 #include <opencv2/opencv.hpp>
 #include "motion_estimator.h"
 #include "os.h"
+#include "timer.h"
 
 using namespace cv;
 
 
 std::pair<std::vector<Vec2i>, std::vector<std::string>> detect_motion(const std::vector<std::string>& paths,
-                                                                      bool verbose = false) {
+                                                                      bool verbose = false,
+                                                                      bool measure_time = false) {
     std::vector<Vec2i> motion_vectors;
     motion_vectors.reserve(paths.size());
     motion_vectors.push_back(Vec2i(0, 0));
@@ -24,7 +26,11 @@ std::pair<std::vector<Vec2i>, std::vector<std::string>> detect_motion(const std:
                               70);  // belief_top_percent
     Mat image_first = read_image(paths[0]);
     Mat image_previous = image_first;
+    Timer timer;
     for (int i = 1; i < paths.size(); ++i) {
+        if (measure_time) {
+            timer.start();
+        }
         Mat image_current = read_image(paths[i]);
         std::vector<Vec2i> local_vectors_previous = estimator.estimate_local_vectors(image_current,
                                                                                      image_previous,
@@ -40,19 +46,26 @@ std::pair<std::vector<Vec2i>, std::vector<std::string>> detect_motion(const std:
         }
         motion_vectors.push_back(motion_vector);
         image_previous = image_current;
+        if (measure_time) {
+            timer.stop();
+            std::cout << "Iteration #" << i << ": " << timer.get_duration() << std::endl;
+        }
     }
     return std::make_pair(motion_vectors, paths);
 }
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " PATH_TO_DIRECTORY [--visualize]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " PATH_TO_DIRECTORY [--visualize] [--time]" << std::endl;
         return 1;
     }
     std::string path_dir(argv[1]);
-    bool visualize = (argc >= 3 && std::string(argv[2]) == "--visualize");
+    bool visualize = ((argc >= 3 && std::string(argv[2]) == "--visualize") ||
+            (argc >= 4 && std::string(argv[3]) == "--visualize"));
+    bool measure_time = ((argc >= 3 && std::string(argv[2]) == "--time") ||
+            (argc >= 4 && std::string(argv[3]) == "--time"));
     std::vector<std::string> paths_images = list_files_in_directory(path_dir, ".tif", true);
-    auto result = detect_motion(paths_images, visualize);
+    auto result = detect_motion(paths_images, visualize, measure_time);
     const std::vector<Vec2i>& motion_vectors = result.first;
     const std::vector<std::string>& paths = result.second;
 

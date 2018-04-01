@@ -7,8 +7,10 @@ PKGCONFIG += opencv
 
 SOURCES += main.cpp \
     motion_estimator.cpp \
-    os.cpp
+    os.cpp \
+    timer.cpp
 
 HEADERS += \
     motion_estimator.h \
-    os.h
+    os.h \
+    timer.h
