@@ -29,11 +29,11 @@ class DarknetModel:
 
     def _build(self):
         conv_model_input = Input(shape=self._input_shape)
-        # x = Conv2D(10, (3, 3), strides=(2, 2), padding='same',
-        #            kernel_initializer='he_normal', kernel_regularizer=l2(1e-10))(conv_model_input)
+        x = Conv2D(10, (3, 3), strides=(2, 2), padding='same',
+                   kernel_initializer='he_normal', kernel_regularizer=l2(1e-10))(conv_model_input)
         x = Conv2D(10, (3, 3), padding='same', kernel_initializer='he_normal',
                    kernel_regularizer=l2(1e-10))(conv_model_input)
-        # self._downsample_factor = 2
+        self._downsample_factor = 2
         if self._use_dropout:
             x = Dropout(0.1)(x)
 
@@ -42,8 +42,8 @@ class DarknetModel:
             x = DarknetBlock(filter_count, filter_count * 2)(x)
             x = DarknetBlock(filter_count, filter_count * 2)(x)
             if idx < len(filter_counts) - 1:
-                # x = MaxPool2D(pool_size=(2, 2), padding='same')(x)
-                # self._downsample_factor *= 2
+                x = MaxPool2D(pool_size=(2, 2), padding='same')(x)
+                self._downsample_factor *= 2
                 if self._use_dropout:
                     x = Dropout(0.1)(x)
         self._model = Model(inputs=[conv_model_input], outputs=[x])

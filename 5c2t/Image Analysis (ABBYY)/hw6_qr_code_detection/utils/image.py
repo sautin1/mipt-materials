@@ -70,3 +70,8 @@ def convert_to_tensor_format(image, convert_color=True):
     # pixel conversion implicitly inverts the image
     image = invert_image(image)
     return image
+
+
+def resize_image(image, fx, fy):
+    return np.array([cv2.resize(channel, None, fx=fx, fy=fy, interpolation=cv2.INTER_CUBIC)
+                     for channel in image])
