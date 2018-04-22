@@ -7,7 +7,8 @@ from scipy.spatial import ConvexHull
 import numpy as np
 
 from os import listdir, environ
-from data import PATH_DUBSKA_QRCODE_DATASET, PATH_SOEROES_DATASET, PATH_ABBYY_DATASET, PATH_BARCODES_DATASET
+from data import PATH_SOEROES_DATASET, PATH_ABBYY_DATASET, PATH_BARCODES_DATASET
+from data import PATH_DUBSKA_MATRIX_DATASET, PATH_DUBSKA_QRCODE_DATASET
 
 
 def get_corner_points(points):
@@ -16,7 +17,7 @@ def get_corner_points(points):
 
 
 if __name__ == '__main__':
-    path_root = PATH_BARCODES_DATASET
+    path_root = PATH_DUBSKA_MATRIX_DATASET
     bash_command = './qr_image \'{}\''
     for dir_name in listdir(path_root):
         path_dir = join(path_root, dir_name)
