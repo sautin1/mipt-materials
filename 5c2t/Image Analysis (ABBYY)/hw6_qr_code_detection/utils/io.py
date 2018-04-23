@@ -8,7 +8,7 @@ from utils.image import convert_to_tensor_format, convert_to_opencv_format
 def read_image(path, is_grey=False):
     image = cv2.imread(path, cv2.IMREAD_COLOR if not is_grey else cv2.IMREAD_GRAYSCALE)
     if image is None:
-        raise IOError('Cannot read image: {path}')
+        raise IOError(f'Cannot read image: {path}')
     return convert_to_tensor_format(image)
 
 
