@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     auto res = detector.detect(image_bw);
     if (measure_time) {
         timer.stop();
-        std::cout << "Time: " << timer.get_duration() << "ms" << std::endl;
+        std::cout << "Time: " << timer.get_duration() << "μs" << std::endl;
     }
 
     for (int i = 0; i < res.first.size(); ++i) {
@@ -56,8 +56,8 @@ int main(int argc, char* argv[]) {
         imshow("image", image);
         waitKey(0);
     } else {
-        imwrite(path_output + "/bw.png", image_bw);
-        imwrite(path_output + "/fips.png", image);
+        imwrite(path_output + "/bw.jpg", image_bw);
+        imwrite(path_output + "/fips.jpg", image);
     }
 
     return 0;
