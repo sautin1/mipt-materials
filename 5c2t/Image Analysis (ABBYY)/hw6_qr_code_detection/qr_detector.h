@@ -7,8 +7,8 @@ using namespace cv;
 
 class QrDetector {
 public:
-    QrDetector(int _row_stride = 1, int _min_center_distance = 10)
-        : row_stride(_row_stride), min_center_distance(_min_center_distance) {}
+    QrDetector(int _row_stride = 1, int _min_center_distance = 10, bool _measure_time = false)
+        : row_stride(_row_stride), min_center_distance(_min_center_distance), measure_time(_measure_time) {}
     std::pair<std::vector<Point>, std::vector<int> > detect(const Mat& image) const;
 
 private:
@@ -27,6 +27,7 @@ private:
 
     const int row_stride;
     const int min_center_distance;
+    const bool measure_time;
     static const int STATE_COUNT;
     // FIP consists of 5 modules (each module consists of 1 or 3 fractions):
     // black (1), white (1), black (3), white (1), black (1)

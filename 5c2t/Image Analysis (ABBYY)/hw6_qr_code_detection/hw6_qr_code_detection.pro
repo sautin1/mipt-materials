@@ -6,7 +6,9 @@ CONFIG += link_pkgconfig
 PKGCONFIG += opencv
 
 SOURCES += main.cpp \
-    qr_detector.cpp
+    qr_detector.cpp \
+    timer.cpp
 
 HEADERS += \
-    qr_detector.h
+    qr_detector.h \
+    timer.h
