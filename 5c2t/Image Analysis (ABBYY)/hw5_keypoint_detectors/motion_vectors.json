@@ -1,0 +1,90 @@
+[
+	{
+		"base": "01.tif",
+		"target": "02.tif",
+		"coords": {
+			"x": 6,
+			"y": -1
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "03.tif",
+		"coords": {
+			"x": -1,
+			"y": 1
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "04.tif",
+		"coords": {
+			"x": 0,
+			"y": -2
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "05.tif",
+		"coords": {
+			"x": 1,
+			"y": -4
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "06.tif",
+		"coords": {
+			"x": 0,
+			"y": -5
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "07.tif",
+		"coords": {
+			"x": -7,
+			"y": -3
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "08.tif",
+		"coords": {
+			"x": -9,
+			"y": -5
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "09.tif",
+		"coords": {
+			"x": 0,
+			"y": -13
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "10.tif",
+		"coords": {
+			"x": 2,
+			"y": -21
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "11.tif",
+		"coords": {
+			"x": 4,
+			"y": -23
+		}
+	},
+	{
+		"base": "01.tif",
+		"target": "12.tif",
+		"coords": {
+			"x": 8,
+			"y": -26
+		}
+	}
+]
